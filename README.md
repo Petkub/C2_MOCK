@@ -134,7 +134,8 @@ release. You only need a new release for new students (or new sets); existing st
 - "My correct code gets Runtime Error / Wrong Answer": ask for the problem, the test number and the line printed
   under *First failure* (e.g. `your program crashed (signal 11 SIGSEGV: invalid memory access)`). Then run their
   file here: `python3 core/judge.py their.cpp K-N` (that creates the big tests under `problems/batch/` and a
-  `core/progress.json`: both are ignored by git and left out of the zip). The judge compiles with `-O2`, which
+  `core/progress.json`; neither is shipped, `progress.json` is ignored by git, and the big inputs show up
+  as untracked in `git status`: do not `git add` them). The judge compiles with `-O2`, which
   exposes uninitialised variables and out-of-bounds reads that pass on the student's own compile.
 - Progress: `python3 ../Judge/judge.py --progress` inside a student's `Mock_K` shows what they have solved;
   the file is `Judge/progress.json`.
@@ -152,7 +153,8 @@ release. You only need a new release for new students (or new sets); existing st
 ## 8. Never
 
 - Edit either `manifest.json` by hand, or commit without rebuilding them.
-- Commit `core/progress.json` or the generated big inputs (both are in `.gitignore`; `git status` should not show them).
+- Commit the big inputs that judging in the repo generated (untracked `NN.in` files in `git status`), or
+  `core/progress.json`.
 - Delete or rename a test that students already have (the updater never deletes; add a new one instead).
 - Type an expected output by hand.
 - Change the judge's exit codes, the manifest format or the updater's safety rules without updating the tests.
