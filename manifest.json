@@ -130,6 +130,7 @@
 ]
 },
 "files": {
+"CHANGELOG.txt": "d15b4362c8bc8134bc40b9b565eaaec3d57fcc712554dd8d2b31cd0753a2a63d",
 "README.txt": "f73c191e08f025803c6b0fa0fce256defc875dbaf72ef01b99c14e498dc49fe0",
 "include/bits/stdc++.h": "1545f1f4b55b3acb866effca73203f3a9131773f147331cbf4e983ebf36d6cc9",
 "judge.py": "2b882fddeda1853663af1ccbc034b02e354c7bfa7ce6a5008059ba8fc3e40c4b",
@@ -1074,5 +1075,5 @@
 "": "core/",
 "problems/": "problems/"
 },
-"version": "1.0"
+"version": "1.1"
 }
