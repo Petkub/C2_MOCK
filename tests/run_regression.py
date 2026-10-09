@@ -14,6 +14,7 @@ that gen.py rebuilds and progress.json are never written into the repo.
 """
 import contextlib
 import glob
+import hashlib
 import io
 import json
 import os
@@ -30,6 +31,7 @@ judge = None        # the package's judge.py, imported by main()
 
 
 def check(ok, name, detail=""):
+    detail = detail.encode("ascii", "backslashreplace").decode("ascii")    # Windows consoles: cp1252
     print(("  ok    " if ok else "  FAIL  ") + name + ("" if ok else "   " + detail))
     if not ok:
         FAILED.append(name)
@@ -58,6 +60,28 @@ def test_package(root):
     starters = glob.glob(os.path.join(root, "Mock_*", "[0-9].cpp"))
     check(len(starters) == 20 and all(judge.is_untouched_starter(s) for s in starters),
           "Mock_K/1.cpp ... 5.cpp are untouched starters", f"{len(starters)} files")
+
+
+def test_crlf_generator():
+    """On Windows gen.py (text mode) writes CRLF; the sha256 in manifest.json is of the LF file."""
+    tmp = tempfile.mkdtemp(prefix="judge_gen_test_")
+    try:
+        data = b"3 1 0 10\n2 1\n7 2\n12 1\n"
+        with open(os.path.join(tmp, "gen.py"), "w") as f:
+            f.write("import os\nos.makedirs('tests', exist_ok=True)\n"
+                    f"open('tests/01.in', 'w', newline='\\r\\n').write({data.decode()!r})\n")
+        test = {"name": "01", "in": hashlib.sha256(data).hexdigest(), "out": "", "in_file": False, "out_file": True}
+        with open(os.path.join(tmp, "manifest.json"), "w") as f:
+            json.dump({"version": 1, "tests": [test]}, f)
+        with contextlib.redirect_stdout(io.StringIO()):
+            ok = judge.ensure_tests(tmp, judge.Style(color=False, ascii_only=True, tty=False))
+        got = b""
+        if os.path.isfile(os.path.join(tmp, "01.in")):
+            with open(os.path.join(tmp, "01.in"), "rb") as f:
+                got = f.read()
+        check(ok and got == data, "gen.py writing CRLF (Windows) is accepted and stored with LF", repr(got))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 # ----------------------------------------------------------------------------- 2. verdicts
@@ -146,6 +170,7 @@ def main():
             import judge as package_judge
             judge = package_judge
             test_package(root)
+            test_crlf_generator()
             test_samples()
             test_cli(root)
     finally:

@@ -240,6 +240,20 @@ def sha256_file(path):
         return hashlib.sha256(f.read()).hexdigest()
 
 
+def generated_ok(path, want):
+    """True if the input gen.py wrote matches its sha256. gen.py writes in text mode, so on Windows the lines end
+    in CRLF while the sha256 is of the LF file: change them back to LF, then check again."""
+    if sha256_file(path) == want:
+        return True
+    with open(path, "rb") as f:
+        data = f.read()
+    if b"\r\n" not in data:
+        return False
+    with open(path, "wb") as f:
+        f.write(data.replace(b"\r\n", b"\n"))
+    return sha256_file(path) == want
+
+
 def output_hash(b):
     return hashlib.sha256("\n".join(normalize(b)).encode("utf-8")).hexdigest()
 
@@ -263,7 +277,7 @@ def ensure_tests(pdir, st):
         bad = []
         for t in missing:
             src = os.path.join(tmp, "tests", t["name"] + ".in")
-            if r.returncode == 0 and os.path.isfile(src) and sha256_file(src) == t["in"]:
+            if r.returncode == 0 and os.path.isfile(src) and generated_ok(src, t["in"]):
                 shutil.move(src, os.path.join(td, t["name"] + ".in"))
             else:
                 bad.append(t["name"])
