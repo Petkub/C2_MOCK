@@ -130,7 +130,7 @@
 ]
 },
 "files": {
-"CHANGELOG.txt": "d15b4362c8bc8134bc40b9b565eaaec3d57fcc712554dd8d2b31cd0753a2a63d",
+"CHANGELOG.txt": "1bda88e1df2979cb43efc695b998a361e2fb13207460d4b42a43db799765ea6b",
 "README.txt": "f73c191e08f025803c6b0fa0fce256defc875dbaf72ef01b99c14e498dc49fe0",
 "include/bits/stdc++.h": "1545f1f4b55b3acb866effca73203f3a9131773f147331cbf4e983ebf36d6cc9",
 "judge.py": "2b882fddeda1853663af1ccbc034b02e354c7bfa7ce6a5008059ba8fc3e40c4b",
@@ -1069,11 +1069,11 @@
 "problems/batch/Mock_4/5/manifest.json": "b5c5a5ccd86a4c1ebc6fbdc19c7066bac3f4d9305ff647aeded670d972f7358f",
 "problems/batch/problems.json": "8aa094e658084ac2c0bc8c7e19206f8bbdd8439f28405e197672e921823119cf",
 "problems/batch/sets.json": "b4bfb0fee0ed09f69ec071698899ef88f10ea4575b1f13f7367118fc712d8177",
-"updater.py": "4352d7a5f26aaf71ce4c6a2b70a55ca1c70d11c81f59d79418cdc8a1a4d87e69"
+"updater.py": "12ef9434186557c1bf2661919fedcbb5803011efa7038f1b0e05f1f30fb97aaa"
 },
 "sources": {
 "": "core/",
 "problems/": "problems/"
 },
-"version": "1.1"
+"version": "1.2"
 }
