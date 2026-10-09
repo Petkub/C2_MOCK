@@ -7,28 +7,32 @@ Build the student package.
   python3 tools/build_dist.py --no-zip         folder only
 
 Layout produced:
-  C2_Mock_Test/README.txt, Progress.md, .vscode/   from student/
-  C2_Mock_Test/Judge/                              core/ + problems/, without progress.json and the big
-                                                   tests gen.py rebuilds (manifest.json in_file/out_file false)
-  C2_Mock_Test/Mock_K/Mock_K.pdf                   from student/Mock_K/
-  C2_Mock_Test/Mock_K/Makefile, judge.bat          from student/set_files/
-  C2_Mock_Test/Mock_K/1.cpp ... 5.cpp              empty template (student/set_files/template.cpp)
+  C2_Mock_Test/README.txt, Progress.md, .vscode/ from student/
+  C2_Mock_Test/Judge/                             exactly the files listed in manifest.json (core/ + problems/),
+                                               plus manifest.json itself (the installed version for updater.py);
+                                               never progress.json or the big tests gen.py rebuilds
+  C2_Mock_Test/Mock_K/Mock_K.pdf                  from student/Mock_K/
+  C2_Mock_Test/Mock_K/Makefile, judge.bat         from student/set_files/
+  C2_Mock_Test/Mock_K/1.cpp ... 5.cpp             empty template (student/set_files/template.cpp)
+The manifest is rebuilt first, so the zip and manifest.json always agree.
 """
-import json
 import os
 import shutil
 import sys
 import zipfile
 
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.dont_write_bytecode = True
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import build_manifest  # noqa: E402
+
+REPO = build_manifest.REPO
 STUDENT = os.path.join(REPO, "student")
 NAME = "C2_Mock_Test"
 MARKER = ".built_by_build_dist"     # only a folder with this file may be replaced by a new build
-SKIP = shutil.ignore_patterns("__pycache__", "*.pyc", ".DS_Store", "progress.json", "progress.json.tmp")
 
 
 def prepare(out):
-    """Create out/Mock_Test, replacing an earlier build but never a folder this script did not make."""
+    """Create out/C2_Mock_Test, replacing an earlier build but never a folder this script did not make."""
     root = os.path.join(out, NAME)
     if os.path.exists(root):
         if not os.path.exists(os.path.join(root, MARKER)):
@@ -40,25 +44,17 @@ def prepare(out):
     return root
 
 
-def unshipped(dirpath, names):
-    """copytree ignore: also the big tests that gen.py rebuilds on the student's computer (e.g. made by
-    judging in the repo), as listed in the problem's manifest.json."""
-    skip = set(SKIP(dirpath, names))
-    p = os.path.join(dirpath, "manifest.json")
-    if os.path.exists(p):
-        with open(p, encoding="utf-8") as f:
-            for t in json.load(f)["tests"]:
-                if not t["in_file"]:
-                    skip.add(t["name"] + ".in")
-                if not t["out_file"]:
-                    skip.add(t["name"] + ".out")
-    return skip
+def copy_file(src, dest):
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    shutil.copy2(src, dest)
 
 
-def copy_judge(root):
+def copy_judge(root, manifest):
     judge = os.path.join(root, "Judge")
-    shutil.copytree(os.path.join(REPO, "core"), judge, ignore=SKIP)
-    shutil.copytree(os.path.join(REPO, "problems"), os.path.join(judge, "problems"), ignore=unshipped)
+    for rel, src in build_manifest.judge_files():
+        copy_file(os.path.join(REPO, src), os.path.join(judge, *rel.split("/")))
+    with open(os.path.join(judge, "manifest.json"), "w", encoding="utf-8") as f:
+        f.write(build_manifest.dumps(manifest))
 
 
 def copy_student_files(root):
@@ -71,21 +67,9 @@ def copy_student_files(root):
 
 
 def make_sets(root):
-    with open(os.path.join(REPO, "problems", "batch", "sets.json"), encoding="utf-8") as f:
-        sets = json.load(f)
-    files = os.path.join(STUDENT, "set_files")
-    for s in sets:
-        k = s["set"]
-        d = os.path.join(root, f"Mock_{k}")
-        os.makedirs(d)
-        pdf = os.path.join(STUDENT, f"Mock_{k}", f"Mock_{k}.pdf")
-        if os.path.exists(pdf):
-            shutil.copy2(pdf, d)
-        for name in ("Makefile", "judge.bat"):
-            shutil.copy2(os.path.join(files, name), d)
-        for i in range(1, len(s["problems"]) + 1):
-            shutil.copy2(os.path.join(files, "template.cpp"), os.path.join(d, f"{i}.cpp"))
-    return len(sets)
+    for rel, src in build_manifest.set_files():
+        copy_file(os.path.join(REPO, src), os.path.join(root, *rel.split("/")))
+    return len({rel.split("/")[0] for rel, _ in build_manifest.set_files()})
 
 
 def make_zip(root):
@@ -110,11 +94,14 @@ def main():
         if i + 1 >= len(argv):
             sys.exit("--out needs a folder")
         out = os.path.abspath(argv[i + 1])
+    manifest = build_manifest.build()
+    with open(build_manifest.MANIFEST, "w", encoding="utf-8") as f:
+        f.write(build_manifest.dumps(manifest))
     root = prepare(out)
-    copy_judge(root)
+    copy_judge(root, manifest)
     copy_student_files(root)
     n = make_sets(root)
-    print(f"Built {root} ({n} sets)")
+    print(f"Built {root} (v{manifest['version']}, {n} sets)")
     if "--no-zip" not in argv:
         path = make_zip(root)
         print(f"Built {path} ({os.path.getsize(path) // 1024} KB)")

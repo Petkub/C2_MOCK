@@ -31,3 +31,6 @@
   ไฟล์ starter ที่ยังไม่ได้แก้จะไม่ถูกนับ
   (ถ้าอยากได้ปุ่มลัดแยก เช่น Ctrl+Alt+P: Ctrl+Shift+P > "Preferences: Open Keyboard Shortcuts (JSON)" แล้วเพิ่ม
    {"key": "ctrl+alt+p", "command": "workbench.action.tasks.runTask", "args": "Show progress"} )
+
+การอัปเดต: เมื่อต่ออินเทอร์เน็ต judge จะอัปเดตตัวเองจาก GitHub อัตโนมัติ (ตรวจสอบไม่เกินชั่วโมงละครั้ง ไฟล์ .cpp ของคุณ
+จะไม่ถูกแก้) บังคับตรวจสอบทันที: python3 ../Judge/judge.py --update  (เลขเวอร์ชันแสดงในกรอบหัวเรื่อง)
