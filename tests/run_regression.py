@@ -304,6 +304,14 @@ def test_updater():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def test_data():
+    """Every problem's own manifest.json lists the tests on disk with the right hashes."""
+    print("Test data")
+    p = subprocess.run([sys.executable, os.path.join(REPO, "tools", "update_problem_manifest.py"), "--check", "--all"],
+                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    check(p.returncode == 0, "problem manifests match the test files", p.stdout.decode("utf-8", "replace"))
+
+
 def test_manifest():
     print("Manifest")
     p = subprocess.run([sys.executable, os.path.join(REPO, "tools", "build_manifest.py"), "--check"],
@@ -329,6 +337,7 @@ def main():
             test_samples()
             test_cli(root)
             test_updater()
+            test_data()
             test_manifest()
     finally:
         shutil.rmtree(tmp, ignore_errors=True)

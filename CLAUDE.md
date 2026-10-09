@@ -46,6 +46,7 @@ C2_MOCK/
                                 # verdict: AC/WA/TLE/RE/CE (first failing test); "score" optional (runs all tests)
   tools/
     build_manifest.py           # writes manifest.json (VERSION + SHA-256 of every file in Judge/); --check for CI
+    update_problem_manifest.py  # refreshes problems/batch/Mock_K/N/manifest.json after adding tests; --check --all in CI
     build_dist.py               # builds the student zip (C2_Mock_Test/ layout with Judge/ and empty Mock_K/*.cpp)
   tests/
     run_regression.py           # runs every sample, compares verdicts with expected.json
@@ -123,6 +124,7 @@ Propose the design and wait for approval before writing it.
 python3 tests/run_regression.py          # must pass before every commit
 python3 tools/build_manifest.py          # after changing anything under core/, problems/ or student/ (and bump VERSION)
 python3 tools/build_manifest.py --check  # CI: fails if manifest.json is stale
+python3 tools/update_problem_manifest.py Mock_K/N   # after adding NN.in/NN.out to a problem (--check --all in CI)
 python3 tools/build_dist.py              # build dist/C2_Mock_Test/ + dist/C2_Mock_Test.zip (--out DIR, --no-zip)
 python3 core/judge.py samples/batch/towers_ok.cpp 1-1      # judge one file from the repo (creates big tests, see above)
 python3 core/interactive_judge.py guess samples/interactive/guess_ok.cpp
