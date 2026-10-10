@@ -104,7 +104,7 @@ def judge_sample(src, problem, full):
     st = judge.Style(color=False, ascii_only=True, tty=False)
     tmp = tempfile.mkdtemp(prefix="judge_")
     try:
-        exe, _, _ = judge.compile_source(src, tmp)
+        exe, _, _, _ = judge.compile_source(src, tmp)
         if not exe:
             return "CE", 0
         with contextlib.redirect_stdout(io.StringIO()):
@@ -113,8 +113,13 @@ def judge_sample(src, problem, full):
             results, _, total = judge.run_tests(exe, pdir, st, 1.0, 0, not full, quiet=True)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
-    bad = [v for _, v, _ in results if v != "AC"]
+    bad = [r[1] for r in results if r[1] != "AC"]
+    peaks = [r[3] for r in results if r[3] is not None]
+    PEAK[0] = max(peaks) / (1024 * 1024) if peaks else None
     return (bad[0] if bad else "AC"), judge.compute_score(results, total)[0]
+
+
+PEAK = [None]      # peak memory (MB) seen by the last judge_sample call
 
 
 def test_samples():
@@ -127,6 +132,8 @@ def test_samples():
         ok = verdict == want["verdict"] and (not full or score == want["score"])
         got = verdict + (f" {score}" if full else "")
         check(ok, f"{name:<28} {want['verdict']}", f"got {got}")
+        if name.endswith("_ok.cpp"):      # a small program must be measured as small (not the judge's own image)
+            check(PEAK[0] is not None and 0.1 < PEAK[0] < 16, f"peak memory of a small program is measured: {PEAK[0]} MB")
 
 
 # ----------------------------------------------------------------------------- 3. command line
@@ -151,6 +158,19 @@ def test_cli(root):
     except (OSError, ValueError, KeyError):
         best = None
     check(best == 100, "progress.json records best 100 for problem 1", f"best = {best}")
+    for name in ("towers_throw.cpp", "towers_warn.cpp"):
+        shutil.copy(os.path.join(SAMPLES, "batch", name), os.path.join(set1, name))
+    code, out, _ = run_judge(["towers_throw.cpp", "1-1", "--no-color", "--stop"], set1)
+    check("out_of_range" in out and "stderr" in out, "RE shows the program's stderr (out_of_range)", out)
+    code, out, _ = run_judge(["towers_warn.cpp", "1-1", "--no-color", "--stop"], set1)
+    check("g++ warning" in out and "unused" in out, "warnings are shown after Compiled", out)
+    code, out, _ = run_judge(["1.cpp", "--no-color", "--stop"], set1)
+    check("warning" not in out and "Memory  peak" in out and "256 MB per test" in out,
+          "clean program: no warnings, memory line, limit in header", out)
+    code, out, _ = run_judge(["1.cpp", "--no-color", "--stop", "--ml", "1"], set1)
+    check("Memory Limit Exceeded" in out and "limit is 1 MB" in out, "--ml 1 makes a small program MLE", out)
+    code, out, _ = run_judge(["--ml", "0"], set1)
+    check(code == 2 and "--ml must be" in out, "judge.py --ml 0 is rejected", f"exit {code}\n{out}")
     code, out, plain = run_judge(["wrong.cpp", "1-1", "--ascii", "--no-color"], set1)
     check(code == 0 and "First failure" in out and plain, "judge.py --ascii shows the failure, ASCII only",
           f"exit {code}, ascii={plain}\n{out}")

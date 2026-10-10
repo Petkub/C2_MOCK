@@ -132,8 +132,10 @@ release. You only need a new release for new students (or new sets); existing st
   `CERTIFICATE_VERIFY_FAILED` → run "Install Certificates.command" from the Python folder).
 - "Could not rebuild test(s) ... on this computer": their `gen.py` output does not match the hash. Ask for their
   Python version and OS; a judge older than v1.2 on Windows always fails this way (update fixes it).
-- "My correct code gets Runtime Error / Wrong Answer": ask for the problem, the test number and the line printed
-  under *First failure* (e.g. `your program crashed (signal 11 SIGSEGV: invalid memory access)`). Then run their
+- "My correct code gets Runtime Error / Wrong Answer": ask for the problem, the test number and the lines printed
+  under *First failure* (e.g. `your program crashed (signal 11 SIGSEGV: invalid memory access)` and the program's
+  own stderr below it, such as `terminate called after throwing ... out_of_range`), plus any g++ warnings printed
+  after "Compiled". Then run their
   file here: `python3 core/judge.py their.cpp K-N` (that creates the big tests under `problems/batch/` and a
   `core/progress.json`; neither is shipped, `progress.json` is ignored by git, and the big inputs show up
   as untracked in `git status`: do not `git add` them). The judge compiles with `-O2`, which

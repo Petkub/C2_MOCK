@@ -1,5 +1,6 @@
 POSN Practice Judge - changes
 
+1.5  Memory limit (MLE) with peak memory shown; the program's stderr is shown after a crash; g++ -Wall warnings shown.
 1.4  Statement PDFs, Makefile, judge.bat, README and VS Code tasks now update too (your .cpp files never).
 1.3  Automatic update check every 10 minutes instead of every hour.
 1.2  --update skips the GitHub cache, so a new version shows at once.

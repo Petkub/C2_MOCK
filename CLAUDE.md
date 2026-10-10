@@ -34,7 +34,7 @@ C2_MOCK/
     include/bits/stdc++.h       # macOS fallback header
   problems/
     batch/Mock_K/N/*.in|out, gen.py, manifest.json   # see "Compact test data" below
-    batch/problems.json         # problem bank: id -> title, tier, dir (Mock_K/N), samples, subtasks
+    batch/problems.json         # problem bank: id -> title, tier, dir (Mock_K/N), samples, subtasks, optional ml (MB)
     batch/sets.json             # set K -> list of 5 problem ids
     interactive/<name>/{problem.json, interactor.cpp, tests/NN.in}
     communication/<name>/{problem.json, manager.cpp, stub/, tests/}
@@ -45,7 +45,7 @@ C2_MOCK/
     batch/towers_ok.cpp, towers_smallhi.cpp, towers_slow.cpp, towers_crash.cpp, towers_syntax.cpp
     interactive/guess_ok.cpp, guess_noflush.cpp, guess_linear.cpp, guess_crash.cpp
     expected.json               # {"batch/towers_ok.cpp": {"problem": "1-1", "verdict": "AC", "score": 100}, ...}
-                                # verdict: AC/WA/TLE/RE/CE (first failing test); "score" optional (runs all tests)
+                                # verdict: AC/WA/TLE/RE/MLE/CE (first failing test); "score" optional (runs all tests)
   tools/
     build_manifest.py           # writes manifest.json (VERSION + SHA-256 of every file in Judge/); --check for CI
     update_problem_manifest.py  # refreshes problems/batch/Mock_K/N/manifest.json after adding tests; --check --all in CI
@@ -71,7 +71,18 @@ and `C2_Mock_Test/Mock_K/1.cpp ... 5.cpp` = student files. The repo layout is **
   `core/progress.json`. Never commit them; `build_dist.py` leaves them out, and the regression tests run inside
   a temporary built package so they never create them.
 - `Judge/progress.json` is the student's own history (best score per problem). Never ship or overwrite it.
-- The C2 judge has no `judge.py 3` shorthand: use `judge.py 3.cpp` (the Makefile and judge.bat do).
+
+## Judging rules (batch)
+
+- Compile: `g++ -O2 -std=c++17 -Wall -Wno-sign-compare -Wno-char-subscripts` (Windows: `-static`, 256 MB stack).
+  Warnings are shown after "Compiled" (a count in set mode); they do not change the verdict.
+- Limits: time `--tl` (default 1 s, hard kill at 2x+0.5 s), memory `--ml` (default 256 MB, the statements;
+  `"ml"` in `problems.json` per problem). Memory = the program's peak resident size, read every millisecond while
+  it runs (`/proc/<pid>/status VmHWM` on Linux, `proc_pid_rusage` on macOS, `GetProcessMemoryInfo` after exit on
+  Windows); never `ru_maxrss` of the child first, because that includes the judge's own Python image before exec.
+  Verdicts in order: MLE, TLE (killed), WA (output over 64 MB), RE (exit code != 0), TLE (slow), AC/WA.
+- The last 8 KB of the program's stderr are kept; after an RE the last 5 lines are shown (exception text, assert).
+- Samples for the regression suite: `*_mle.cpp`, `*_throw.cpp`, `*_warn.cpp` next to the AC/WA/TLE/RE/CE ones.
 
 ## Interactive protocol (already implemented, keep compatible)
 

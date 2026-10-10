@@ -19,7 +19,7 @@
   Linux / macOS   make (ทั้งชุด)  ·  make 3 (เฉพาะข้อ 3)
   Windows         judge (ทั้งชุด) ·  judge 3   หรือดับเบิลคลิก judge.bat
   ทุกระบบ         python3 ../Judge/judge.py   ·   python3 ../Judge/judge.py 3.cpp
-  ตัวเลือก: --tl 2 (เพิ่ม time limit ถ้าเครื่องช้า)  --diff 5  --stop
+  ตัวเลือก: --tl 2 (เพิ่ม time limit ถ้าเครื่องช้า)  --ml 512 (หน่วยความจำ MB, ปกติ 256)  --diff 5  --stop
 
 ติดตามความคืบหน้า (ข้อที่ผ่านเต็ม 100)
   ทุกครั้งที่ตรวจ judge จะบันทึกคะแนนที่ดีที่สุดของแต่ละข้อไว้ใน Judge/progress.json

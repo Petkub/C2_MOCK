@@ -82,10 +82,10 @@
 ]
 },
 "files": {
-"CHANGELOG.txt": "86709da384780a43ff9cd93b7f82df708d2cb8428bf92be94623e2a125f62125",
+"CHANGELOG.txt": "15a38c9b3043a9217af83b2634db0e17ca572efce5898cda797a8bb2f834c786",
 "README.txt": "6781ffbe98fd92ddacf9e973ab47d06a7f3fa8f4103fec5f4146ed9b5e581c14",
 "include/bits/stdc++.h": "1545f1f4b55b3acb866effca73203f3a9131773f147331cbf4e983ebf36d6cc9",
-"judge.py": "cd9a230d61c927e05b33781dc7fcca1276c19409db8eb90d12a2fb04aaec9c6c",
+"judge.py": "dfac8ce37a41c9fbaff54067318115207690604bc8a4602d43df0225fba9ec83",
 "problems/batch/Mock_1/1/01.in": "df535b5ec6ed8ea285e5ab89dd96757a82f08b23786e7d26a7eb44283175eb67",
 "problems/batch/Mock_1/1/01.out": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
 "problems/batch/Mock_1/1/02.in": "e75c95dc1e1e2a5d14acac32fb7b5f5b20388559a4e66a8b7764b96223d920ab",
@@ -1085,7 +1085,7 @@
 "student/Progress.md"
 ],
 "README.txt": [
-"da96390062ece4ec643a446be987c2420923e262680cc53569395e6891c058d7",
+"ba5d1f96784861b2568774db16e1e69dd8a529055740a746975b799d228cab7b",
 "student/README.txt"
 ]
 },
@@ -1093,5 +1093,5 @@
 "": "core/",
 "problems/": "problems/"
 },
-"version": "1.4"
+"version": "1.5"
 }
