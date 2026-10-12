@@ -82,10 +82,10 @@
 ]
 },
 "files": {
-"CHANGELOG.txt": "ac646a015b0fb1421266f2aa66ce0319db7dcad327b231cd27eb00bdc517e665",
+"CHANGELOG.txt": "ede7e759b684f2f29081b7a75eef2b3e28b5453c7157e298d9bbaaf85a9f950f",
 "README.txt": "6781ffbe98fd92ddacf9e973ab47d06a7f3fa8f4103fec5f4146ed9b5e581c14",
 "include/bits/stdc++.h": "1545f1f4b55b3acb866effca73203f3a9131773f147331cbf4e983ebf36d6cc9",
-"judge.py": "dfac8ce37a41c9fbaff54067318115207690604bc8a4602d43df0225fba9ec83",
+"judge.py": "ae75ca08b9dbd7d85211560fc8133808fc4598769645c30fc3b0c15ac4b719e9",
 "problems/batch/Mock_1/1/01.in": "df535b5ec6ed8ea285e5ab89dd96757a82f08b23786e7d26a7eb44283175eb67",
 "problems/batch/Mock_1/1/01.out": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
 "problems/batch/Mock_1/1/02.in": "e75c95dc1e1e2a5d14acac32fb7b5f5b20388559a4e66a8b7764b96223d920ab",
@@ -1093,5 +1093,5 @@
 "": "core/",
 "problems/": "problems/"
 },
-"version": "1.6"
+"version": "1.7"
 }
