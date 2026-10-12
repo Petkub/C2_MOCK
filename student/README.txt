@@ -13,6 +13,8 @@
 
 วิธีตรวจ (ต้องมี Python 3.7+ และ g++)
   ก) VS Code (ง่ายที่สุด): File > Open Folder... เลือกโฟลเดอร์ C2_Mock_Test (ไม่ใช่ Mock_K)
+     ต้องเป็นโฟลเดอร์ที่มี Judge อยู่ข้างในทันที (ถ้ามี C2_Mock_Test ซ้อนอยู่ใน C2_Mock_Test ให้เลือกอันข้างใน)
+     ถ้ากด Ctrl+Shift+B แล้วขึ้นรายการ g++ / gcc ให้เลือกแทนการตรวจ แปลว่าเปิดผิดโฟลเดอร์
      เปิดไฟล์ที่ทำ เช่น Mock_2/3.cpp แล้วกด Ctrl+Shift+B (Mac: Cmd+Shift+B) = ตรวจข้อนั้น
      ตรวจทั้งชุด: Terminal > Run Task... > Judge whole set
   ข) terminal ในโฟลเดอร์ Mock_K:
