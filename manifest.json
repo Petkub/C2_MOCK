@@ -84,7 +84,7 @@
 "files": {
 "README.txt": "6781ffbe98fd92ddacf9e973ab47d06a7f3fa8f4103fec5f4146ed9b5e581c14",
 "include/bits/stdc++.h": "1545f1f4b55b3acb866effca73203f3a9131773f147331cbf4e983ebf36d6cc9",
-"judge.py": "a75449b4f288568777a3544f9ce21f8aaa50d3f105b77e2a9e9d3c40914f61fe",
+"judge.py": "143ab75dce7bd8b4488e1b9987b3e67d76036b0a62676c6d6a4567c904d52147",
 "problems/batch/Mock_1/1/01.in": "df535b5ec6ed8ea285e5ab89dd96757a82f08b23786e7d26a7eb44283175eb67",
 "problems/batch/Mock_1/1/01.out": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
 "problems/batch/Mock_1/1/02.in": "e75c95dc1e1e2a5d14acac32fb7b5f5b20388559a4e66a8b7764b96223d920ab",
@@ -1124,10 +1124,10 @@
 ]
 },
 "files": {
-"CHANGELOG.txt": "31d5b5eaa567a9830f57165e38a6d1bbd9afb1f98c6c10d8598395f021ed8d31",
+"CHANGELOG.txt": "998269ba96592afeeb0a4f7db66e70e007f0fca3be54dc2375517d82a90648d7",
 "README.txt": "6781ffbe98fd92ddacf9e973ab47d06a7f3fa8f4103fec5f4146ed9b5e581c14",
 "include/bits/stdc++.h": "1545f1f4b55b3acb866effca73203f3a9131773f147331cbf4e983ebf36d6cc9",
-"judge.py": "a75449b4f288568777a3544f9ce21f8aaa50d3f105b77e2a9e9d3c40914f61fe",
+"judge.py": "143ab75dce7bd8b4488e1b9987b3e67d76036b0a62676c6d6a4567c904d52147",
 "problems/batch/Mock_1/1/01.in": "df535b5ec6ed8ea285e5ab89dd96757a82f08b23786e7d26a7eb44283175eb67",
 "problems/batch/Mock_1/1/01.out": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
 "problems/batch/Mock_1/1/02.in": "e75c95dc1e1e2a5d14acac32fb7b5f5b20388559a4e66a8b7764b96223d920ab",
@@ -2135,7 +2135,7 @@
 "": "core/",
 "problems/": "problems/"
 },
-"version": "1.8"
+"version": "1.9"
 },
 "managed": {
 ".vscode/settings.json": [
