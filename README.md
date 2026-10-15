@@ -22,7 +22,7 @@ student/               the rest of the student package: README.txt, Progress.md,
                        set_files/ (Makefile, judge.bat, template.cpp -> 1.cpp ... 5.cpp)
 samples/               known-verdict programs used by the tests (expected.json says which verdict each must get)
 tests/run_regression.py          the test suite: run before every push
-tools/build_manifest.py          writes manifest.json (hashes of everything students get)
+tools/build_manifest.py          writes manifest.json (hashes of everything students get) and bundles/ (zips for fast updates)
 tools/update_problem_manifest.py refreshes a problem's own manifest.json after adding/changing tests
 tools/build_dist.py              builds dist/C2_Mock_Test.zip for new students
 VERSION                          the version students see ("Judge v1.3")
