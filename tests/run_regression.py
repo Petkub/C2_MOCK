@@ -67,7 +67,9 @@ def test_package(root):
     check(not extra, "test files match manifest.json (big tests not shipped)", ", ".join(extra[:5]))
     check(not os.path.exists(os.path.join(judge_dir, "progress.json")), "no progress.json shipped")
     starters = glob.glob(os.path.join(root, "Mock_*", "[0-9].cpp"))
-    check(len(starters) == 20 and all(judge.is_untouched_starter(s) for s in starters),
+    with open(os.path.join(REPO, "problems", "batch", "sets.json"), encoding="utf-8") as f:
+        expected = sum(len(s["problems"]) for s in json.load(f))
+    check(len(starters) == expected and all(judge.is_untouched_starter(s) for s in starters),
           "Mock_K/1.cpp ... 5.cpp are untouched starters", f"{len(starters)} files")
 
 

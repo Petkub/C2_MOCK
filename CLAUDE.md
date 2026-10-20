@@ -1,6 +1,6 @@
 # C2_MOCK: POSN Camp 2 Practice Judge
 
-A terminal judge that students run on their own machines to practice for the POSN Computer Olympiad (Camp 2: 4 sets x 5 problems, no subtasks).
+A terminal judge that students run on their own machines to practice for the POSN Computer Olympiad (Camp 2: 6 sets x 5 problems, no subtasks).
 Sibling repo `C1_MOCK` is the Camp 1 judge (same structure); fix shared bugs in both.
 Today it judges batch problems (`judge.py`). We are adding interactive and communication problems,
 and it updates itself from this GitHub repo so bugs can be fixed without re-sending zip files.

@@ -1,4 +1,6 @@
 import random, os
+from operator import lt, itemgetter
+g0, g1 = itemgetter(0), itemgetter(1)
 random.seed(2611)
 os.makedirs("tests", exist_ok=True)
 cases = []
@@ -37,8 +39,57 @@ for idx in range(11, len(cases)):
     if mx <= 10**6 and idx % 2 == 0:
         f = 10**9 // mx
         cases[idx] = [(l * f, r * f) for l, r in cases[idx]]
-for i, I in enumerate(cases, 1):
-    assert 1 <= len(I) <= 100000 and all(0 <= l < r <= B for l, r in I)
-    random.shuffle(I) if i > 5 else None
+# ---- legacy strengthening (2026-10): the big tests were mostly N = 5 * 10^4, where O(N^2) programs still run in
+# about a second. The same families are rebuilt at N = 10^5, and new tests where most people are present most of
+# the time (filling every compressed piece of every interval costs ~10^10 steps there).
+# Families with few distinct times (where N hardly matters) keep their N = 5 * 10^4 tests.
+# The cases above are still generated and shuffled so the unchanged tests keep their bytes; `override` replaces
+# some of them, `extra` adds tests at the end. All new data comes from R, not from `random`.
+R = random.Random(26112)
+rr = R.random
+M = 100000
+def ri(a, b): return a + int(rr() * (b - a + 1))
+def rnd2(n, span, lmax, f=1):
+    I = []
+    for _ in range(n):
+        l = int(rr() * span); I.append((l * f, min(span, l + 1 + int(rr() * lmax)) * f))
+    return I
+def shuf(I):
+    R.shuffle(I)
+    return I
+def sorted_points(n, lo, hi):
+    """n distinct sorted times in [lo, hi)"""
+    return sorted(R.sample(range(lo, hi), n))
+override = {
+    13: rnd2(M, B, B),
+    14: rnd2(M, B, 10**4),
+    17: shuf([(i, B - i) for i in range(M)]),            # nested
+    18: shuf([(i * 10000, i * 10000 + 10000) for i in range(M)]),   # touching, never overlapping
+    20: rnd2(M, 10**6, 10),
+    21: shuf([(i, i + 1) for i in range(M // 2)] + [(i, i + 2) for i in range(M // 2)]),
+    22: rnd2(M, 10**9, 10**9),
+    23: rnd2(M, 10**5, 50, 10**4),
+    24: rnd2(M, 10**9, 10**6),
+    25: rnd2(M, 5000, 5000, 2 * 10**5),
+}
+extra = []
+L, Rt = sorted_points(M, 0, B // 2), sorted_points(M, B // 2 + 1, B + 1)
+extra.append(shuf(list(zip(L, Rt[::-1]))))                       # random nested, all endpoints distinct
+L, Rt = sorted_points(M, 0, 10**8), sorted_points(M, 9 * 10**8, B + 1)
+R.shuffle(Rt); extra.append(list(zip(L, Rt)))                    # all long, crossing
+L = sorted_points(M, 0, B // 2)
+extra.append(shuf([(l, l + B // 2) for l in L]))                 # sliding: every interval half the day
+extra.append(shuf([(l, B) for l in sorted_points(M, 0, B)]))     # all stay until the end
+extra.append([(ri(0, B // 3), ri(2 * B // 3, B)) for _ in range(M)])
+extra.append(shuf([(ri(0, 10**6), B - ri(0, 10**6)) for _ in range(M // 2)] + rnd2(M // 2, B, B)))
+extra.append([(lambda l: (l, l + ri(B // 4, B - l)))(ri(0, 3 * B // 4 - 1)) for _ in range(M)])
+for i, I in enumerate(cases + extra, 1):
+    if i <= len(cases):
+        random.shuffle(I) if i > 5 else None
+    if i in override:
+        I = override[i]
+    Ls, Rs = list(map(g0, I)), list(map(g1, I))
+    assert 1 <= len(I) <= 100000 and min(Ls) >= 0 and max(Rs) <= B and all(map(lt, Ls, Rs))
     open(f"tests/{i:02d}.in", "w").write(f"{len(I)}\n" + "".join(f"{l} {r}\n" for l, r in I))
-print(len(cases), "tests")
+assert len(cases) + len(extra) <= 40
+print(len(cases) + len(extra), "tests")
