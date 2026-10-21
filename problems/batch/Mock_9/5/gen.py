@@ -1,222 +1,264 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
 import os, random
 
-random.seed(950521)
-MAXN, MAXSUM, MAXW = 100000, 200000, 10000
+random.seed(905)
+MAXN, MAXW = 100000, 10 ** 6
 tests = []
-rand = random.random
+rnd = random.random
 
 
-def ri(lo, hi):
-    """uniform integer in [lo, hi] (faster than randint, still deterministic)"""
-    return lo + int(rand() * (hi - lo + 1))
+def ri(a, b):
+    """random integer in [a, b] (faster than randint, still deterministic)"""
+    return a + int(rnd() * (b - a + 1))
 
 
-def add(n, par, w, queries, order=None):
-    """par[i], w[i] for towns i = 2..n (index 0, 1 unused); queries: lists of towns;
-    order (optional): the towns with every p_i before i, starting with town 1 (checked)"""
-    assert 2 <= n <= MAXN and len(par) == n + 1 and len(w) == n + 1
-    assert 1 <= len(queries) and sum(map(len, queries)) <= MAXSUM
-    # the roads form a tree: every town is reached from town 1 going down the p_i links
-    assert 1 <= min(par[2:]) and max(par[2:]) <= n and 1 <= min(w[2:]) and max(w[2:]) <= MAXW
-    assert all(map(int.__ne__, par[2:], range(2, n + 1)))
-    if order is None:
-        kids = [[] for _ in range(n + 1)]
-        for i in range(2, n + 1):
-            kids[par[i]].append(i)
-        order = [1]
-        for u in order:
-            order.extend(kids[u])
-    assert len(order) == n and order[0] == 1 and min(order) == 1 and max(order) == n
-    pos = dict(zip(order, range(n)))
-    assert len(pos) == n                    # order lists every town once
-    get = pos.__getitem__
-    assert all(map(int.__lt__, map(get, par[2:]), map(get, range(2, n + 1))))
-    assert all(len(set(q)) == len(q) for q in queries)
-    assert 1 <= min(map(min, queries)) and max(map(max, queries)) <= n
-    lines = [str(n), " ".join(map(str, par[2:])), " ".join(map(str, w[2:])), str(len(queries))]
-    lines += [" ".join(map(str, [len(q)] + q)) for q in queries]
+def shuf(a):
+    """a shuffled copy of the list a (Fisher-Yates with rnd(): faster than random.shuffle)"""
+    b = list(a)
+    for i in range(len(b) - 1, 0, -1):
+        j = int(rnd() * (i + 1))
+        b[i], b[j] = b[j], b[i]
+    return b
+
+
+def add(n, c, plant, edges, tree_ok=False):
+    """edges = (us, vs, ws); tree_ok: emit() already proved the roads form a tree
+    (par[i] < i, relabelled by a permutation)"""
+    us, vs, ws = edges
+    assert 1 <= n <= MAXN and len(us) == len(vs) == len(ws) == n - 1
+    assert sorted(c) == list(range(1, n + 1))
+    assert len(plant) == n and set(plant) <= {"0", "1"} and "1" in plant
+    if n > 1:
+        assert 1 <= min(us) and max(us) <= n and 1 <= min(vs) and max(vs) <= n
+        assert all(map(int.__ne__, us, vs)) and 1 <= min(ws) and max(ws) <= MAXW
+    if not tree_ok:             # n - 1 roads that connect all towns: a tree
+        check_tree(n, us, vs)
+    lines = [str(n), " ".join(map(str, c)), plant] + list(map("{} {} {}".format, us, vs, ws))
     tests.append("\n".join(lines) + "\n")
 
 
-# ---- trees: base shape with nodes 0..n-1, parent bp[i] < i for i >= 1 (node 0 is the base root)
-def shape(kind, n, a=0):
-    if kind == "path":
-        return [-1] + list(range(n - 1))
+def add_list(n, c, plant, roads):
+    """roads given as (u, v, w) triples (samples)"""
+    add(n, c, plant, tuple(map(list, zip(*roads))) if roads else ([], [], []))
+
+
+def check_tree(n, us, vs):
+    adj = [[] for _ in range(n + 1)]
+    for u, v in zip(us, vs):
+        adj[u].append(v)
+        adj[v].append(u)
+    seen = [False] * (n + 1)
+    seen[1] = True
+    stack = [1]
+    cnt = 1
+    while stack:
+        for u in adj[stack.pop()]:
+            if not seen[u]:
+                seen[u] = True
+                cnt += 1
+                stack.append(u)
+    assert cnt == n
+
+
+# ---------------------------------------------------------------- tree shapes on 0..n-1 (par[i] < i)
+def shape(kind, n):
+    par = [-1] * n
     if kind == "random":
-        return [-1] + [ri(0, i - 1) for i in range(1, n)]
-    if kind == "deep":                  # parent among the a previous nodes
-        return [-1] + [ri(max(0, i - a), i - 1) for i in range(1, n)]
-    if kind == "cater":                 # spine 0..a-1, every other node hangs on a random spine node
-        return [-1] + [i - 1 if i < a else ri(0, a - 1) for i in range(1, n)]
-    if kind == "broom":                 # path 0..a-1, the rest hang on its end
-        return [-1] + [i - 1 if i < a else a - 1 for i in range(1, n)]
-    if kind == "star":
-        return [-1] + [0] * (n - 1)
-    if kind == "binary":
-        return [-1] + [(i - 1) // 2 for i in range(1, n)]
-    if kind == "spider":                # legs of a nodes from node 0
-        return [-1] + [0 if (i - 1) % a == 0 else i - 1 for i in range(1, n)]
-    if kind == "comb":                  # spine 0..a-1, teeth: paths hanging from the spine nodes in turn
-        bp = [-1] + list(range(a - 1))
-        tooth = 0
-        while len(bp) < n:
-            ln = min(n - len(bp), ri(1, 2 * (n - a) // a + 1))
-            bp.append(tooth % a)
-            for _ in range(ln - 1):
-                bp.append(len(bp) - 1)
-            tooth += 1
-        return bp
+        for i in range(1, n):
+            par[i] = int(rnd() * i)
+    elif kind == "deep":
+        for i in range(1, n):
+            par[i] = ri(max(0, i - 4), i - 1)
+    elif kind == "path":
+        for i in range(1, n):
+            par[i] = i - 1
+    elif kind == "caterpillar":
+        spine = max(1, n // 2)
+        for i in range(1, n):
+            par[i] = i - 1 if i < spine else int(rnd() * spine)
+    elif kind == "spurs":           # spine 0..h-1, vertex h + j hangs below spine vertex j
+        h = (n + 1) // 2
+        for i in range(1, n):
+            par[i] = i - 1 if i < h else i - h
+    elif kind == "star":
+        for i in range(1, n):
+            par[i] = 0
+    elif kind == "broom":
+        h = n // 2
+        for i in range(1, n):
+            par[i] = i - 1 if i <= h else h
+    elif kind == "binary":
+        for i in range(1, n):
+            par[i] = (i - 1) // 2
+    elif kind == "long-arms":       # a few long paths out of vertex 0
+        arms = 5
+        for i in range(1, n):
+            par[i] = i - arms if i > arms else 0
+    else:
+        raise ValueError(kind)
+    return par
+
+
+def weights(kind, n, par, plants):
+    w = [0] * n
+    for i in range(1, n):
+        if kind == "rand":
+            w[i] = ri(1, MAXW)
+        elif kind == "max":
+            w[i] = MAXW
+        elif kind == "small":
+            w[i] = ri(1, 10)
+        elif kind == "spur":        # roads into a plant leaf are short, the rest long
+            w[i] = ri(1, 3) if i in plants else ri(30000, 99999)
+        else:
+            raise ValueError(kind)
+    return w
+
+
+def has_child(n, par):
+    ch = [False] * n
+    for i in range(1, n):
+        ch[par[i]] = True
+    return ch
+
+
+def choose_plants(kind, n, par, cnt):
+    ch = has_child(n, par)
+    leaves = [v for v in range(n) if not ch[v]]
+    if kind == "random":
+        return set(random.sample(range(n), cnt))
+    if kind == "leaves":
+        return set(random.sample(leaves, min(cnt, len(leaves))))
     raise ValueError(kind)
 
 
-_perm = {}
+def choose_order(kind, n, par, plants, start=None):
+    """order of joining towns (0-based vertices); start = c_1 if given"""
+    ch = has_child(n, par)
+    if start is None:
+        start = int(rnd() * n)
+    if kind == "random":
+        return [start] + shuf([v for v in range(n) if v != start])
+    if kind == "leaves":            # non-plant leaves first, then the plants, then everything else
+        lv = shuf([v for v in range(n) if not ch[v] and v != start and v not in plants])
+        pl = shuf(sorted(v for v in plants if v != start))
+        seen = set(lv) | set(pl) | {start}
+        rest = shuf([v for v in range(n) if v not in seen])
+        return [start] + lv + pl + rest
+    if kind == "bfs":               # every new town is next to the network
+        adj = [[] for _ in range(n)]
+        for i in range(1, n):
+            adj[i].append(par[i])
+            adj[par[i]].append(i)
+        seen = [False] * n
+        seen[start] = True
+        frontier = [start]
+        out = []
+        while frontier:
+            j = int(rnd() * len(frontier))
+            frontier[j], frontier[-1] = frontier[-1], frontier[j]
+            v = frontier.pop()
+            out.append(v)
+            for u in adj[v]:
+                if not seen[u]:
+                    seen[u] = True
+                    frontier.append(u)
+        return out
+    if kind == "zigzag":            # path 0..n-1: start in the middle, then the two ends inwards
+        lo, hi = 0, n - 1
+        out = [start]
+        while lo <= hi:
+            for v in (lo, hi):
+                if v != start and v not in out[-2:]:
+                    out.append(v)
+            lo += 1
+            hi -= 1
+        assert sorted(out) == list(range(n))
+        return out
+    raise ValueError(kind)
 
 
-def labels(n):
-    """a random labelling of the base nodes 0..n-1 by 1..n; all trees of one size share it (fast)"""
-    if n not in _perm:
-        p = list(range(1, n + 1))
-        random.shuffle(p)
-        _perm[n] = p
-    return _perm[n]
-
-
-class Tree:
-    """a base shape with random labels, rooted at town 1 (a random base node) for the input"""
-
-    def __init__(self, bp, wlo=1, whi=MAXW, root=None):
-        n = self.n = len(bp)
-        lab = list(labels(n))
-        r = ri(0, n - 1) if root is None else root
+def emit(n, par, w, plants, order, keep_one=None):
+    """random labels; keep_one: vertex that gets label 1 (else a vertex that is not c_1)"""
+    lab = shuf(list(range(1, n + 1)))
+    if n > 1:
+        one = keep_one
+        if one is None:             # town 1 is never c_1 here (c_1 = 1 is tested on its own)
+            one = order[0]
+            while one == order[0]:
+                one = int(rnd() * n)
         j = lab.index(1)
-        lab[j], lab[r] = lab[r], lab[j]          # node r gets label 1
-        self.lab = lab
-        # re-root the base tree at r: only the links on the path from r up to node 0 turn around
-        bpar = list(bp)
-        x, prev = r, -1
-        while x != -1:
-            nxt = bp[x]
-            bpar[x] = prev
-            prev, x = x, nxt
-        par = [0] * (n + 1)
-        for v in range(n):
-            if bpar[v] != -1:
-                par[lab[v]] = lab[bpar[v]]
-        # parents before children: the path from r up to node 0, then the other nodes by index
-        onpath = [False] * n
-        path, x = [], r
-        while x != -1:
-            onpath[x] = True
-            path.append(x)
-            x = bp[x]
-        self.order = [lab[v] for v in path] + [lab[v] for v in range(n) if not onpath[v]]
-        w = [0] * (n + 1)
-        span = whi - wlo + 1
-        w[2:] = [wlo + int(rand() * span) for _ in range(n - 1)]
-        self.par, self.w = par, w
-        deg = [0] * n
-        for v in range(1, n):
-            deg[v] += 1
-            deg[bp[v]] += 1
-        self.leaves = [lab[v] for v in range(n) if deg[v] == 1] or [lab[0]]
-
-    def pick(self, k, pool=None):
-        """k distinct towns, from pool (labels) if given"""
-        src = pool if pool is not None else self.lab
-        size = len(src)
-        k = min(k, size)
-        if k * k > size:          # many towns: sample; few: draw until all differ
-            return [src[i] for i in random.sample(range(size), k)]
-        while True:
-            q = [src[int(rand() * size)] for _ in range(k)]
-            if len(set(q)) == k:
-                return q
+        lab[j], lab[one] = lab[one], lab[j]
+    assert sorted(lab) == list(range(1, n + 1))
+    assert n == 1 or (min(par[1:]) >= 0 and all(map(int.__lt__, par[1:], range(1, n))))
+    c = [lab[v] for v in order]
+    plant = ["0"] * n
+    for v in plants:
+        plant[lab[v] - 1] = "1"
+    # roads in the order of the label of their lower end (labels are random), random direction
+    idx = sorted(range(1, n), key=lab.__getitem__)
+    lo = list(map(lab.__getitem__, idx))
+    hi = [lab[par[i]] for i in idx]
+    flip = format(random.getrandbits(n - 1), "0%db" % (n - 1)) if n > 1 else ""
+    us = [b if f == "1" else a for a, b, f in zip(lo, hi, flip)]
+    vs = [a if f == "1" else b for a, b, f in zip(lo, hi, flip)]
+    ws = [w[i] for i in idx]
+    add(n, c, "".join(plant), (us, vs, ws), tree_ok=True)
 
 
-def emit(t, queries):
-    """the queries in order, as many as fit into the limit on the sum of k"""
-    s, keep = 0, []
-    for q in queries:
-        if s + len(q) > MAXSUM:
-            break
-        keep.append(q)
-        s += len(q)
-    add(t.n, t.par, t.w, keep, t.order)
-
-
-def many(t, q, klo, khi, pool=None, total=None):
-    qs, s = [], 0
-    for _ in range(q):
-        k = ri(klo, khi)
-        if total is not None and s + k > total:
-            break
-        qs.append(t.pick(k, pool))
-        s += len(qs[-1])
-    return qs
+def build(n, kind, wkind="rand", pkind="random", pcnt=3, okind="random", start=None, c1_plant=False,
+          one=None):
+    par = shape(kind, n)
+    if pkind == "spurs":            # plants = the hanging leaves of some spine vertices
+        h = (n + 1) // 2
+        plants = set(random.sample(range(h, n), min(pcnt, n - h))) if n > h else {0}
+    else:
+        plants = choose_plants(pkind, n, par, pcnt)
+    if start is None:
+        cand = [v for v in range(n) if v not in plants] or [0]
+        start = cand[int(rnd() * len(cand))]
+    if c1_plant:
+        plants.add(start)
+    w = weights(wkind, n, par, plants)
+    order = choose_order(okind, n, par, plants, start)
+    emit(n, par, w, plants, order, one)
 
 
 # samples
-add(7, [0, 0, 1, 1, 2, 2, 3, 3], [0, 0, 3, 2, 4, 1, 5, 2], [[4, 5, 7], [6], [7, 6, 4, 1]])
-add(6, [0, 0, 3, 5, 3, 6, 1], [0, 0, 2, 4, 1, 3, 6], [[2, 5], [4, 6, 2], [3]])
-add(5, [0, 0, 1, 1, 1, 1], [0, 0, 7, 3, 9, 1], [[2, 3, 4, 5], [1, 5], [3, 4]])
-add(2, [0, 0, 1], [0, 0, 5], [[2], [1, 2]])
-add(9, [0, 0, 1, 2, 2, 4, 1, 6, 6, 8], [0, 0, 4, 2, 6, 1, 3, 5, 2, 7], [[3, 5, 9], [2, 7], [5, 3, 1, 8, 9]])
+add_list(7, [3, 6, 1, 5, 2, 7, 4], "0000101",
+    [(1, 2, 4), (2, 3, 2), (2, 4, 3), (4, 5, 1), (4, 6, 5), (1, 7, 6)])
+add_list(5, [3, 2, 4, 1, 5], "10001", [(1, 2, 3), (2, 3, 4), (3, 4, 1), (4, 5, 2)])
+add_list(1, [1], "1", [])
+add_list(4, [2, 4, 1, 3], "0100", [(1, 2, 7), (2, 3, 9), (2, 4, 1)])
+add_list(5, [2, 5, 3, 1, 4], "10000", [(1, 3, 5), (3, 2, 2), (3, 4, 4), (4, 5, 1)])
 # hidden: small (brute checks these)
-t = Tree(shape("random", 12), 1, 10)
-emit(t, many(t, 60, 1, 6))
-t = Tree(shape("path", 40))
-emit(t, many(t, 100, 1, 8))
-t = Tree(shape("star", 30), 1, 5)
-emit(t, many(t, 100, 2, 10))
-t = Tree(shape("cater", 300, 60))
-emit(t, many(t, 300, 1, 12) + many(t, 100, 2, 6, t.leaves))
-t = Tree(shape("deep", 2000, 4))
-emit(t, many(t, 600, 2, 15))
-t = Tree(shape("comb", 1500, 40))
-emit(t, many(t, 400, 3, 20, t.leaves) + [t.pick(40)])
-# hidden: big, N = 100000
-N = MAXN
-t = Tree(shape("path", N))
-emit(t, many(t, 30000, 2, 5))
-t = Tree(shape("path", N), MAXW, MAXW)
-emit(t, many(t, 20000, 3, 6) + [[t.lab[0], t.lab[N - 1]]])               # all roads, every length maximal
-t = Tree(shape("deep", N, 8))
-emit(t, many(t, 30000, 2, 5))
-t = Tree(shape("deep", N, 3))
-emit(t, many(t, 25000, 2, 6, t.leaves))
-t = Tree(shape("deep", N, 2), 1, 100)
-emit(t, many(t, 30000, 2, 3))
-t = Tree(shape("cater", N, N // 2))
-emit(t, many(t, 25000, 3, 7, t.leaves))
-t = Tree(shape("cater", N, N // 4))
-emit(t, many(t, 30000, 2, 5))
-t = Tree(shape("broom", N, N // 2))
-emit(t, many(t, 25000, 2, 6) + many(t, 500, 20, 60, t.leaves))
-t = Tree(shape("broom", N, 3 * N // 4))
-emit(t, many(t, 30000, 3, 4, t.leaves[:10] + t.pick(3000)))
-t = Tree(shape("spider", N, N // 2))                                       # two long arms
-emit(t, many(t, 30000, 2, 5))
-t = Tree(shape("spider", N, 10000))                                        # ten long legs
-emit(t, many(t, 25000, 3, 6))
-t = Tree(shape("comb", N, 300))
-emit(t, many(t, 25000, 3, 6, t.leaves))
-t = Tree(shape("comb", N, 10000), 1, 100)
-emit(t, [t.pick(N // 2, t.leaves), t.pick(30000)] + many(t, 20000, 1, 3))
-t = Tree(shape("star", N))
-emit(t, many(t, 30000, 3, 6))
-t = Tree(shape("random", N))
-emit(t, many(t, 35000, 2, 4))
-t = Tree(shape("binary", N))
-emit(t, many(t, 4000, 10, 40, t.leaves))
-t = Tree(shape("deep", N, 20))
-emit(t, [list(t.lab)] + many(t, 20000, 1, 1) + many(t, 15000, 2, 3))          # all towns at once, k = 1
-t = Tree(shape("deep", N, 5), 1, 9)
-emit(t, many(t, 800, 50, 150))
+add_list(2, [2, 1], "01", [(1, 2, MAXW)])
+build(12, "random", "small", "random", 2, "leaves")
+build(40, "spurs", "spur", "spurs", 3, "leaves")
+build(300, "random", "rand", "random", 1, "random")
+build(2000, "caterpillar", "spur", "leaves", 4, "leaves")
+build(3000, "path", "small", "random", 2, "zigzag", start=1500)
+build(9000, "deep", "rand", "random", 5, "random", c1_plant=True)
+# hidden: big
+build(MAXN, "path", "rand", "random", 2, "zigzag", start=MAXN // 2)
+build(MAXN, "path", "max", "random", 1, "random")
+build(MAXN, "path", "spur", "random", 30, "leaves", start=7)
+build(MAXN, "spurs", "spur", "spurs", 5, "leaves")
+build(MAXN, "random", "rand", "random", 3, "leaves")
+build(MAXN, "random", "spur", "leaves", 20, "leaves")
+build(MAXN, "deep", "spur", "leaves", 50, "leaves")
+build(MAXN, "caterpillar", "rand", "leaves", 3, "leaves")
+build(MAXN, "broom", "spur", "leaves", 10, "leaves", start=0)
+build(MAXN, "star", "rand", "random", 1, "random")
+build(MAXN, "binary", "spur", "leaves", 8, "leaves")
+build(MAXN, "long-arms", "rand", "random", 2, "leaves")
+build(MAXN, "random", "rand", "random", MAXN // 10, "bfs")
+build(MAXN, "deep", "max", "random", 1, "random", c1_plant=True)
+build(MAXN, "path", "max", "random", 1, "random", start=0, one=MAXN - 1)
 
-for x in tests:
-    assert x.endswith("\n") and "  " not in x and " \n" not in x
+for t in tests:
+    assert t.endswith("\n") and "  " not in t and " \n" not in t
 os.makedirs("tests", exist_ok=True)
-for i, x in enumerate(tests, 1):
+for i, t in enumerate(tests, 1):
     with open(f"tests/{i:02d}.in", "w") as f:
-        f.write(x)
+        f.write(t)

@@ -1,154 +1,213 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
 import os, random
 
-random.seed(60502)
-MAXN, MAXM, MAXW, MAXK = 10_000, 50_000, 10**6, 11
+random.seed(650521)
+MAXN, MAXM, MAXK, MAXW = 3000, 10000, 100, 10 ** 6
 tests = []
+rnd = random.random
 
 
-def ri(lo, hi):
-    return lo + int(random.random() * (hi - lo + 1))
+def ri(a, b):
+    """random integer in [a, b] (faster than randint, still deterministic)"""
+    return a + int(rnd() * (b - a + 1))
 
 
-def add(n, roads, s, cap, orders, relabel=True):
-    m, k = len(roads), len(orders)
-    assert 2 <= n <= MAXN and 1 <= m <= MAXM and 1 <= k <= MAXK and 1 <= cap <= k and 1 <= s <= n
-    assert all(1 <= a <= n and 1 <= b <= n and a != b and 1 <= w <= MAXW for a, b, w in roads)
-    assert all(1 <= p <= n and 1 <= q <= n for p, q in orders)
-    if relabel:                                  # random vertex numbers and road order
-        r = random.random
-        lab = [0] + sorted(range(1, n + 1), key=lambda _: r())
-        roads = sorted(((lab[a], lab[b], w) if r() < 0.5 else (lab[b], lab[a], w) for a, b, w in roads),
-                       key=lambda _: r())
-        s = lab[s]
-        orders = [(lab[p], lab[q]) for p, q in orders]
-    tests.append(f"{n} {m}\n" + "".join(f"{a} {b} {w}\n" for a, b, w in roads)
-                 + f"{s} {k} {cap}\n" + "".join(f"{p} {q}\n" for p, q in orders))
+def add(n, edges, s, cap, pas):
+    m, k = len(edges), len(pas)
+    assert 1 <= n <= MAXN and 0 <= m <= MAXM and 1 <= cap <= k <= MAXK and 1 <= s <= n
+    for u, v, w in edges:
+        assert 1 <= u <= n and 1 <= v <= n and u != v and 1 <= w <= MAXW
+    for a, b in pas:
+        assert 1 <= a <= n and 1 <= b <= n
+    lines = [f"{n} {m} {k} {cap} {s}", " ".join(str(a) for a, b in pas), " ".join(str(b) for a, b in pas)]
+    lines += [f"{u} {v} {w}" for u, v, w in edges]
+    tests.append("\n".join(lines) + "\n")
 
 
-def w_rand(lo=1, hi=MAXW):
+def relabel(n, edges, s, pas):
+    """random town numbers and road order (the build order would show the structure)"""
+    perm = list(range(1, n + 1))
+    random.shuffle(perm)
+    lab = [0] + perm
+    e = [(lab[u], lab[v], w) if rnd() < 0.5 else (lab[v], lab[u], w) for u, v, w in edges]
+    random.shuffle(e)
+    return e, lab[s], [(lab[a], lab[b]) for a, b in pas]
+
+
+def wgt(lo=1, hi=MAXW):
     return ri(lo, hi)
 
 
-def connected(n, m, lo=1, hi=MAXW, extra_from=None):
-    """random tree (attach to a recent vertex: long thin shape) plus random extra roads"""
-    roads = [(v, ri(max(1, v - 30), v - 1), w_rand(lo, hi)) for v in range(2, n + 1)]
-    while len(roads) < m:
-        a, b = ri(1, n), ri(1, n)
-        if a != b:
-            roads.append((a, b, w_rand(lo, hi)))
-    return roads
+def random_graph(n, m, w=(1, MAXW)):
+    """connected: random tree (attach to a recent town, so it is deep) plus random extra roads"""
+    e = []
+    for v in range(2, n + 1):
+        u = ri(max(1, v - 30), v - 1) if rnd() < 0.7 else ri(1, v - 1)
+        e.append((u, v, wgt(*w)))
+    while len(e) < m:
+        u, v = ri(1, n), ri(1, n)
+        if u != v:
+            e.append((u, v, wgt(*w)))
+    return e
 
 
-def grid(r, c, lo, hi, m):
-    idx = lambda i, j: i * c + j + 1
-    roads = []
-    for i in range(r):
-        for j in range(c):
-            if j + 1 < c:
-                roads.append((idx(i, j), idx(i, j + 1), w_rand(lo, hi)))
-            if i + 1 < r:
-                roads.append((idx(i, j), idx(i + 1, j), w_rand(lo, hi)))
-    while len(roads) < m:                        # a few diagonals
-        i, j = ri(0, r - 2), ri(0, c - 2)
-        roads.append((idx(i, j), idx(i + 1, j + 1), w_rand(lo, hi)))
-    return roads
+def grid_graph(rows, cols, extra, w=(1, MAXW)):
+    e = []
+    idx = lambda r, c: r * cols + c + 1
+    for r in range(rows):
+        for c in range(cols):
+            if c + 1 < cols:
+                e.append((idx(r, c), idx(r, c + 1), wgt(*w)))
+            if r + 1 < rows:
+                e.append((idx(r, c), idx(r + 1, c), wgt(*w)))
+    n = rows * cols
+    for _ in range(extra):
+        u, v = ri(1, n), ri(1, n)
+        if u != v:
+            e.append((u, v, wgt(*w)))
+    return e
 
 
-def two_towns(n, m, bridge_len, bridge_w):
-    """two random towns of equal size joined by a long road of bridge_len hops; returns roads, town A, town B"""
-    t = (n - bridge_len + 1) // 2
-    A = list(range(1, t + 1))
-    B = list(range(t + 1, 2 * t + 1))
-    roads = []
-    for town in (A, B):
-        for i in range(1, len(town)):
-            roads.append((town[i], town[ri(max(0, i - 20), i - 1)], w_rand(1, 1000)))
-    chain = [A[-1]] + list(range(2 * t + 1, n + 1)) + [B[0]]
-    for i in range(len(chain) - 1):
-        roads.append((chain[i], chain[i + 1], bridge_w))
-    while len(roads) < m:
-        town = A if random.random() < 0.5 else B
-        a, b = random.choice(town), random.choice(town)
-        if a != b:
-            roads.append((a, b, w_rand(1, 1000)))
-    return roads, A, B
+def line_graph(n, extra, w=(1, MAXW), ew=None):
+    e = [(v, v + 1, wgt(*w)) for v in range(1, n)]
+    for _ in range(extra):
+        u = ri(1, n - 1)
+        v = min(n, u + ri(2, 40))
+        if u != v:
+            e.append((u, v, wgt(*(ew or w))))
+    return e
 
 
-def cycle(n, m, lo, hi):
-    roads = [(i, i % n + 1, w_rand(lo, hi)) for i in range(1, n + 1)]
-    while len(roads) < m:                        # parallel or longer copies: never shortcuts
-        i = ri(1, n)
-        roads.append((i, i % n + 1, MAXW))
-    return roads
+def clusters(sizes, inner_m, bridge_w):
+    """clusters of towns (random graphs with short roads) joined in a chain by long bridges;
+    returns edges and the list of towns of every cluster"""
+    e, groups, base = [], [], 0
+    for sz, mm in zip(sizes, inner_m):
+        g = random_graph(sz, mm, (1, 1000))
+        e += [(u + base, v + base, w) for u, v, w in g]
+        groups.append(list(range(base + 1, base + sz + 1)))
+        base += sz
+    for a, b in zip(groups, groups[1:]):
+        for _ in range(2):
+            e.append((random.choice(a), random.choice(b), ri(bridge_w // 2, bridge_w)))
+    return e, groups
 
 
-def pts(n, k, pool=None):
-    pool = pool or list(range(1, n + 1))
-    return [(random.choice(pool), random.choice(pool)) for _ in range(k)]
+def pick(pool, k):
+    return [random.choice(pool) for _ in range(k)]
 
 
-# samples
-add(5, [(1, 2, 2), (2, 3, 1), (3, 4, 5), (4, 5, 1)], 1, 1, [(2, 4), (3, 5)],
-    relabel=False)
-add(4, [(1, 2, 3), (2, 3, 2), (3, 4, 2)], 1, 3, [(2, 4), (2, 2), (4, 1)], relabel=False)
-add(4, [(1, 2, 4), (3, 4, 1)], 2, 1, [(1, 4)], relabel=False)
-add(3, [(1, 2, 1), (2, 3, 1)], 1, 1, [(1, 3), (2, 2)], relabel=False)
-add(3, [(1, 2, 5), (2, 3, 7)], 2, 2, [(1, 3), (3, 1), (2, 2)], relabel=False)
+def emit(n, e, s, cap, pas, shuffle=True):
+    if shuffle:
+        e, s, pas = relabel(n, e, s, pas)
+    add(n, e, s, cap, pas)
 
-# hidden: small (checked by trying every order, or by Dijkstra over (vertex, parcels))
-add(2, [(1, 2, 1000000)], 2, 1, [(2, 2)])
-add(2, [(1, 2, 7), (2, 1, 3)], 1, 1, [(2, 1), (1, 2), (2, 1)])
-r_, A, B = two_towns(40, 90, 5, 1000)
-add(40, r_, A[0], 1, [(random.choice(A), random.choice(B)) for _ in range(5)])
-add(100, connected(100, 300, 1, MAXW), 50, 3, pts(100, 5))
-add(12, connected(12, 20, 1, 9), 1, 2, pts(12, 8, [1, 2, 3, 4]))
-r_, A, B = two_towns(30, 60, 3, 500)
-add(30, r_, B[0], 2, [(random.choice(A), random.choice(B)) for _ in range(7)])
-add(20, cycle(20, 30, 1, 50), 1, 3, pts(20, 9))
-add(500, connected(500, 2000, 1, MAXW), 7, 1, pts(500, 6))
-r_ = connected(60, 100, 1, 100)
-r_ = [(a, b, w) for a, b, w in r_ if a != 60 and b != 60] + [(1, 2, 5)]
-add(60, r_, 1, 2, pts(59, 6) + [(60, 3)])        # one pickup cannot be reached
 
-# hidden: large
-N, M = MAXN, MAXM
-add(N, connected(N, M), 1, 3, pts(N, 11))
-add(N, connected(N, M), 1, 1, pts(N, 11))
-add(N, connected(N, M, 1, 1000), ri(1, N), 2, pts(N, 11))
-add(N, grid(100, 100, 1, MAXW, M), 5050, 4, pts(N, 11))
-add(N, grid(100, 100, 1, 1000, 25_000), 1, 2, [(ri(1, 50), ri(9950, N)) for _ in range(11)])
-for cap, bridge in ((1, 3000), (2, 6000), (3, 100), (5, 8000), (11, 2000)):
-    r_, A, B = two_towns(N, M, bridge, MAXW)
-    add(N, r_, random.choice(A), cap, [(random.choice(A), random.choice(B)) for _ in range(11)])
-r_, A, B = two_towns(N, M, 9000, MAXW)                 # back and forth: some parcels go the other way
-add(N, r_, random.choice(B), 2, [(random.choice(A), random.choice(B)) if i % 3 else
-                                 (random.choice(B), random.choice(A)) for i in range(11)])
-add(N, cycle(N, M, 1, MAXW), 1, 1, [(i * 900 + 1, (i * 900 + 4500) % N + 1) for i in range(11)])
-add(N, cycle(N, M, MAXW - 10, MAXW), 1, 2, [((i * 2311) % N + 1, (i * 2311 + N // 2) % N + 1) for i in range(11)])
-star = []                                          # long arms from the centre 1
-arm = (N - 1) // 11
-for a in range(11):
-    prev = 1
-    for t in range(arm):
-        v = 2 + a * arm + t
-        star.append((prev, v, w_rand(MAXW // 2, MAXW)))
-        prev = v
-ends = [1 + (a + 1) * arm for a in range(11)]
-while len(star) < M:
-    v = ri(2, 1 + 11 * arm)
-    star.append((v, v - 1 if v > 2 else 1, MAXW))   # extra copies of arm roads
-add(1 + 11 * arm, star, 1, 3, [(ends[i], ends[(i + 4) % 11]) for i in range(11)])
-add(N, connected(N, M), 9, 10, pts(N, 11, list(range(1, 40))))   # shared and equal points
-same = [ri(1, N) for _ in range(4)]
-add(N, connected(N, M, 1, 5000), same[0], 2, [(same[i % 4], same[(i * 3 + 1) % 4]) for i in range(10)]
-    + [(same[2], same[2])])                       # four places only, one parcel stays put
-add(N, connected(N, M), 1, 6, pts(N, 11))
-add(N, connected(N, M, 1, 300), 1, 1, pts(N, 11))
-add(N, connected(N, M, 1000, 2000), 1, 2, pts(N, 11))
-r_ = connected(N - 5, M - 6)                     # one drop on an island of five houses
-r_ += [(a + N - 5, b + N - 5, w) for a, b, w in connected(5, 6)]
-add(N, r_, 1, 3, pts(N - 5, 10) + [(ri(1, N - 5), N - 2)])
+# ---------------------------------------------------------------- samples
+add(3, [(1, 2, 1), (2, 3, 10)], 1, 2, [(2, 3), (2, 3), (1, 3)])
+add(3, [(1, 2, 1), (2, 3, 10)], 1, 2, [(1, 3), (2, 1)])
+add(3, [(1, 2, 5)], 1, 1, [(2, 3)])
+add(3, [(1, 2, 4), (2, 3, 3)], 2, 1, [(2, 2), (3, 1), (3, 3)])
+add(4, [(1, 2, 3), (2, 3, 2), (3, 4, 4), (4, 1, 6)], 3, 2, [(2, 4), (4, 1), (1, 1), (4, 2)])
+
+# ---------------------------------------------------------------- small hidden (brute checks these)
+add(1, [], 1, 1, [(1, 1)])
+n = 40
+emit(n, random_graph(n, 70, (1, 50)), 1, 2, [(ri(1, n), ri(1, n)) for _ in range(10)])
+n = 30
+emit(n, line_graph(n, 5, (1, 100)), ri(1, n), 3, [(ri(1, n), ri(1, n)) for _ in range(11)])
+e, gr = clusters([12, 12], [20, 20], 5000)
+emit(24, e, gr[0][0], 2, [(random.choice(gr[0]), random.choice(gr[1])) for _ in range(11)])
+n = 25
+emit(n, random_graph(n, 40, (1, 9)), 5, 1, [(v, v) if rnd() < 0.5 else (v, ri(1, n)) for v in pick(range(1, n + 1), 10)])
+# towns outside the shuttle's part exist, but every stop is reachable
+e = random_graph(20, 35, (1, MAXW)) + [(21, 22, 7), (22, 23, 7)]
+emit(23, e, 3, 4, [(ri(1, 20), ri(1, 20)) for _ in range(9)])
+# the last destination cannot be reached
+e = random_graph(20, 30, (1, 1000)) + [(21, 22, 1)]
+pas = [(ri(1, 20), ri(1, 20)) for _ in range(8)] + [(ri(1, 20), 22)]
+emit(22, e, 1, 3, pas)
+n = 50
+emit(n, random_graph(n, 49, (1, MAXW)), 1, 11, [(ri(1, n), ri(1, n)) for _ in range(11)])
+
+# ---------------------------------------------------------------- big hidden
+K = MAXK
+
+
+def big_random(cap, w=(1, MAXW), stops=None):
+    e = random_graph(MAXN, MAXM, w)
+    towns = random.sample(range(1, MAXN + 1), 2 * K + 1)
+    pas = [(towns[2 * j + 1], towns[2 * j + 2]) for j in range(K)] if stops is None else stops
+    emit(MAXN, e, towns[0], cap, pas)
+
+
+big_random(2)
+big_random(3)
+big_random(7)
+big_random(25, (1, 1000))
+big_random(K)
+
+# grid road network
+e = grid_graph(50, 60, MAXM - 5890)
+towns = random.sample(range(1, MAXN + 1), 2 * K + 1)
+emit(MAXN, e, towns[0], 4, [(towns[2 * j + 1], towns[2 * j + 2]) for j in range(K)])
+e = grid_graph(60, 50, MAXM - 5890, (900000, MAXW))
+towns = random.sample(range(1, MAXN + 1), 2 * K + 1)
+emit(MAXN, e, towns[0], 2, [(towns[2 * j + 1], towns[2 * j + 2]) for j in range(K)])
+
+# commuters: everyone waits in the first cluster and goes to the far one
+for cap, sizes in ((3, [1500, 1500]), (10, [1000, 1000, 1000]), (2, [1200, 600, 1200])):
+    e, gr = clusters(sizes, [s * 3 for s in sizes[:-1]] + [MAXM - 3 * sum(sizes[:-1]) - 2 * (len(sizes) - 1)], 10 ** 6)
+    assert len(e) <= MAXM
+    pas = [(random.choice(gr[0]), random.choice(gr[-1] if rnd() < 0.8 else random.choice(gr))) for _ in range(K)]
+    emit(MAXN, e, gr[0][0], cap, pas)
+
+# two-way traffic between two clusters
+for cap in (2, 5):
+    e, gr = clusters([1500, 1500], [4990, 4990], 10 ** 6)
+    pas = []
+    for j in range(K):
+        a, b = (0, 1) if (j // ri(1, 4)) % 2 == 0 else (1, 0)
+        pas.append((random.choice(gr[a]), random.choice(gr[b])))
+    emit(MAXN, e, gr[0][0], cap, pas)
+
+# a long line with heavy roads (lengths beyond 32 bits), stops jump between the two ends
+e = line_graph(MAXN, 0, (MAXW, MAXW))
+pas = [(ri(1, 30), ri(MAXN - 30, MAXN)) if j % 2 == 0 else (ri(MAXN - 30, MAXN), ri(1, 30)) for j in range(K)]
+emit(MAXN, e, 1, 1, pas, shuffle=False)
+e = line_graph(MAXN, MAXM - MAXN + 1, (1, MAXW), (MAXW, MAXW))
+pas = [(ri(1, MAXN), ri(1, MAXN)) for _ in range(K)]
+emit(MAXN, e, ri(1, MAXN), 3, pas)
+# along a line: passengers ride forward, each a short way, waiting places interleaved
+e = line_graph(MAXN, MAXM - MAXN + 1, (1, MAXW), (MAXW, MAXW))
+pos = sorted(random.sample(range(1, MAXN + 1), K))
+pas = [(pos[j], min(MAXN, pos[j] + ri(1, 400))) for j in range(K)]
+emit(MAXN, e, 1, 2, pas)
+pas = [(pos[j], max(1, pos[j] - ri(1, 400))) for j in range(K)]
+emit(MAXN, e, MAXN, 4, pas)
+
+# few stop towns used many times, some passengers going nowhere
+e = random_graph(MAXN, MAXM)
+hot = random.sample(range(1, MAXN + 1), 6)
+pas = []
+for _ in range(K):
+    a = random.choice(hot)
+    pas.append((a, a) if rnd() < 0.3 else (a, random.choice(hot)))
+emit(MAXN, e, hot[0], 3, pas)
+
+# star around the start
+e = [(1, v, ri(1, MAXW)) for v in range(2, MAXN + 1)] + [(ri(2, MAXN), ri(2, MAXN), ri(1, MAXW)) for _ in range(MAXM - MAXN + 1)]
+e = [x for x in e if x[0] != x[1]]
+towns = random.sample(range(2, MAXN + 1), 2 * K)
+emit(MAXN, e, 1, 6, [(towns[2 * j], towns[2 * j + 1]) for j in range(K)])
+
+# disconnected: big second part without stops; and the -1 version
+e = random_graph(2000, 7000) + [(u + 2000, v + 2000, w) for u, v, w in random_graph(1000, 3000)]
+towns = random.sample(range(1, 2001), 2 * K + 1)
+pas = [(towns[2 * j + 1], towns[2 * j + 2]) for j in range(K)]
+emit(MAXN, e, towns[0], 5, pas)
+pas[K // 2] = (pas[K // 2][0], ri(2001, MAXN))
+emit(MAXN, e, towns[0], 5, pas)
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

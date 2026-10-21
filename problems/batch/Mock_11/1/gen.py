@@ -2,263 +2,269 @@
 import os, random
 
 random.seed(1101)
-MAXN, MAXQ = 100000, 50000
-rnd = random.random
+MAXN, MAXM, MAXP, MAXW = 50000, 100000, 10, 10 ** 9
 tests = []
-LABELS = {}
+rnd = random.random
 
 
-def add(n, par, qs, is_tree=False):
-    """par[i] for i = 2..n (par[0], par[1] unused); qs = list of (a, b, c, d);
-    is_tree: par comes from a Tree, which checked it already, and qs is flat (a1, b1, c1, d1, a2, ...)"""
-    q = len(qs) // 4 if is_tree else len(qs)
-    assert 2 <= n <= MAXN and 1 <= q <= MAXQ
-    if not is_tree:
-        # n - 1 roads and every town is reached from town 1 going down to children: a tree
-        p = par[2:n + 1]
-        assert 1 <= min(p) and max(p) <= n and all(par[i] != i for i in range(2, n + 1))
-        kids = [[] for _ in range(n + 1)]
-        for i in range(2, n + 1):
-            kids[par[i]].append(i)
-        seen = [1]
-        for u in seen:
-            seen.extend(kids[u])
-        assert len(seen) == n
-    flat = qs if is_tree else [x for t in qs for x in t]
-    assert len(flat) % 4 == 0
-    assert 1 <= min(flat) and max(flat) <= n
-    lines = [f"{n} {q}", " ".join(map(str, par[2:n + 1]))]
-    tests.append("\n".join(lines) + "\n" + "%d %d %d %d\n" * q % tuple(flat))
+def ri(a, b):
+    """random integer in [a, b] (faster than randint, still deterministic)"""
+    return a + int(rnd() * (b - a + 1))
 
 
-class Tree:
-    """a tree given in build order: p[i] < i for i >= 1 (vertex 0 is the root);
-    labels: build vertex i is town lab[i], the root is town 1, the others are shuffled"""
+def add(n, p, lights, us, vs, ws):
+    m = len(us)
+    assert 2 <= n <= MAXN and 1 <= m <= MAXM and 1 <= p <= MAXP and len(lights) == n
+    assert len(vs) == m and len(ws) == m
+    assert all(len(s) == p and set(s) <= {"0", "1"} for s in lights)
+    assert 1 <= min(us) and max(us) <= n and 1 <= min(vs) and max(vs) <= n
+    assert all(map(int.__ne__, us, vs)) and 1 <= min(ws) and max(ws) <= MAXW
+    lines = [f"{n} {m} {p}", " ".join(lights)] + list(map("{} {} {}".format, us, vs, ws))
+    tests.append("\n".join(lines) + "\n")
+
+
+def add_list(n, p, lights, roads):
+    """roads as (u, v, w) triples (samples)"""
+    add(n, p, lights, *map(list, zip(*roads)))
+
+
+POOL = {}
+
+
+def rand_light(p, dens):
+    """a light as a bit mask (bit r = green at remainder r), drawn from a pool of 2048 random masks"""
+    if (p, dens) not in POOL:
+        POOL[(p, dens)] = [sum(1 << r for r in range(p) if rnd() < dens) for _ in range(2048)]
+    pool = POOL[(p, dens)]
+    return pool[int(rnd() * 2048)]
+
+
+def light_str(p):
+    """text of every mask: character r is bit r"""
+    return ["".join("1" if x >> r & 1 else "0" for r in range(p)) for x in range(1 << p)]
+
+
+class Graph:
+    """towns 0..n-1 while building, lights as bit masks; emit() relabels them
+    (start -> 1, goal -> N, the rest shuffled)"""
 
     def __init__(self, p):
-        n = len(p)
-        self.n = n
-        if n not in LABELS:         # one shuffled labelling per size (shuffling is slow)
-            lab = list(range(2, n + 1))
-            random.shuffle(lab)
-            LABELS[n] = [1] + lab
-        self.lab = LABELS[n]
-        # p[i] < i and the labels are a permutation with the root as town 1: a tree whose towns all reach town 1
-        assert p[0] == 0 and all(0 <= p[i] < i for i in range(1, n))
-        assert self.lab[0] == 1 and len(set(self.lab)) == n and min(self.lab) == 1 and max(self.lab) == n
-        par = [0] * (n + 1)
-        for i in range(1, n):
-            par[self.lab[i]] = self.lab[p[i]]
-        self.par = par
         self.p = p
-        ch = [[] for _ in range(n)]
-        for i in range(1, n):
-            ch[p[i]].append(i)
-        self.ch = ch
-        size = [1] * n
-        for i in range(n - 1, 0, -1):
-            size[p[i]] += size[i]
-        self.size = size
-        # preorder: subtree of v = order[tin[v] .. tin[v] + size[v] - 1]
-        tin = [0] * n
-        order = []
-        st = [0]
-        while st:
-            u = st.pop()
-            tin[u] = len(order)
-            order.append(u)
-            st.extend(ch[u])
-        self.tin, self.order = tin, order
+        self.lt = []
+        self.e = []
 
-    def any(self):
-        return int(rnd() * self.n)
+    def node(self, light=None, dens=0.5):
+        self.lt.append(light if light is not None else rand_light(self.p, dens))
+        return len(self.lt) - 1
 
-    def arms(self, v):
-        """the parts of the tree around v: each child subtree, and the rest above v (as -1)"""
-        a = list(self.ch[v])
-        if v != 0:
-            a.append(-1)
-        return a
+    def green(self, v, r):
+        self.lt[v] |= 1 << (r % self.p)
 
-    def pt(self, v, arm):
-        """a random vertex of the arm `arm` of v"""
-        if arm == -1:
-            r = int(rnd() * (self.n - self.size[v]))
-            return self.order[r if r < self.tin[v] else r + self.size[v]]
-        return self.order[self.tin[arm] + int(rnd() * self.size[arm])]
+    def edge(self, u, v, w):           # (add() checks every road)
+        self.e.append((u, v, w))
 
-    def query(self, kind):
-        """one query of the given kind, in build vertices"""
-        n = self.n
-        if kind == "rand":
-            return (self.any(), self.any(), self.any(), self.any())
-        if kind == "same":
-            a, b = self.any(), self.any()
-            r = rnd()
-            if r < 0.4:
-                return (a, b, a, b)
-            if r < 0.8:
-                return (a, b, b, a)
-            return (a, a, a, a) if r < 0.9 else (a, a, b, b)
-        for _ in range(100):
-            v = self.any()
-            ar = self.arms(v)
-            if len(ar) >= 2 or (kind == "nest" and self.ch[v]):
-                break
-        else:
-            return self.query("rand")       # tiny tree without a suitable vertex
-        k = len(ar)
-        if k > 1:       # move up to four random distinct arms to the front (a partial shuffle)
-            for i in range(min(k - 1, 4)):
-                j = i + int(rnd() * (k - i))
-                ar[i], ar[j] = ar[j], ar[i]
-        P = self.pt
-        if kind == "one":         # two paths meeting only at v
-            a, b = P(v, ar[0]), (P(v, ar[2]) if len(ar) >= 3 and rnd() < 0.6 else v)
-            c, d = P(v, ar[1]), (P(v, ar[3]) if len(ar) >= 4 and rnd() < 0.6 else v)
-        elif kind == "nest":      # a path inside one child subtree of v, the other through v
-            c0 = next(x for x in ar if x != -1)
-            rest = [x for x in ar if x != c0]
-            a, b = P(v, c0), P(v, c0)
-            c = P(v, rest[0]) if rest else v
-            d = P(v, rest[1]) if len(rest) >= 2 and rnd() < 0.7 else v
-        elif kind == "sib":       # paths inside two different arms of v
-            a, b = P(v, ar[0]), P(v, ar[0])
-            c, d = P(v, ar[1]), P(v, ar[1])
-        else:                     # "over": both paths through v using some common arms
-            x, y = ar[0], ar[1]
-            a, b = P(v, x), P(v, y)
-            if len(ar) >= 3 and rnd() < 0.4:
-                y = ar[2]
-            c, d = P(v, x), P(v, y)
-        return (a, b, c, d)
+    def room(self):
+        return MAXM - len(self.e)
 
-    def queries(self, q, mix):
-        """q queries as a flat list a1 b1 c1 d1 a2 ...; mix = list of (kind, weight), each kind gets its share
-        of the q queries; endpoints of each path and the two paths in random order"""
-        tot = sum(w for _, w in mix)
-        cnt = [q * w // tot for _, w in mix]
-        cnt[0] += q - sum(cnt)
-        n, lab = self.n, self.lab
-        out = []
-        for (kind, _), c in zip(mix, cnt):
-            if kind == "rand":          # made in bulk (fast)
-                out += [lab[int(rnd() * n)] for _ in range(4 * c)]
-                continue
-            for _ in range(c):
-                a, b, c2, d = self.query(kind)
-                if rnd() < 0.5:
-                    a, b = b, a
-                if rnd() < 0.5:
-                    c2, d = d, c2
-                if rnd() < 0.5:
-                    a, b, c2, d = c2, d, a, b
-                out += (lab[a], lab[b], lab[c2], lab[d])
-        return out
+    def emit(self, start, goal):
+        n = len(self.lt)
+        rest = [v for v in range(n) if v != start and v != goal]
+        for i in range(len(rest) - 1, 0, -1):
+            j = int(rnd() * (i + 1))
+            rest[i], rest[j] = rest[j], rest[i]
+        lab = [0] * n
+        lab[start] = 1
+        lab[goal] = n
+        for i, v in enumerate(rest):
+            lab[v] = i + 2
+        text = light_str(self.p)
+        lights = [""] * n
+        for v, x in zip(lab, self.lt):
+            lights[v - 1] = text[x]
+        # roads in the order of a random key (the build order would show the structure)
+        key = [rnd() for _ in self.e]
+        order = sorted(range(len(self.e)), key=key.__getitem__)
+        eu, ev, ew = zip(*self.e)
+        add(n, self.p, lights, [lab[eu[i]] for i in order], [lab[ev[i]] for i in order], [ew[i] for i in order])
 
 
-def emit(t, q, mix):
-    add(t.n, t.par, t.queries(q, mix), True)
+def weight_with(res, p, lo, hi):
+    """a random weight in [lo, hi] that is = res (mod p)"""
+    lo2 = lo + (res - lo) % p
+    assert lo2 <= hi
+    return lo2 + p * int(rnd() * ((hi - lo2) // p + 1))
 
 
-ALL = [("rand", 3), ("one", 3), ("nest", 3), ("sib", 2), ("over", 3), ("same", 1)]
-BIG = [("rand", 20), ("one", 1), ("nest", 1), ("sib", 1), ("over", 1), ("same", 1)]
+def chain(p, hubs, k, dens, wlo=1, whi=MAXW, flood=0, noise=0, mid_dens=1.0, back=0):
+    """hubs in a row; between two hubs k routes hub -> mid -> next hub. One route (planted) keeps a
+    remainder that works all the way; the other k - 1 routes are shorter and arrive with other
+    remainders (flood: that many extra short routes all arriving with the same wrong remainder).
+    noise: random roads between towns of nearby gadgets; back: roads from a hub back to an earlier hub"""
+    g = Graph(p)
+    h = [g.node(dens=dens) for _ in range(hubs)]
+    g.green(h[0], 0)
+    r = 0                       # planted minute mod p at the current hub
+    near = [[h[i]] for i in range(hubs)]       # towns of gadget i (its first hub and its mid towns)
+    for i in range(hubs - 1):
+        a, b = h[i], h[i + 1]
+        r2 = int(rnd() * p)
+        g.green(b, r2)
+        span = whi - wlo
+        W = weight_with(r2 - r, p, wlo + span // 2, whi)            # planted total
+        routes = [(W, True)]
+        for _ in range(k - 1):
+            routes.append((ri(max(2, wlo), max(2, W - 1)), False))     # shorter decoys
+        if flood and p > 1:
+            bad = (r2 + ri(1, p - 1)) % p
+            for _ in range(flood):
+                routes.append((weight_with(bad - r, p, max(2, wlo), max(2 + p, W - 1)), False))
+        for tot, planted in routes:
+            tot = max(tot, 2)
+            w1 = ri(1, tot - 1)
+            md = g.node(dens=mid_dens)
+            g.green(md, r + w1)
+            if planted:
+                g.green(a, r)
+            g.edge(a, md, w1)
+            g.edge(md, b, tot - w1)
+            near[i].append(md)
+        r = (r + W) % p
+    for _ in range(back):
+        if g.room() < 1:
+            break
+        i = ri(1, hubs - 1)
+        j = ri(max(0, i - 20), i - 1)
+        g.edge(h[i], h[j], ri(1, max(1, whi // 50)))
+    for _ in range(noise):
+        if g.room() < 1:
+            break
+        i = int(rnd() * hubs)
+        j = min(hubs - 1, max(0, i + ri(-2, 2)))
+        u = near[i][int(rnd() * len(near[i]))]
+        v = near[j][int(rnd() * len(near[j]))]
+        if u != v and v != h[0] and u != h[-1]:
+            g.edge(u, v, ri(wlo, whi))
+    g.emit(h[0], h[-1])
 
 
-# build orders (p[i] < i)
-def path(n):
-    return [0] + list(range(n - 1))
+def planted_random(p, n, m, dens, plen, wlo=1, whi=MAXW, goal_in=3, flood=0, start_red=False):
+    """random roads and lights, plus one planted walk from 1 to N whose remainders work;
+    the goal can be entered only from a few towns. flood: on every planted step that many shorter
+    parallel roads, all arriving with the same wrong remainder"""
+    g = Graph(p)
+    for _ in range(n):
+        g.node(dens=dens)
+    start, goal = 0, n - 1
+    walk = [start] + [ri(1, n - 2) for _ in range(plen - 1)] + [goal]
+    t = 0
+    for a, b in zip(walk, walk[1:]):
+        if a == b:
+            continue
+        g.green(a, t)
+        w = ri(max(wlo, p + 2), whi)
+        g.edge(a, b, w)
+        if flood and p > 1:
+            bad = (t + w + ri(1, p - 1)) % p
+            for _ in range(flood):
+                g.edge(a, b, weight_with(bad - t, p, 1, w - 1))
+        t += w
+    if start_red:
+        g.lt[start] &= ~1
+    into = [ri(1, n - 2) for _ in range(goal_in)]
+    while len(g.e) < m:
+        u, v = int(rnd() * n), int(rnd() * n)
+        if v == goal and u not in into:
+            continue
+        if u != v and u != goal:
+            g.edge(u, v, ri(wlo, whi))
+    g.emit(start, goal)
 
 
-def near_path(n, k):
-    """parent is one of the k previous vertices: deep, with many short side branches"""
-    return [0] + [max(0, i - 1 - int(rnd() * k)) for i in range(1, n)]
+def loops(p, units, dens=0.3, whi=MAXW):
+    """each unit: hub a (green at the planted remainder), a small cycle a -> x -> y -> a that shifts the
+    remainder, a direct road a -> b that only works after going round the cycle a certain number of times"""
+    g = Graph(p)
+    a = g.node(dens=dens)
+    start = a
+    r = 0
+    g.green(a, 0)
+    for _ in range(units):
+        x = g.node((1 << p) - 1)
+        y = g.node((1 << p) - 1)
+        c = weight_with(ri(1, p - 1), p, 3, whi // 4)               # cycle length, not = 0 mod p
+        c1 = ri(1, c - 2)
+        c2 = ri(1, c - c1 - 1)
+        g.edge(a, x, c1)
+        g.edge(x, y, c2)
+        g.edge(y, a, c - c1 - c2)
+        turns = ri(1, p - 1)
+        r_dep = (r + turns * c) % p
+        for j in range(turns + 1):                                  # a is green on the way round
+            g.green(a, r + j * c)
+        b = g.node(dens=dens)
+        w = ri(1, whi)
+        g.edge(a, b, w)
+        r = (r_dep + w) % p
+        g.green(b, r)
+        a = b
+    g.emit(start, a)
 
 
-def chains(n, legs):
-    """the root with `legs` long chains"""
-    p = [0] * n
-    for i in range(1, n):
-        p[i] = 0 if i <= legs else i - legs
-    return p
-
-
-def caterpillar(n, spine):
-    return [0] + [i - 1 if i < spine else int(rnd() * spine) for i in range(1, n)]
-
-
-def broom(n, handle):
-    return [0] + [i - 1 if i < handle else handle - 1 for i in range(1, n)]
-
-
-def long_branches(n, prob):
-    """keep extending the last vertex; with probability prob start a new chain at a random earlier vertex"""
-    return [0] + [int(rnd() * i) if rnd() < prob else i - 1 for i in range(1, n)]
-
-
-def binary(n):
-    return [0] + [(i - 1) // 2 for i in range(1, n)]
-
-
-def recursive(n):
-    return [0] + [int(rnd() * i) for i in range(1, n)]
-
-
-def deep_halves(n, k):
-    """two near-path halves hanging from the root"""
-    h = n // 2
-    p = [0] * n
-    for i in range(1, n):
-        if i == 1 or i == h:
-            p[i] = 0
-        elif i < h:
-            p[i] = max(1, i - 1 - int(rnd() * k))
-        else:
-            p[i] = max(h, i - 1 - int(rnd() * k))
-    return p
+def dead_end(p, n, m, dens, whi=MAXW, gate_in=0):
+    """random roads where waiting would always help; the goal is entered from one town only (the gate),
+    which is green at a single remainder; gate_in extra roads lead into the gate"""
+    g = Graph(p)
+    for _ in range(n):
+        g.node(dens=dens)
+    gate = 1
+    g.lt[gate] = 1 << int(rnd() * p)
+    g.green(0, 0)
+    g.edge(gate, n - 1, ri(1, whi))
+    for _ in range(gate_in):
+        g.edge(ri(2, n - 2), gate, ri(1, whi))
+    for _ in range(20):         # a few ways out of the start
+        g.edge(0, ri(2, n - 2), ri(1, whi))
+    while len(g.e) < m:
+        u, v = int(rnd() * n), int(rnd() * n)
+        if u != v and u != n - 1 and v != n - 1:
+            g.edge(u, v, ri(1, whi))
+    g.emit(0, n - 1)
 
 
 # samples
-add(7, [0, 0, 1, 1, 2, 2, 3, 3], [(4, 6, 5, 7), (4, 5, 6, 7), (6, 7, 4, 1), (4, 7, 7, 4)])
-add(5, [0, 0, 1, 2, 3, 4], [(1, 3, 3, 5), (2, 2, 4, 1), (5, 1, 4, 2)])
-add(9, [0, 0, 1, 1, 2, 2, 4, 4, 3, 3], [(8, 9, 3, 6), (5, 6, 7, 8), (7, 6, 9, 8)])
-add(2, [0, 0, 1], [(1, 2, 2, 1), (1, 1, 2, 2), (2, 2, 1, 2)])
-add(8, [0, 0, 5, 1, 3, 1, 4, 6, 4], [(2, 7, 8, 6), (5, 6, 1, 4), (7, 6, 8, 5)])
-# hidden: small and medium (brute checks these)
-for n in (2, 3, 5):
-    t = Tree(recursive(n))
-    emit(t, 200, ALL)
-emit(Tree(near_path(300, 3)), 2000, ALL)
-emit(Tree(recursive(1000)), 2000, ALL)
-emit(Tree(binary(1500)), 2000, ALL)
-emit(Tree(path(2000)), 2000, ALL)
-emit(Tree(caterpillar(3000, 1000)), 3000, ALL)
-emit(Tree(long_branches(5000, 0.01)), 5000, ALL)
-emit(Tree(chains(5000, 3)), 5000, [("one", 1), ("nest", 1), ("same", 1)])
-# hidden: big (N = 100000, Q = 50000); most are deep trees, where the paths are long
-N, Q = MAXN, MAXQ
-t = Tree(path(N))
-emit(t, Q, BIG)
-emit(t, Q, [("rand", 24), ("nest", 3), ("one", 3), ("same", 1)])
-t = Tree(near_path(N, 3))
-emit(t, Q, BIG)
-emit(t, Q, [("rand", 16), ("nest", 2), ("one", 2), ("sib", 1)])
-emit(Tree(near_path(N, 8)), Q, BIG)
-t = Tree(chains(N, 2))
-emit(t, Q, BIG)
-emit(t, Q, [("rand", 20), ("one", 2), ("nest", 2), ("over", 2)])
-emit(Tree(chains(N, 5)), Q, [("rand", 20), ("one", 2), ("nest", 2), ("over", 2)])
-t = Tree(caterpillar(N, N // 2))
-emit(t, Q, BIG)
-emit(t, Q, [("rand", 6), ("nest", 1), ("one", 1), ("sib", 1)])
-emit(Tree(broom(N, N // 2)), Q, BIG)
-t = Tree(deep_halves(N, 4))
-emit(t, Q, BIG)
-emit(t, Q, [("rand", 16), ("over", 2), ("one", 2), ("nest", 1)])
-emit(Tree(long_branches(N, 0.0005)), Q, BIG)
-emit(Tree(binary(N)), Q, BIG)
-emit(Tree(recursive(N)), Q, BIG)
-emit(Tree(near_path(N, 2)), Q, [("rand", 5), ("same", 1)])
+add_list(4, 3, ["100", "001", "001", "000"], [(1, 2, 1), (1, 3, 2), (3, 2, 3), (2, 4, 2), (1, 4, 10)])
+add_list(4, 2, ["11", "10", "01", "00"], [(1, 2, 1), (1, 3, 1), (3, 1, 2), (2, 4, 5)])
+add_list(2, 4, ["0111", "0000"], [(1, 2, 3)])
+add_list(4, 4, ["1000", "0001", "0001", "0000"],
+    [(1, 2, 10 ** 9), (1, 2, 999999999), (2, 3, 10 ** 9), (3, 4, 10 ** 9), (1, 3, 1)])
+add_list(3, 3, ["100", "010", "000"], [(1, 2, 2), (2, 3, 1), (2, 1, 1)])
+# hidden: small (brute checks these)
+add_list(2, 1, ["1", "0"], [(1, 2, MAXW)])
+chain(5, 6, 3, 0.4, whi=30)
+chain(7, 40, 3, 0.3, whi=1000, flood=8, back=10)
+loops(10, 30, whi=10 ** 4)
+planted_random(6, 300, 900, 0.35, 15, whi=100, flood=7)
+dead_end(8, 200, 600, 0.6, gate_in=10)
+chain(10, 300, 3, 0.25, flood=12, noise=200)
+# hidden: big
+chain(10, 12000, 3, 0.3, noise=4000)
+chain(10, 9000, 4, 0.2, noise=10000, back=5000)
+chain(10, 3500, 2, 0.3, flood=11, noise=5000)
+chain(10, 16000, 2, 0.15, back=30000)
+chain(7, 10000, 3, 0.4, flood=1, noise=8000, back=8000)
+chain(10, 12000, 3, 0.3, wlo=MAXW // 2, noise=3000)
+chain(3, 15000, 2, 0.5, noise=15000)
+chain(2, 16000, 2, 0.5, noise=20000)
+loops(10, 16000)
+loops(6, 16000, dens=0.6)
+planted_random(10, MAXN, MAXM, 0.3, 2000, flood=11)
+planted_random(10, MAXN, MAXM, 0.5, 400, wlo=10 ** 8, flood=12)
+planted_random(8, MAXN, MAXM, 0.2, 5000, whi=1000, flood=9)
+planted_random(9, MAXN, MAXM, 0.4, 3000, whi=10 ** 6, flood=4, start_red=True)
+planted_random(1, 20000, 40000, 0.7, 200)
+planted_random(10, MAXN, MAXM, 1.0, 300)
+dead_end(10, MAXN, MAXM, 0.75, gate_in=40)
+dead_end(5, MAXN, MAXM, 0.8, whi=10 ** 6, gate_in=20)
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

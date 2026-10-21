@@ -1,203 +1,203 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
+# The big tests use N = MAXN with small numbers (inputs <= ~3 MB); large distances come from a few wide gaps
+# along the river that only long roads cross.
 import os, random
 
 random.seed(1104)
-MAXN, MAXM = 4000, 10000
+MAXN, MAXM, MAXW, MAXX, MAXC = 130000, 130000, 10 ** 9, 10 ** 9, 10 ** 9
 tests = []
+rnd = random.random
 
 
-def add(n, st):
-    assert 1 <= n <= MAXN and 1 <= len(st) <= MAXM
-    for l, r, op, c in st:
-        assert 1 <= l <= r <= n and op in (">=", "<=", "=") and 0 <= c <= r - l + 1
-    tests.append(f"{n} {len(st)}\n" + "".join(f"{l} {r} {op} {c}\n" for l, r, op, c in st))
+def ri(a, b):
+    return a + int(rnd() * (b - a + 1))
 
 
-def pattern(n, kind):
-    """a hidden on/off pattern x[1..n] (x[0] unused); every statement made from it is true for it"""
-    if kind == "blocks":
-        x, cur = [0], random.randint(0, 1)
-        while len(x) <= n:
-            x += [cur] * random.randint(1, 40)
-            cur ^= 1
-        return x[:n + 1]
-    p = {"sparse": 0.1, "half": 0.5, "dense": 0.9}[kind]
-    return [0] + [1 if random.random() < p else 0 for _ in range(n)]
+def put(n, c, x, lines):
+    assert 2 <= n <= MAXN and len(lines) <= MAXM and len(x) == n and 0 <= c <= MAXC
+    assert 0 <= min(x) and max(x) <= MAXX
+    tests.append(f"{n} {len(lines)} {c}\n" + " ".join(map(str, x)) + "\n" + "".join(lines))
 
 
-def prefix(x):
-    s = [0]
-    for v in x[1:]:
-        s.append(s[-1] + v)
-    return s
+def check_edges(lo, hi, edges):
+    """towns lo..hi"""
+    if edges:
+        us, vs, ws = zip(*edges)
+        assert lo <= min(us) and max(us) <= hi and lo <= min(vs) and max(vs) <= hi
+        assert 1 <= min(ws) and max(ws) <= MAXW and all(map(int.__ne__, us, vs))
 
 
-def interval(n, lens):
-    k = random.choice(lens)
-    if k == "short":
-        ln = random.randint(1, min(n, 12))
-    elif k == "mid":
-        ln = random.randint(1, min(n, 300))
+def add(n, c, x, edges):
+    check_edges(1, n, edges)
+    put(n, c, x, [f"{u} {v} {w}\n" for u, v, w in edges])
+
+
+def shuffle(a):
+    for i in range(len(a) - 1, 0, -1):
+        j = int(rnd() * (i + 1))
+        a[i], a[j] = a[j], a[i]
+
+
+def emit(n, c, x, edges, start, goal):
+    """towns 0..n-1 while building; start -> 1, goal -> N, the rest shuffled; roads shuffled"""
+    rest = [v for v in range(n) if v != start and v != goal]
+    shuffle(rest)
+    lab = [0] * n
+    lab[start] = 1
+    lab[goal] = n
+    for i, v in enumerate(rest):
+        lab[v] = i + 2
+    xs = [0] * n
+    for v in range(n):
+        xs[lab[v] - 1] = x[v]
+    check_edges(0, n - 1, edges)     # before relabelling (lab is a permutation of 1..n)
+    out = [f"{lab[u]} {lab[v]} {w}\n" if rnd() < 0.5 else f"{lab[v]} {lab[u]} {w}\n" for u, v, w in edges]
+    shuffle(out)            # the build order would show the structure
+    put(n, c, xs, out)
+
+
+def river(n, extra, X, s_num, s_den, noise, c, ends="far", back=6, local=25, ties=0, gaps=0, G=2 * 10 ** 8):
+    """towns along a river (sorted by x); roads join nearby towns and are slower than the ferry per km
+    (length about s_num / s_den times the distance along the river, plus noise); `gaps` wide empty stretches
+    of G km near the downstream end (only long roads cross them)"""
+    if ties:
+        step = X // max(1, ties)
+        x = sorted(int(rnd() * (ties + 1)) * step for _ in range(n))
     else:
-        ln = random.randint(1, n)
-    l = random.randint(1, n - ln + 1)
-    return l, l + ln - 1
+        x = sorted(int(rnd() * (X + 1)) for _ in range(n))
+    if gaps:
+        cuts = sorted(ri(n - n // 6, n - 1) for _ in range(gaps))
+        k = 0
+        for i in range(n):
+            while k < gaps and cuts[k] <= i:
+                k += 1
+            x[i] += k * G
 
-
-def true_statements(n, s, m, ops=(">=", "<=", "="), lens=("short", "mid", "long"), slack=(0, 0, 0, 1, 2), loose=0.0):
-    """m statements that hold for the pattern with prefix counts s: tight most of the time, or off by up to
-    loose * length (then "=" statements are rare)"""
-    out = []
-    for _ in range(m):
-        l, r = interval(n, lens)
-        cnt, ln = s[r] - s[l - 1], r - l + 1
-        op = random.choice(ops)
-        d = random.choice(slack) + random.randint(0, int(loose * ln))
-        if op == "=" and loose > 0 and random.random() < 0.8:
-            op = random.choice((">=", "<="))
-        if op == ">=":
-            c = max(0, cnt - d)
-        elif op == "<=":
-            c = min(ln, cnt + d)
-        else:
-            c = cnt
-        out.append((l, r, op, c))
-    return out
-
-
-def contradiction(n, s, a, b, pieces, kind):
-    """statements on [a, b] that cannot hold together: pieces that are true for the pattern (with single-lamp gaps
-    between them when kind == "gaps"), and one statement on the whole of [a, b] that disagrees with them by one lamp"""
-    cuts = sorted(random.sample(range(a, b), pieces - 1)) if pieces > 1 else []
-    bounds, prev = [], a - 1
-    for c in cuts + [b]:
-        bounds.append((prev + 1, c))
-        prev = c
-    out, lo, hi = [], 0, 0          # lo..hi: what the pieces (and the gap lamps) allow on [a, b]
-    gaps = kind == "gaps"
-    for idx, (l, r) in enumerate(bounds):
-        if gaps and idx % 2 == 1 and r - l + 1 == 1:
-            lo, hi = lo, hi + 1     # a lone gap lamp: anything
-            continue
-        cnt = s[r] - s[l - 1]
-        out.append((l, r, "=", cnt))
-        lo, hi = lo + cnt, hi + cnt
-    ln = b - a + 1
-    if hi + 1 <= ln and (lo == 0 or (not gaps and random.random() < 0.5)):
-        out.append((a, b, ">=", hi + 1))
+    edges, noise1 = [], noise + 1
+    for i in range(1, n):
+        j = i - 1 - int(rnd() * back)
+        if j < 0:
+            j = 0
+        w = (x[i] - x[j]) * s_num // s_den + int(rnd() * noise1)
+        edges.append((i, j, w if 0 < w <= MAXW else (1 if w <= 0 else MAXW)))
+    while len(edges) < n - 1 + extra:
+        i = int(rnd() * n)
+        j = min(n - 1, max(0, i + int(rnd() * (2 * local + 1)) - local))
+        if i != j:
+            w = abs(x[i] - x[j]) * s_num // s_den + int(rnd() * noise1)
+            edges.append((i, j, w if 0 < w <= MAXW else (1 if w <= 0 else MAXW)))
+    if ends == "far":
+        s, t = ri(0, n // 50), n - 1 - ri(0, n // 50)
+    elif ends == "mid":
+        s, t = ri(n // 4, n // 2), ri(n // 2 + 1, 3 * n // 4)
     else:
-        out.append((a, b, "<=", lo - 1))
-    return out
+        s, t = ri(0, n - 1), ri(0, n - 1)
+        while t == s:
+            t = ri(0, n - 1)
+    if rnd() < 0.5:
+        s, t = t, s
+    emit(n, c, x, edges, s, t)
 
 
-def soft_contradiction(n, s, a, b, pieces, skip=0.0):
-    """like contradiction(), but the pieces are only ">=" (the true counts), a share `skip` of them left out,
-    and the whole is "<=" one less than the pieces force"""
-    cuts = sorted(random.sample(range(a, b), pieces - 1))
-    out, prev, tot = [], a - 1, 0
-    for c in cuts + [b]:
-        cnt = s[c] - s[prev]
-        if not out or random.random() >= skip:
-            out.append((prev + 1, c, ">=", cnt))
-            tot += cnt
-        prev = c
-    assert tot >= 1
-    out.append((a, b, "<=", tot - 1))
-    return out
+def random_graph(n, extra, W, X, c, wlo=1):
+    """random recursive tree plus random extra roads, random x"""
+    span = W - wlo + 1
+    edges = [(v, int(rnd() * v), wlo + int(rnd() * span)) for v in range(1, n)]
+    while len(edges) < n - 1 + extra:
+        u, v = int(rnd() * n), int(rnd() * n)
+        if u != v:
+            edges.append((u, v, ri(wlo, W)))
+    x = [ri(0, X) for _ in range(n)]
+    emit(n, c, x, edges, 0, n - 1)
 
 
-def feasible(n, m, kind, **kw):
-    s = prefix(pattern(n, kind))
-    return true_statements(n, s, m, **kw)
+def path(n, step, extra, c, plus=0):
+    """a single road line along the river, road length = distance along the river (+ plus); distinct x"""
+    x = [0] * n
+    for i in range(1, n):
+        x[i] = x[i - 1] + ri(1, step)
+    edges = [(i, i + 1, max(1, x[i + 1] - x[i] + ri(0, plus))) for i in range(n - 1)]
+    for _ in range(extra):      # long detours that never help
+        i = ri(0, n - 2)
+        j = min(n - 1, i + ri(1, 5))
+        edges.append((i, j, MAXW))
+    emit(n, c, x, edges, 0, n - 1)
 
 
-def infeasible(n, m, kind, pieces, how, span=None, skip=0.0, tight=False, **kw):
-    """tight: the statement on the whole of [a, b] gets the true count instead, so the test is feasible
-    but only just (every piece is forced to its exact count when nothing is skipped)"""
-    x = pattern(n, kind)
-    s = prefix(x)
-    if span is None:
-        a, b = 1, n
-    else:
-        a = random.randint(1, n - span + 1)
-        b = a + span - 1
-    while True:
-        if how == "soft":
-            if s[b] - s[a - 1] == 0:
-                a, b = 1, n
-            bad = soft_contradiction(n, s, a, b, pieces, skip)
-        else:
-            bad = contradiction(n, s, a, b, pieces, how)
-        if tight:
-            bad[-1] = (a, b, bad[-1][2], s[b] - s[a - 1])
-        if all(0 <= c <= r - l + 1 for l, r, op, c in bad):
-            break
-    st = true_statements(n, s, m - len(bad), **kw) + bad
-    random.shuffle(st)
-    return st
+def split(n1, n2, n3, m, X, c, W=MAXW):
+    """1 and N in different parts (n3 towns in further parts); every part is a random tree plus extra roads"""
+    n = n1 + n2 + n3
+    parts = [(0, n1), (n1, n1 + n2)]
+    p = n1 + n2
+    while p < n:
+        q = min(n, p + ri(1, 200))
+        parts.append((p, q))
+        p = q
+    edges = []
+    for lo, hi in parts:
+        for v in range(lo + 1, hi):
+            edges.append((v, ri(lo, v - 1), ri(1, W)))
+    while len(edges) < m:
+        lo, hi = parts[0] if rnd() < 0.5 else parts[1]
+        u, v = ri(lo, hi - 1), ri(lo, hi - 1)
+        if u != v:
+            edges.append((u, v, ri(1, W)))
+    x = [ri(0, X) for _ in range(n)]
+    emit(n, c, x, edges, 0, n1)
 
 
-def windows(n, s, w, op, step=1):
-    """the true statement of type op on every window [i, i + w - 1] (i = 1, 1 + step, ...)"""
-    out = []
-    for i in range(1, n - w + 2, step):
-        cnt = s[i + w - 1] - s[i - 1]
-        out.append((i, i + w - 1, op, cnt))
-    return out
+def grid(rows, cols, X, s, noise, c, extra, down=0.5):
+    """towns on a grid, x = column; roads between neighbours"""
+    n = rows * cols
+    step = X // cols
+    x = [(i % cols) * step + ri(0, step // 3) for i in range(n)]
+    edges = []
+    for r in range(rows):
+        for q in range(cols):
+            v = r * cols + q
+            if q + 1 < cols:
+                edges.append((v, v + 1, max(1, s * abs(x[v + 1] - x[v]) + ri(0, noise))))
+            if r + 1 < rows and rnd() < down:
+                edges.append((v, v + cols, ri(1, noise + 1)))
+    for _ in range(extra):
+        u, v = int(rnd() * n), int(rnd() * n)
+        if u != v:
+            edges.append((u, v, ri(MAXW // 2, MAXW)))
+    edges = edges[:MAXM]
+    emit(n, c, x, edges, ri(0, rows - 1) * cols, ri(0, rows - 1) * cols + cols - 1)
 
 
 # samples
-add(6, [(1, 3, ">=", 2), (3, 6, "<=", 1), (2, 5, "=", 2)])
-add(5, [(1, 5, "=", 4), (1, 2, "<=", 1), (4, 5, "<=", 1)])
-add(7, [(1, 4, ">=", 2), (3, 7, "<=", 2), (2, 6, "=", 3), (5, 7, ">=", 1)])
-add(8, [(3, 5, ">=", 0), (1, 8, "<=", 8)])
-add(9, [(1, 3, "=", 2), (3, 5, "<=", 0), (5, 9, ">=", 4), (2, 8, "<=", 4)])
-
-# hidden: small (the brute tries every pattern)
-add(1, [(1, 1, ">=", 1)])
-add(1, [(1, 1, "<=", 0), (1, 1, ">=", 0)])
-add(16, feasible(16, 30, "half"))
-add(18, feasible(18, 40, "blocks", slack=(0,)))
-add(17, infeasible(17, 12, "half", 5, "gaps", loose=0.5))
-add(20, feasible(20, 25, "sparse", lens=("short",)))
-add(15, infeasible(15, 20, "dense", 4, "soft", skip=0.4))
-add(19, feasible(19, 50, "dense", ops=(">=", "<="), slack=(0, 1)))
-
-# hidden: medium
-add(600, feasible(600, 1500, "half"))
-add(700, infeasible(700, 2000, "blocks", 40, "plain"))
-add(650, feasible(650, 2000, "blocks", ops=(">=", "<="), slack=(0,)))
-
+add(5, 1, [0, 3, 4, 8, 9], [(1, 2, 4), (2, 3, 2), (3, 5, 9), (1, 4, 20), (4, 5, 1)])
+add(4, 5, [7, 1, 2, 3], [(1, 2, 1), (3, 4, 1)])
+add(3, 0, [0, 5, 10], [(1, 2, 5), (2, 3, 5)])
+add(2, 3, [4, 4], [(1, 2, 4)])
+add(6, 2, [1, 6, 2, 5, 3, 8], [(1, 3, 3), (3, 5, 4), (5, 2, 6), (2, 6, 5), (1, 4, 9), (4, 6, 7), (3, 4, 2)])
+# hidden: small (brute checks these)
+add(2, 0, [0, 0], [])
+add(3, 7, [3, 1, 9], [(2, 3, 1)])
+river(40, 31, 1000, 3, 1, 30, 300, ends="any")
+river(80, 41, 10 ** 6, 2, 1, 100, 10 ** 5, ties=4)
+random_graph(100, 61, 50, 80, 7)
+path(120, 80, 30, 0, plus=1)
+split(30, 40, 20, 110, 1000, 5)
+grid(10, 14, 10 ** 5, 2, 300, 2000, 20)
+river(120, 30, 10 ** 4, 3, 1, 5, 2000, gaps=3, G=3 * 10 ** 8)
 # hidden: big
-N, M = MAXN, MAXM
-add(N, feasible(N, M, "half", loose=0.3))
-add(N, feasible(N, M, "blocks", slack=(0,)))
-add(N, feasible(N, M, "sparse", ops=(">=", "<="), lens=("mid", "long"), loose=0.4))
-add(N, feasible(N, M, "dense", lens=("short", "mid"), loose=0.2))
-add(N, feasible(N, M, "half", lens=("short",), loose=0.5))
-s = prefix(pattern(N, "half"))
-st = windows(N, s, 3, ">=")[::-1]
-add(N, st + true_statements(N, s, M - len(st), ops=("<=",), loose=0.2))      # every window of 3, right to left
-s = prefix(pattern(N, "blocks"))
-st = windows(N, s, 2, "<=") + windows(N, s, 5, ">=", 2)
-random.shuffle(st)
-add(N, st[:M])
-s = prefix(pattern(N, "sparse"))
-st = windows(N, s, 7, "=", 3)
-add(N, st + true_statements(N, s, M - len(st), lens=("long",), loose=0.1))
-s = prefix(pattern(N, "blocks"))
-st = true_statements(N, s, 3000, ops=("=",), lens=("mid",))
-add(N, st + true_statements(N, s, M - len(st), lens=("short", "long"), loose=0.4))
-s = prefix(pattern(N, "half"))
-st = windows(N, s, 4, "<=", 2)[::-1] + windows(N, s, 9, ">=", 3)
-add(N, st + true_statements(N, s, M - len(st), lens=("mid",), loose=0.25))
-add(N, feasible(N, M, "dense", ops=(">=", "<="), lens=("long",), loose=0.3))
-add(N, infeasible(N, M, "half", 1600, "plain", loose=0.2))
-add(N, infeasible(N, M, "blocks", 1200, "gaps", loose=0.6))
-add(N, infeasible(N, M, "half", 2500, "soft", skip=0.3, tight=True, loose=0.6))      # feasible, only just
-add(N, infeasible(N, M, "sparse", 50, "gaps", span=400, tight=True, loose=0.1))
-add(N, infeasible(N, M, "dense", 2, "soft", ops=(">=", "<="), slack=(0, 1)))
-add(N, infeasible(N, M, "blocks", 3500, "soft", skip=0.0, tight=True, lens=("short",), slack=(0,)))
+N = MAXN
+river(N, 1, 10 ** 5, 3, 1, 1, 30000, gaps=2)
+river(N - 3000, 3001, 10 ** 5, 3, 1, 1, 5000, ends="mid")
+river(N, 1, 10 ** 5, 2, 1, 3, 0, ends="far", back=2)
+river(N - 3000, 3001, 10 ** 5, 5, 4, 1, 3000, ties=20, gaps=1)
+river(N, 1, 10 ** 5, 6, 5, 0, 4000, back=1, local=3)
+river(N - 3000, 3001, 10 ** 5, 7, 2, 3, 2 * 10 ** 8, ties=1000, gaps=3)
+river(N, 1, 10 ** 5, 2, 1, 2, 3, ties=6)
+random_graph(N - 500, 501, 9, 10 ** 5, 3)
+random_graph(N, 0, 10, 10, 0, wlo=10)
+path(N, 15, 0, 0)
+path(N, 15, 0, 1, plus=1)
+split(N // 3, N // 2, N - N // 3 - N // 2, N, 10 ** 5, 0, W=99)
+grid(200, 300, MAXX // 2, 3, 10 ** 5, MAXX // 20, 5000, down=0.3)
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

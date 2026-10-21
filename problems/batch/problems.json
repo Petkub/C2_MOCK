@@ -168,8 +168,8 @@
   "samples": 5
  },
  "25": {
-  "title": "ปลายสองข้างรวมเป็นยอด",
-  "en": "Ends Make the Peak",
+  "title": "เนินเขาที่มองเห็นกัน",
+  "en": "Hills in View",
   "tier": 0,
   "dir": "Mock_5/5",
   "samples": 5
@@ -203,8 +203,8 @@
   "samples": 5
  },
  "30": {
-  "title": "คนส่งของกระเป๋าเล็ก",
-  "en": "Courier With a Small Bag",
+  "title": "รถรับส่งแถวเดียว",
+  "en": "Single-File Shuttle",
   "tier": 0,
   "dir": "Mock_6/5",
   "samples": 5
@@ -231,8 +231,8 @@
   "samples": 5
  },
  "34": {
-  "title": "เศษเหลือของเลขกลับหลัง",
-  "en": "Mirror Remainder",
+  "title": "ยามบนกำแพงเมือง",
+  "en": "Guards on the City Wall",
   "tier": 0,
   "dir": "Mock_7/4",
   "samples": 5
@@ -308,8 +308,8 @@
   "samples": 5
  },
  "45": {
-  "title": "เชื่อมเมืองที่ถูกเลือก",
-  "en": "Joining the Chosen Towns",
+  "title": "โครงข่ายไฟฟ้าที่ค่อย ๆ ขยาย",
+  "en": "Growing Network",
   "tier": 0,
   "dir": "Mock_9/5",
   "samples": 5
@@ -322,8 +322,8 @@
   "samples": 5
  },
  "47": {
-  "title": "รถรับส่งไปสถานีช่วง",
-  "en": "Shuttles to a Range",
+  "title": "ลานน้ำแข็งกับเบรก",
+  "en": "Ice Rink With Brakes",
   "tier": 0,
   "dir": "Mock_10/2",
   "samples": 5
@@ -343,43 +343,43 @@
   "samples": 5
  },
  "50": {
-  "title": "ลังผลผลิต",
-  "en": "Crates of Produce",
+  "title": "แปลงผักที่มีต้นไม้น้อย",
+  "en": "Square Plot With Few Trees",
   "tier": 0,
   "dir": "Mock_10/5",
   "samples": 5
  },
  "51": {
-  "title": "ช่วงทางที่ใช้ร่วมกัน",
-  "en": "Shared Stretch of Two Routes",
+  "title": "ไฟจราจรที่ห้ามจอดรอ",
+  "en": "Traffic Lights Without Waiting",
   "tier": 0,
   "dir": "Mock_11/1",
   "samples": 5
  },
  "52": {
-  "title": "ความเร็วเครื่องจักรที่น้อยที่สุด",
-  "en": "Minimum Machine Speed",
+  "title": "รถบรรทุกตามคิว",
+  "en": "Trucks in a Fixed Order",
   "tier": 0,
   "dir": "Mock_11/2",
   "samples": 5
  },
  "53": {
-  "title": "playlist สองชุด",
-  "en": "Two Playlists",
+  "title": "แนวตึกจากหัวมุม",
+  "en": "Skyline From the Corner",
   "tier": 0,
   "dir": "Mock_11/3",
   "samples": 5
  },
  "54": {
-  "title": "พยานกับโคมไฟถนน",
-  "en": "Witnesses and Street Lamps",
+  "title": "คู่เมืองทางลัด",
+  "en": "Shortcut Pairs",
   "tier": 0,
   "dir": "Mock_11/4",
   "samples": 5
  },
  "55": {
-  "title": "แนวตึกจากหัวมุม",
-  "en": "Skyline From the Corner",
+  "title": "เครื่องมือวิเศษในครัว",
+  "en": "Magic Kitchen Tool",
   "tier": 0,
   "dir": "Mock_11/5",
   "samples": 5
