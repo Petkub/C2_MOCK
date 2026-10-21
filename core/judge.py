@@ -287,12 +287,14 @@ def output_hash(b):
 
 
 def ensure_tests(pdir, st):
-    """Build missing big inputs with gen.py (first run only). Returns False if the test data is not usable."""
+    """Build missing big inputs with gen.py (first run only). Returns False if the test data is not usable.
+    A big input left over from an older version of the problem (sha256 differs) is rebuilt too."""
     man = load_manifest(pdir)
     if not man:
         return True
     td = tests_dir(pdir)
-    missing = [t for t in man["tests"] if not os.path.isfile(os.path.join(td, t["name"] + ".in"))]
+    missing = [t for t in man["tests"] if not os.path.isfile(os.path.join(td, t["name"] + ".in"))
+               or (not t["in_file"] and sha256_file(os.path.join(td, t["name"] + ".in")) != t["in"])]
     if not missing:
         return True
     print("  " + st.dim(f"Preparing {len(missing)} big test files (first run of this problem only, a few seconds) ..."),
@@ -319,9 +321,10 @@ def ensure_tests(pdir, st):
 
 
 def expected_matches(fin, got, man_out):
-    """True if the program output got equals the expected output of test fin."""
+    """True if the program output got equals the expected output of test fin. A test whose output is checked by
+    sha256 only ignores a .out file left over from an older version of the problem."""
     fout = fin[:-3] + ".out"
-    if os.path.isfile(fout):
+    if os.path.isfile(fout) and os.path.basename(fin)[:-3] not in HASH_ONLY[0]:
         with open(fout, "rb") as f:
             return normalize(got) == normalize(f.read())
     return man_out is not None and output_hash(got) == man_out
@@ -406,6 +409,7 @@ SAMPLE_COUNT = [6]  # number of statement samples of the problem being judged (t
 
 SUBTASKS = [None]  # [{"points": 40, "tests": ["01", ...]}, ...] or None (score = share of tests passed)
 TEST_NAMES = [[]]  # names of all tests of the problem being judged (also those --stop did not run)
+HASH_ONLY = [set()]  # names of its tests whose expected output is checked by sha256 only (out_file false)
 
 
 MEM_LIMIT = [MEMORY_LIMIT_MB]   # MB, of the problem being judged
@@ -965,6 +969,7 @@ def run_tests(exe, pdir, st, tl, show_diff, stop, quiet=False):
                       if os.path.exists(f[:-3] + ".out")),
                      key=test_key)
     TEST_NAMES[0] = [os.path.basename(f)[:-3] for f in ins]
+    HASH_ONLY[0] = {t["name"] for t in man["tests"] if not t["out_file"]} if man else set()
     hard = tl * 2 + 0.5
     results = []
     first_fail = None
@@ -1164,7 +1169,7 @@ def show_failure(st, first_fail, show_diff):
     exp = out = diffs = None
     if v == "WA" and overflow:
         summary = f"printed over {OUTPUT_LIMIT // (1024 * 1024)} MB and was stopped"
-    elif v == "WA" and not os.path.isfile(fin[:-3] + ".out"):
+    elif v == "WA" and (name in HASH_ONLY[0] or not os.path.isfile(fin[:-3] + ".out")):
         summary = "wrong answer on a big hidden test (its expected output is checked by checksum only)"
     elif v == "WA":
         with open(fin[:-3] + ".out", "rb") as f:

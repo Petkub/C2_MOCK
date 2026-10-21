@@ -95,6 +95,37 @@ def test_crlf_generator():
         shutil.rmtree(tmp, ignore_errors=True)
 
 
+def test_stale_tests():
+    """An update that changes a problem's tests leaves the old files of its big tests behind (the updater never
+    deletes): a big input whose sha256 differs is rebuilt, and an old .out of a hash-only test is ignored."""
+    pdir, _ = judge.find_problem("1-1", judge.load_meta())
+    td = judge.tests_dir(pdir)
+    mpath = os.path.join(td, "manifest.json")
+    with open(mpath, encoding="utf-8") as f:
+        original = f.read()
+    man = json.loads(original)
+    t_in, t_out = [t for t in man["tests"] if not t["in_file"]][:2]
+    fin, fout = os.path.join(td, t_in["name"] + ".in"), os.path.join(td, t_out["name"] + ".out")
+    with open(fout, "rb") as f:
+        shipped_out = f.read()
+    try:
+        t_out["out_file"] = False
+        with open(mpath, "w", encoding="utf-8") as f:
+            json.dump(man, f)
+        with open(fin, "wb") as f:
+            f.write(b"1 1 0 1\n1 1\n")
+        with open(fout, "wb") as f:
+            f.write(b"0\n")
+        verdict, score = judge_sample(os.path.join(SAMPLES, "batch", "towers_ok.cpp"), "1-1", True)
+        check(verdict == "AC" and score == 100 and sha(fin) == t_in["in"],
+              "old test files left by an update: big input rebuilt, old .out ignored", f"{verdict} {score}")
+    finally:
+        with open(mpath, "w", encoding="utf-8") as f:
+            f.write(original)
+        with open(fout, "wb") as f:
+            f.write(shipped_out)
+
+
 # ----------------------------------------------------------------------------- 2. verdicts
 def judge_sample(src, problem, full):
     """(verdict, score) of src on problem K-P; full = run every test (needed for the score)."""
@@ -489,6 +520,7 @@ def main():
             test_package(root)
             test_crlf_generator()
             test_samples()
+            test_stale_tests()
             test_exited_peak()
             test_missed_last_reading()
             test_cli(root)
