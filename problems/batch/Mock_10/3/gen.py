@@ -88,6 +88,44 @@ def dense_sparse(m, first, gap, extra):
     return c, MAXN - m + extra, Shuffled(pos)
 
 
+def offset_trap(r, d, sp):
+    """d houses on consecutive points, a gap of 10r, then sp (odd) houses 1.2r apart; the circle closes 0.6r after
+    the last one. With radius r the dense run needs ceil(d / (2r + 1)) lamps and the sparse houses (sp + 1) / 2,
+    but one lamp less works when a lamp holds the last sparse house together with the first d mod (2r + 1) dense
+    houses: the only best splits start that far into the dense run, so trying just the first few hundred starts
+    (in sorted order) finds a worse split. Returns (c, k, positions)"""
+    assert r % 5 == 0 and sp % 2 == 1 and 0 < d % (2 * r + 1) <= 7 * r // 5 + 1
+    pos = list(range(d)) + [d - 1 + 10 * r + 6 * r // 5 * t for t in range(sp)]
+    return pos[-1] + 3 * r // 5, (sp + 1) // 2 + -(-d // (2 * r + 1)) - 1, pos
+
+
+def multi_trap(r, m, q, seed, lone=0):
+    """m segments around the circle: one house, then 0.6r later a run of q(2r + 1) + L consecutive houses
+    (L = 1.4r + 1 or a few less), then a gap of over 3r. A lamp holding a segment's single house and the first L houses
+    of its run saves one lamp per segment, so the best splits start only at a single house or exactly L houses into
+    a run: trying a few hundred first starts or a few dozen random ones fails. `lone` far-apart single houses after
+    the segments (one lamp each) make K large, so a cap like 10^8 / K on the starts tried stays below L. The circle
+    is turned so that point 0 is the start of the first run. Returns (c, k, positions)"""
+    g = random.Random(seed)
+    w = 2 * r + 1
+    pos, k, cur = [], 0, 0
+    for _ in range(m):
+        single = cur
+        d = q * w + 7 * r // 5 + 1 - g.randint(0, 3)
+        first = single + 3 * r // 5
+        pos.append(single)
+        pos += range(first, first + d)
+        k += -(-d // w)
+        cur = first + d - 1 + 3 * r + g.randint(1, r)
+    for _ in range(lone):
+        pos.append(cur)
+        k += 1
+        cur += 2 * r + 1 + g.randint(0, r)
+    c = cur + r
+    shift = 3 * r // 5                                     # point 0 = first house of the first run
+    return c, k, Shuffled(g.sample([(x - shift) % c for x in pos], len(pos)))
+
+
 # samples
 add(20, 2, [1, 3, 8, 12, 17, 19], shuffle=False)
 add(10, 1, [0, 5], shuffle=False)
@@ -108,9 +146,9 @@ add(*tight(12, 41, 5, 10, 20, 25))
 # hidden: big
 N = MAXN
 add(MAXC, 1, rnd(MAXC, N))
-add(MAXC, 2, rnd(MAXC, N))
-add(MAXC, 1000, rnd(MAXC, N))
-add(MAXC, N // 3, rnd(MAXC, N))
+add(*offset_trap(500, 99800, 100199))
+add(*offset_trap(2000, 150000, 49999))
+add(*offset_trap(5000, 97000, 102999))
 add(*dense_sparse(100000, MAXC - 40000, 5000, 50))   # a dense run of houses crosses point 0
 add(N, 66667, list(range(N)))                       # every point holds a house
 add(MAXC, 50000, clusters(MAXC, 50000, 4, 2001))
@@ -120,13 +158,13 @@ add(*tight(20000, 19, 4, 5, 9, 12))
 add(*tight(8000, 30001, 3000, 3001, 10000, 15000))
 add(*tight(2, 300000001, 6000, 10 ** 6, 10 ** 8, 15 * 10 ** 7))
 add(*tight(100, 2000001, 2200, 10 ** 5, 10 ** 6, 12 * 10 ** 5))
-add(*tight(20000, 8, 1, 2, 2, 3))
-add(*tight(9000, 39, 3, 4, 10, 15))
-add(*tight(4500, 101, 4, 6, 30, 40))
-add(*tight(10000, 25, 2, 3, 7, 9))
+add(*multi_trap(800, 60, 1, 4, lone=9000))
+add(*multi_trap(2000, 18, 2, 1, lone=4000))
+add(*multi_trap(3000, 14, 1, 5, lone=3000))
+add(*multi_trap(5000, 11, 1, 2, lone=2500))
 add(*tight(4000, 401, 20, 25, 100, 200))
 add(*dense_sparse(50000, 0, 3000, 25))
-add(*tight(11000, 30, 3, 5, 6, 8))
+add(*multi_trap(1500, 36, 1, 3, lone=5000))
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

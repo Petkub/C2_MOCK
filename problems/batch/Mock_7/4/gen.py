@@ -102,11 +102,11 @@ add(K, trap(NK, K, 123, 45, base=[MAXC - i * 9000 for i in range(NK)]))         
 add(625, trap(N, 625, 77, 200, cheap=(5000, 9000), dec=(1, 4999)))
 add(K, trap(NK, K, 7, 150, broken=0.4))
 add(K, break_run(costs(N), N - 250, K))                   # K broken posts across the join of N and 1: -1
-add(200, trap(N, 200, 77, 5, broken=1.0))                 # only the cheap posts and the decoys work
+add(K, trap(NK, K, 77, 5, broken=1.0))                    # only the cheap posts and the decoys work
 # every K-th post works (the gap across the join is shorter), plus cheaper decoys that never replace one of them
 c = [-1 if i % K != 5 else ri(10, 99) for i in range(N)]
 add(K, decoys(c, K, range(K - 200, N - 2 * K + 1, 2 * K)))
-add(10, trap(N, 10, 4, 6, cheap=(10 ** 5, 10 ** 6), dec=(1, 10 ** 5 - 1), dear=(10 ** 7, MAXC)))
+add(K, trap(NK, K, 4, 6, cheap=(10 ** 5, 10 ** 6), dec=(1, 10 ** 5 - 1), dear=(10 ** 7, MAXC)))
 add(K, [ri(1, 10) if i < K or i >= N - K else ri(10 ** 6, 10 ** 9) for i in range(N)])
 add(K, trap(NK, K, K - 7, K // 2, cheap=(5, 10), dec=(1, 4), broken=0.1))
 add(500, decoys(periodic(N, 500, 500, cheap=(100, 200), dear=(10 ** 5, MAXC)), 500, (123, 25000 + 200, 37777)))

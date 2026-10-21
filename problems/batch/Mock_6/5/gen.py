@@ -208,6 +208,14 @@ pas = [(towns[2 * j + 1], towns[2 * j + 2]) for j in range(K)]
 emit(MAXN, e, towns[0], 5, pas)
 pas[K // 2] = (pas[K // 2][0], ri(2001, MAXN))
 emit(MAXN, e, towns[0], 5, pas)
+# long roads along a line (totals far beyond 32 bits), stops anywhere
+e = line_graph(MAXN, 3000, (MAXW // 2, MAXW), (MAXW, MAXW))
+pas = [(ri(1, MAXN), ri(1, MAXN)) for _ in range(K)]
+emit(MAXN, e, ri(1, MAXN), 5, pas)
+# the shuttle starts in a part that holds no stop: -1
+e = random_graph(1000, 3000) + [(u + 1000, v + 1000, w) for u, v, w in random_graph(MAXN - 1000, MAXM - 3000)]
+towns = random.sample(range(1001, MAXN + 1), 2 * K)
+emit(MAXN, e, ri(1, 1000), 3, [(towns[2 * j], towns[2 * j + 1]) for j in range(K)])
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

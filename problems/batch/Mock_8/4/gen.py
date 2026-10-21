@@ -103,16 +103,16 @@ add(rlist(15000, 1, MAXA), rlist(15000, 1, MAXW))
 N = MAXN
 add(*wall(rlist(N, 1, MAXA), rlist(N, 1, MAXW), 30000))
 add(*far_apart(N, 8000, 30000, "dec"))
-add(rlist(N, 1, 10), rlist(N, 1, MAXW))
+add(*wall(rlist(N, 1, 10), rlist(N, 1, MAXW), 30000))
 add(*wall(rlist(N, 1, 2), rlist(N, 1, MAXW), 25000))
 add([MAXA - (i % 2) for i in range(N)], [MAXW] * N)                    # perfect zigzag, all heavy
 add([1 + (i // 2) % 2 for i in range(N)], [MAXW - (i % 7) for i in range(N)])   # pairs of equal values
 a = zigzag(N, 1, MAXA, 3, 30)
 add(*wall(a, heavy_inside(a, MAXW // 2, MAXW, 1000), 35000))
 a = zigzag(N, 1, 1000, 2, 6)
-add(a, heavy_inside(a, 1000, MAXW, 50))
+add(*wall(a, heavy_inside(a, 1000, MAXW, 50), 40000))
 a = zigzag(N, 1, MAXA, 100, 2000)
-add(a, rlist(N, 1, MAXW))
+add(*wall(a, rlist(N, 1, MAXW), 30000))
 add(list(range(1, N + 1)), rlist(N, 1, MAXW))                          # increasing: at most 2 items
 add([7] * N, rlist(N, 1, MAXW))                                         # all equal: one item
 a = []
@@ -123,7 +123,7 @@ a = [x for x in rlist(N // 50, 1, MAXA) for _ in range(50)]            # blocks 
 add(a, rlist(N, 1, MAXW))
 add(*far_apart(N, 500, 4000, "const"))
 a = zigzag(N, 1, 20, 1, 4)
-add(a, rlist(N, MAXW - 100, MAXW))
+add(*wall(a, rlist(N, MAXW - 100, MAXW), 30000))
 add(*far_apart(N, 15000, 40000, "const"))
 add(*far_apart(N, 1500, 20000, "alt"))
 add(*far_apart(N, 20000, 50000, "alt"))

@@ -198,6 +198,8 @@ path(N, 15, 0, 0)
 path(N, 15, 0, 1, plus=1)
 split(N // 3, N // 2, N - N // 3 - N // 2, N, 10 ** 5, 0, W=99)
 grid(200, 300, MAXX // 2, 3, 10 ** 5, MAXX // 20, 5000, down=0.3)
+river(N, 1, 10 ** 5, 3, 1, 2, 2000, ties=300, gaps=2)        # many towns share an x
+random_graph(N - 1000, 1001, 1000, 50, 3)                  # x in 0..50: big groups of equal x
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

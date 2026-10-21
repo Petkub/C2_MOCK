@@ -139,13 +139,14 @@ tree(N, 40000, "rand", "spider", 3)
 tree(N, 25000, "big", "spider", 2)
 tree(N, 20000, "rand", "capital", 0.3)
 tree(N, 50000, "rand", "random")
-tree(N, 10, "rand", "deep", 3)
+tree(N, 1500, "rand", "broom", 1000)
 tree(N, 30000, "mix", "path")
 tree(N, 5000, "rand", "binary")
-tree(N, 0, "max", "random")
-tree(N, N - 1, "rand", "hubs", 50)
+tree(N, 0, "max", "capital", 0.5)
+tree(N, N - 1, "rand", "hubs", 5)
 tree(N, 99000, "max", "star")
 tree(N, 3, "rand", "hubs", 4)
+tree(N, 30000, "mix", "capital", 0.6)
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

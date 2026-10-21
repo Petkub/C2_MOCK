@@ -148,15 +148,15 @@ add(shuffled(clusters(2500, 30, 7, [4], [], 0, 1, 999) + pooled(2500, ids(300, 1
 # every skill, or of every pair of skills, then touches about N^2 entries)
 add([line(mixed([123456789, 987654321, 1, 1000000000]))] * MAXN)                # everybody the same
 add(pooled(MAXN, ids(6, 1, 99), [4]))                                             # every pair shares >= 2
-add(pooled(MAXN, ids(8, 1, 999), [1, 2, 3, 4]))
-add(pooled(MAXN, ids(12, 1, 9999), [3, 4]))
+add(popular_too([ids(2, 1, 10 ** 5) for _ in range(MAXN)], [100, 200], 0.5))
+add(popular_too([ids(3, 1, 20000) for _ in range(MAXN)], [5, 6], 0.6))
 add(popular_too(clusters(MAXN, 1000, 6, [2, 3, 4, 4], [5000], 1.0, 1, 99999), [5001, 5002], 0.93))
 add(popular_too(clusters(MAXN, 100, 7, [4], [31337], 0.98, 1, 99999), [31338], 0.7))
 add(clusters(MAXN, 2500, 5, [3, 4], ids(2, 1, 9999), 0.85, 1, 99999))
-add(["4 1 " + x[2:] for x in pooled(MAXN, list(range(2, 32)), [3])])            # skill 1 is everybody's
+add([[1] + ids(3, 2, 10 ** 5) for _ in range(MAXN)])                              # skill 1 is everybody's
 add(clusters(MAXN, 20, 8, [2, 3, 4], [777, 888, 999], 0.92, 1, 9999))
 add(zipf(MAXN, 1000, [2, 3, 4, 4], 1, 99999))
-add(zipf(MAXN, 20, [3, 4], 1, 999))
+add(zipf(MAXN, 20000, [3, 4], 1, 99999))
 add(all_subsets(ids(7, 1, 999), MAXN // 98)[:MAXN] + pooled(MAXN - 98 * (MAXN // 98), ids(7, 1, 999), [4]))
 base = popular_too([ids(2) for _ in range(MAXN * 7 // 10)], [999999937], 0.98)
 base = [line(s) for s in popular_too(base, [999999929, 999999893], 0.93)]
@@ -164,8 +164,11 @@ add(shuffled(base + [base[int(rnd() * len(base))] for _ in range(MAXN - len(base
 add(shuffled(pooled(MAXN // 2, ids(100, 1, 9999), [1]) + pooled(MAXN // 2, ids(6, 1, 9999), [3, 4])))
 add(popular_too(shuffled(clusters(MAXN // 2, 50, 6, [4], [], 0, 10 ** 8, MAXS)
                          + zipf(MAXN // 2, 300, [2, 3, 4])), ids(3, 10 ** 8, MAXS), 0.93))
-add(popular_too([ids(1, 1, 400) for _ in range(MAXN)], [7777], 0.98))             # mostly {7777, x}
-add(pooled(MAXN, ids(5, 1, 99), [2, 3, 4]))
+add(popular_too([ids(1, 1, 10 ** 6) for _ in range(MAXN)], [7777], 0.98))         # mostly {7777, x}
+# almost every member's skill set is different, but a popular skill remains (grouping equal sets does not help)
+add(popular_too([ids(3, 1, 10 ** 5) for _ in range(MAXN)], [4242], 0.95))
+add(popular_too([ids(2, 1, 3000) for _ in range(MAXN)], [11, 12], 0.9))
+add(popular_too([ids(2) for _ in range(MAXN)], [7], 0.97))
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

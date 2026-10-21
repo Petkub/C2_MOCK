@@ -1,5 +1,11 @@
 POSN Practice Judge - changes
 
+3.2  Stronger tests for 6/4, 6/5, 7/4, 7/5, 8/4, 10/3, 10/4 and 11/4 (some slow or wrong solutions passed too
+     many). Clearer story in 8/2. The judge's help says 1.cpp ... 5.cpp.
+3.1  A big test left over from an older version of a problem is rebuilt, so it is never judged with old data.
+3.0  Mock sets 7 to 11 (sets 10 and 11 are harder than the real exam). Sets 5 and 6 changed: every problem
+     is solved by an observation plus standard Camp 2 tools.
+2.0  Mock sets 5 and 6 (harder than the real exam), and stronger big tests for sets 1 to 4.
 1.9  Memory limit on macOS: a program over the limit could sometimes pass; now it always gets MLE.
 1.8  Updates are much faster: files download in parallel, and a whole mock set comes as one zip.
 1.7  Memory peak of a very fast program no longer shows the judge's own size (about 20 MB).

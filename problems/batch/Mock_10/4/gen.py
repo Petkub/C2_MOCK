@@ -111,11 +111,10 @@ def pref_attach(n):
 
 
 def star_of_stars(n, k):
-    p = [0]
-    for _ in range(k):
-        p.append(0)
+    """k hubs below the root with the leaves dealt out in turn (equal sizes, so whom the root calls first matters)"""
+    p = [0] * (k + 1)
     while len(p) < n:
-        p.append(1 + random.randrange(k))
+        p.append(1 + len(p) % k)
     return p
 
 
@@ -134,18 +133,6 @@ def with_hub(base, h, total):
         v = len(p)
         p.append(first + r(v - first))
     return p
-
-
-def hub_binomials(n, leaves):
-    """a hub with `leaves` leaves and binomial trees of random orders 0..11 below it"""
-    p = [0] * (leaves + 1)
-    while len(p) < n:
-        k = min(random.randint(0, 11), (n - len(p)).bit_length() - 1)
-        base = len(p)
-        p.append(0)
-        for v in range(1, 1 << k):
-            p.append(base + (v & (v - 1)))
-    return p[:n]
 
 
 def mixed(n, fan=(2, 6), shapes=("path", "bushy", "mix", "mix")):
@@ -210,16 +197,11 @@ N = MAXN
 add_tree(star(N))
 add_tree(with_hub(rand_tree(40000), 155000, N))
 add_tree(with_hub(path(40000), 158000, N))
-add_tree(with_hub(caterpillar(30000, 10000, 3), 160000, N))
 add_tree(with_hub(binomial(15), 160000, N))
-add_tree(hub_binomials(N, 155000))
-add_tree(with_hub(pref_attach(30000), 155000, N))
-add_tree(with_hub(spider(30000, 40), 160000, N))
-add_tree(with_hub(kary(40000, 3), 157000, N))
-add_tree(with_hub(mixed(40000), 156000, N))
+add_tree(star_of_stars(N, 4))
+add_tree(star_of_stars(N, 2))
 add_tree(with_hub(mixed(30000, (2, 3)), 165000, N))
 add_tree(with_hub(mixed(20000, (2, 40)), 170000, N))
-add_tree(with_hub(rand_tree(35000, 4), 155000, N))
 # ---------- big: no such person ----------
 add_tree(path(N))
 add_tree(rand_tree(N))
@@ -228,6 +210,11 @@ add_tree(mixed(N))
 add_tree(mixed(N, (2, 3), ("path", "bushy")))
 add_tree(mixed(N, (3, 200)))
 add_tree(mixed(N, (2, 8), ("path", "bushy", "mix")))
+add_tree(mixed(N, (2, 50)))
+add_tree(star_of_stars(N, 3))                          # a few big hubs compete: call order matters
+add_tree(star_of_stars(N, 9))
+add_tree(mixed(N, (10, 100), ("bushy", "mix")))
+add_tree(mixed(N, (2, 5), ("bushy",)))
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

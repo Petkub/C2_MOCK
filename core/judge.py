@@ -4,12 +4,12 @@ POSN Camp 2 Practice Judge
 ==========================
 
 Usage (inside a Mock_K folder, e.g. Mock_3, with the judge in ../Judge)
-  python3 ../Judge/judge.py                    judge the whole set (1.cpp ... 8.cpp in this folder)
+  python3 ../Judge/judge.py                    judge the whole set (1.cpp ... 5.cpp in this folder)
   python3 ../Judge/judge.py 5.cpp              judge problem 5 of this set   (or just: python3 ../Judge/judge.py 5)
 
 Usage (anywhere)
   python3 judge.py SOLUTION.cpp K-P            judge one solution for set K, problem P   (e.g. 3-5)
-  python3 judge.py --set K FOLDER              judge a whole mock exam set (files 1.cpp ... 8.cpp in FOLDER)
+  python3 judge.py --set K FOLDER              judge a whole mock exam set (files 1.cpp ... 5.cpp in FOLDER)
   python3 judge.py --set K                     show the problems of mock exam set K
   python3 judge.py --list                      list all sets and problems
   python3 judge.py --progress                  show which problems you have solved (--progress 3: set 3 only)
@@ -1366,7 +1366,7 @@ TEMPLATE_WORDS = ("#include <bits/stdc++.h> using namespace std; int32_t main() 
 
 
 def is_template(src):
-    """True if src is still the untouched 1.cpp ... 8.cpp template (whitespace ignored)."""
+    """True if src is still the untouched 1.cpp ... 5.cpp template (whitespace ignored)."""
     try:
         with open(src, "rb") as f:
             data = f.read(4096)
@@ -1663,12 +1663,12 @@ def main():
             if k is None:               # e.g. Mock_3 - Copy/5.cpp
                 return not_a_mock_folder(st, os.path.dirname(os.path.abspath(a)), name)
             print(st.red(f"Cannot tell the problem number from the file name '{name}'."))   # e.g. 5_brute.cpp
-            print(st.dim(f"  Name it 1.cpp ... 8.cpp, or give the problem as K-P, e.g.:"))
+            print(st.dim(f"  Name it 1.cpp ... 5.cpp, or give the problem as K-P, e.g.:"))
             print(f"  {PY} {prog_name()} \"{name}\" {k}-5")
             return 1
         else:
             return usage("expected SOLUTION.cpp and a problem (e.g. 3-5), "
-                         "or run it inside a Mock_K folder (files 1.cpp ... 8.cpp)")
+                         "or run it inside a Mock_K folder (files 1.cpp ... 5.cpp)")
     if len(pos) != 2:
         return usage("expected SOLUTION.cpp and a problem (e.g. 3-5)")
     src, parg = pos
