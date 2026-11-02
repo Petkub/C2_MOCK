@@ -1,5 +1,8 @@
 POSN Practice Judge - changes
 
+4.0  Sets renumbered from easy to hard (set 1 is the easiest), and the problems inside each set too. No hints in
+     the statements: some samples and sample explanations changed (the old samples are now hidden tests).
+     Cover time plans end with "check your work".
 3.2  Stronger tests for 6/4, 6/5, 7/4, 7/5, 8/4, 10/3, 10/4 and 11/4 (some slow or wrong solutions passed too
      many). Clearer story in 8/2. The judge's help says 1.cpp ... 5.cpp.
 3.1  A big test left over from an older version of a problem is rebuilt, so it is never judged with old data.

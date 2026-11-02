@@ -1,138 +1,81 @@
-# Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-# A test is kept as two lists (prices, ratings) so that the big tests are built quickly.
-import os, random
-
-random.seed(740218)
-MAXN, MAXV = 150000, 10 ** 9
-tests = []
-rnd = random.random
-
-
-def add(h):
-    ps, rs = h
-    n = len(ps)
-    assert 1 <= n <= MAXN and len(rs) == n
-    assert 1 <= min(ps) and max(ps) <= MAXV and 1 <= min(rs) and max(rs) <= MAXV
-    flat = [0] * (2 * n)
-    flat[0::2] = ps
-    flat[1::2] = rs
-    tests.append(f"{n}\n" + "%d %d\n" * n % tuple(flat))
-
-
-def pairs(lst):
-    return [p for p, r in lst], [r for p, r in lst]
-
-
-def band(n, width, slope, wp, wr):
-    """points along a falling line: x in [0, width), price x + noise, rating (width - x) * slope + noise"""
-    xs = [int(rnd() * width) for _ in range(n)]
-    ps = [x + 1 + int(rnd() * (wp + 1)) for x in xs]
-    rs = [(width - x) * slope + 1 + int(rnd() * (wr + 1)) for x in xs]
-    return ps, rs
-
-
-def layers(n, count, size, step):
-    """`count` copies of one random antichain (price and rating both increasing), each copy moved by
-    (+step, -step): a hotel of a copy is beaten by the same hotel of the copies before"""
-    bp, br, p, r = [], [], 1, 1
-    for _ in range(size):
-        p += random.randint(0, 3)
-        r += random.randint(0, 3)
-        bp.append(p)
-        br.append(r)
-    top = count * step
-    ks = [int(rnd() * count) * step for _ in range(n)]
-    js = [int(rnd() * size) for _ in range(n)]
-    return [bp[j] + k for j, k in zip(js, ks)], [br[j] + top - k for j, k in zip(js, ks)]
-
-
-def blocks(n, cnt, side, grid):
-    """`cnt` squares on a falling diagonal, random points inside each, coordinates divided by `grid`"""
-    ks = [int(rnd() * cnt) for _ in range(n)]
-    ps = [(k * side + int(rnd() * side)) // grid + 1 for k in ks]
-    rs = [((cnt - k) * side + int(rnd() * side)) // grid + 1 for k in ks]
-    return ps, rs
-
-
-def dup(h, share):
-    """replace a share of the hotels by copies of other hotels"""
-    ps, rs = h[0][:], h[1][:]
-    n = len(ps)
-    for _ in range(int(n * share)):
-        i, j = int(rnd() * n), int(rnd() * n)
-        ps[i], rs[i] = ps[j], rs[j]
-    return ps, rs
-
-
-def spread(h):
-    """map prices and ratings to random large values in the same order (the rounds do not change)"""
-    out = []
-    for col in h:
-        vals = sorted(set(col))
-        m = dict(zip(vals, sorted(random.sample(range(1, MAXV + 1), len(vals)))))
-        out.append([m[v] for v in col])
-    return tuple(out)
-
-
-_perm = []
-
-
-def mixed(h):
-    """h in a random order; every big test has MAXN hotels, so one shuffled order is reused (fast)"""
-    n = len(h[0])
-    if n < MAXN:
-        idx = list(range(n))
-        random.shuffle(idx)
-    else:
-        if not _perm:
-            _perm.extend(range(MAXN))
-            random.shuffle(_perm)
-        idx = _perm
-    return [h[0][i] for i in idx], [h[1][i] for i in idx]
-
-
-# samples
-add(pairs([(300, 4), (200, 5), (300, 4), (100, 3), (200, 2), (400, 5), (500, 1)]))
-add(pairs([(5, 1), (5, 2), (5, 3), (5, 3)]))
-add(pairs([(7, 7)]))
-add(pairs([(3, 3), (5, 1), (1, 5), (4, 2), (2, 4)]))
-add(pairs([(4, 6), (2, 2), (6, 5), (3, 6), (2, 7), (5, 3), (4, 6), (1, 1)]))
-# hidden: small (brute checks these)
-add(pairs([(1, 1), (1, 1)]))
-add(pairs([(10 ** 9, 1), (1, 10 ** 9), (10 ** 9, 10 ** 9), (1, 1)]))
-add(mixed(dup(band(40, 10, 1, 2, 2), 0.2)))
-add(mixed(dup(blocks(300, 30, 4, 2), 0.1)))
-add(([random.randint(1, 4) for _ in range(500)], [random.randint(1, 4) for _ in range(500)]))
-add(mixed(dup(layers(2000, 200, 50, 3), 0.05)))
-add(mixed(band(3000, 1500, 2, 3, 3)))
-add(mixed(dup(band(8000, 4000, 1, 5, 5), 0.1)))
-add(spread(mixed(dup(blocks(10000, 2000, 3, 1), 0.05))))
-# hidden: big (N = 150000)
-N = MAXN
-add(mixed(dup(band(N, 60000, 1, 3, 3), 0.05)))
-add(mixed(dup(band(N, 40000, 2, 8, 2), 0.1)))
-add(mixed(dup(band(N, 100000, 1, 1, 1), 0.02)))
-add(mixed(dup(band(N, 25000, 1, 10, 40), 0.05)))
-add(mixed(band(N, 30000, 3, 0, 5)))                         # many equal prices
-add(mixed(band(N, 30000, 1, 6, 0)))                         # many equal ratings
-add(mixed(dup(layers(N, 60000, 20, 6), 0.03)))
-add(mixed(dup(layers(N, 70000, 60, 2), 0.05)))
-add(mixed(layers(N, 50000, 40, 8)))
-add(mixed(dup(blocks(N, 25000, 6, 2), 0.05)))
-add(mixed(dup(blocks(N, 50000, 3, 1), 0.1)))
-add(mixed(blocks(N, 40000, 8, 3)))
-add(spread(mixed(dup(band(N, 70000, 1, 2, 2), 0.05))))
-add(spread(mixed(dup(layers(N, 80000, 10, 2), 0.05))))
-x = range(1, N + 1)
-add(mixed(([i for i in x], [N + 1 - i for i in x])))                         # one chain: rounds 1..N
-add(mixed(([(i + 1) // 2 for i in x], [(N + 2 - i) // 2 for i in x])))      # a chain through equal values
-add(mixed(dup(([i // 3 + 1 for i in x], [(N - i) // 3 + 1 for i in x]), 0.3)))
-add(([int(rnd() * MAXV) + 1 for _ in x], [int(rnd() * MAXV) + 1 for _ in x]))
-add(([5] * N, [5] * N))
-
-for t in tests:
-    assert t.endswith("\n") and "  " not in t and " \n" not in t
+import random, os
+random.seed(2603)
 os.makedirs("tests", exist_ok=True)
-for i, t in enumerate(tests, 1):
-    with open(f"tests/{i:02d}.in", "w") as f:
-        f.write(t)
+cases = []
+# ---- samples ----
+cases.append((2, 2, [3, -1, 4, -10, 5, -9, 2]))
+cases.append((1, 1, [1, 2, 3, 4, 5]))
+cases.append((2, 1, [4, 4, 4]))
+cases.append((1, 6, [-3, 1, -4, 1, -5, 9]))
+cases.append((3, 2, [-1, -2, 7, 8, -100, -3, -4, 6, 6]))
+# ---- small random ----
+def rnd(n, k, L, lo, hi):
+    return (k, L, [random.randint(lo, hi) for _ in range(n)])
+for _ in range(6):
+    n = random.randint(3, 12); L = random.randint(1, 3)
+    k = random.randint(1, max(1, (n + 1) // (L + 1)))
+    cases.append(rnd(n, k, L, -20, 20))
+# ---- large ----
+N = 100000
+B = 10**9
+cases.append(rnd(N, 100, 1, -B, B))
+cases.append(rnd(N, 100, 50, -B, B))
+cases.append(rnd(N, 100, 990, -B, B))                 # K(L+1) = N + 1 - 1 + ... near tight
+cases.append(rnd(N, 1, 1000, -B, B))
+cases.append(rnd(N, 100, 1, 1, B))                    # all positive: rest days are the only loss
+cases.append(rnd(N, 100, 3, -B, -1))                  # all negative
+cases.append(rnd(N, 50, 1999, -B, B))                 # 50 * 2000 = 100000 <= N + 1 (tight)
+cases.append((100, 999, [B if (i // 1000) % 2 == 0 else -B for i in range(N)]))
+cases.append(rnd(N, 37, 7, -1000, 1000))
+cases.append((100, 1, [B] * N))                        # sum fits only in 64-bit
+cases.append(rnd(N, 100, 1, -B, B // 10))              # mostly negative, must still pick 100
+cases.append((1, 1, [-7]))                              # N = 1
+cases.append(rnd(3000, 100, 2, -B, B))                  # medium: O(N^2 K) still too slow
+cases.append(rnd(5000, 20, 10, -B, B))
+cases.append(rnd(N, 100, 999, -B, B))                   # tight: 100 * 1000 = N
+cases.append(rnd(N, 80, 1, -5, 5))                      # many ties
+cases.append(rnd(N, 2, 30000, -B, B))
+cases.append(rnd(N, 100, 7, -B, B // 3))
+# ---- stronger tests (2026-10-20): long runs, so the O(N K L) DP over the run length is too slow ----
+# (a separate random stream, so the tests that stay as they were keep their bytes)
+rng = random.Random(260320)
+def big(k, L, lo, hi): return (k, L, [rng.randint(lo, hi) for _ in range(N)])
+cases[14] = big(1, 40000, -B, B)                         # test 15: one long run
+cases[15] = big(100, 300, 1, B)                          # test 16: all positive, rest days are the only loss
+cases[16] = big(100, 600, -B, -1)                        # test 17: all negative
+cases[19] = big(37, 2000, 1, 1000)                       # test 20: small positive values, every rest day costs
+cases[20] = (100, 900, [B] * N)                          # test 21: sum fits only in 64-bit
+cases[21] = big(100, 400, -B, B // 10)                   # test 22: mostly negative, must still pick 100
+cases[26] = big(80, 250, -5, 5)                          # test 27: many ties
+cases[28] = big(100, 700, -B, B // 3)                    # test 29
+cases.append((100, 999, [rng.randint(1, B) for _ in range(N)]))   # K (L + 1) = N: no slack at all
+# positive days with about 40 negative valleys: fewer valleys than the K - 1 rest days needed
+a = [rng.randint(1, B) for _ in range(N)]
+for _ in range(40):
+    st = rng.randrange(N - 200)
+    for j in range(st, st + rng.randint(1, 200)): a[j] = -rng.randint(1, B)
+cases.append((100, 500, a))
+cases.append(big(100, 800, B // 2, B))                   # all positive: where the 99 rest days go decides
+cases.append(big(10, 9999, -B, B))
+# long positive stretches cut by single very negative days: the best runs are much longer than L
+a = []
+while len(a) < N:
+    a += [rng.randint(1, B) for _ in range(rng.randint(3000, 6000))] + [-B]
+cases.append((35, 2500, a[:N]))
+# positive blocks of length L + 1 .. 3L separated by one negative day: a rest day costs only that day
+a = []
+while len(a) < N:
+    a += [rng.randint(B // 2, B) for _ in range(rng.randint(1000, 3000))] + [-rng.randint(1, 1000)]
+cases.append((100, 300, a[:N]))
+cases.append(big(99, 1000, -5, 5))
+cases.append((100, 990, [-B] * N))                       # all equal negative: shortest runs everywhere
+cases.append((50, 1000, [B] * N))
+cases.append(big(1, 60000, -B, B))
+cases.append(big(30, 3000, 1, B))
+assert len(cases) <= 40
+for i, (k, L, a) in enumerate(cases, 1):
+    n = len(a)
+    assert 1 <= n <= 100000 and 1 <= k <= 100 and 1 <= L <= n and k * (L + 1) <= n + 1
+    assert all(-10**9 <= x <= 10**9 for x in a)
+    open(f"tests/{i:02d}.in", "w").write(f"{n} {k} {L}\n" + " ".join(map(str, a)) + "\n")
+print(len(cases), "tests")

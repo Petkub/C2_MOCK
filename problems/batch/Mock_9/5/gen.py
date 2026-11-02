@@ -1,263 +1,129 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
 import os, random
 
-random.seed(905)
-MAXN, MAXW = 100000, 10 ** 6
+random.seed(5101)
+MAXN = 200000
+MAXV = 10 ** 9
 tests = []
-rnd = random.random
 
 
-def ri(a, b):
-    """random integer in [a, b] (faster than randint, still deterministic)"""
-    return a + int(rnd() * (b - a + 1))
+def ri(lo, hi):
+    """uniform integer in [lo, hi] (faster than randint, still deterministic)"""
+    return lo + int(random.random() * (hi - lo + 1))
 
 
-def shuf(a):
-    """a shuffled copy of the list a (Fisher-Yates with rnd(): faster than random.shuffle)"""
-    b = list(a)
-    for i in range(len(b) - 1, 0, -1):
-        j = int(rnd() * (i + 1))
-        b[i], b[j] = b[j], b[i]
-    return b
+def add(m, k, a):
+    n = len(a)
+    assert 1 <= n <= MAXN and 1 <= m and 1 <= k and m * k <= n
+    assert all(1 <= x <= MAXV for x in a)
+    tests.append(f"{n} {m} {k}\n" + " ".join(map(str, a)) + "\n")
 
 
-def add(n, c, plant, edges, tree_ok=False):
-    """edges = (us, vs, ws); tree_ok: emit() already proved the roads form a tree
-    (par[i] < i, relabelled by a permutation)"""
-    us, vs, ws = edges
-    assert 1 <= n <= MAXN and len(us) == len(vs) == len(ws) == n - 1
-    assert sorted(c) == list(range(1, n + 1))
-    assert len(plant) == n and set(plant) <= {"0", "1"} and "1" in plant
-    if n > 1:
-        assert 1 <= min(us) and max(us) <= n and 1 <= min(vs) and max(vs) <= n
-        assert all(map(int.__ne__, us, vs)) and 1 <= min(ws) and max(ws) <= MAXW
-    if not tree_ok:             # n - 1 roads that connect all towns: a tree
-        check_tree(n, us, vs)
-    lines = [str(n), " ".join(map(str, c)), plant] + list(map("{} {} {}".format, us, vs, ws))
-    tests.append("\n".join(lines) + "\n")
-
-
-def add_list(n, c, plant, roads):
-    """roads given as (u, v, w) triples (samples)"""
-    add(n, c, plant, tuple(map(list, zip(*roads))) if roads else ([], [], []))
-
-
-def check_tree(n, us, vs):
-    adj = [[] for _ in range(n + 1)]
-    for u, v in zip(us, vs):
-        adj[u].append(v)
-        adj[v].append(u)
-    seen = [False] * (n + 1)
-    seen[1] = True
-    stack = [1]
-    cnt = 1
-    while stack:
-        for u in adj[stack.pop()]:
-            if not seen[u]:
-                seen[u] = True
-                cnt += 1
-                stack.append(u)
-    assert cnt == n
-
-
-# ---------------------------------------------------------------- tree shapes on 0..n-1 (par[i] < i)
-def shape(kind, n):
-    par = [-1] * n
-    if kind == "random":
-        for i in range(1, n):
-            par[i] = int(rnd() * i)
-    elif kind == "deep":
-        for i in range(1, n):
-            par[i] = ri(max(0, i - 4), i - 1)
-    elif kind == "path":
-        for i in range(1, n):
-            par[i] = i - 1
-    elif kind == "caterpillar":
-        spine = max(1, n // 2)
-        for i in range(1, n):
-            par[i] = i - 1 if i < spine else int(rnd() * spine)
-    elif kind == "spurs":           # spine 0..h-1, vertex h + j hangs below spine vertex j
-        h = (n + 1) // 2
-        for i in range(1, n):
-            par[i] = i - 1 if i < h else i - h
-    elif kind == "star":
-        for i in range(1, n):
-            par[i] = 0
-    elif kind == "broom":
-        h = n // 2
-        for i in range(1, n):
-            par[i] = i - 1 if i <= h else h
-    elif kind == "binary":
-        for i in range(1, n):
-            par[i] = (i - 1) // 2
-    elif kind == "long-arms":       # a few long paths out of vertex 0
-        arms = 5
-        for i in range(1, n):
-            par[i] = i - arms if i > arms else 0
-    else:
-        raise ValueError(kind)
-    return par
-
-
-def weights(kind, n, par, plants):
-    w = [0] * n
-    for i in range(1, n):
-        if kind == "rand":
-            w[i] = ri(1, MAXW)
-        elif kind == "max":
-            w[i] = MAXW
-        elif kind == "small":
-            w[i] = ri(1, 10)
-        elif kind == "spur":        # roads into a plant leaf are short, the rest long
-            w[i] = ri(1, 3) if i in plants else ri(30000, 99999)
+def planted(n, k, extra, x, order, hi_top=MAXV, lo_bot=1, rp=0.0):
+    """boxes of odd length between k and k + extra while they fit in n fruits; returns (number of boxes, row).
+    In a box of length L exactly (L + 1) / 2 fruits are >= x (about half of them equal to x), the others < x.
+    rp > 0: the first rp share of the boxes get one more fruit >= x and the last rp share one fewer
+    (the total stays the same, but the surplus is far from where it is needed).
+    order: 'front' = big fruits first, 'back' = last, 'mix' = shuffled, 'wave' = alternate boxes front/back"""
+    lens = []
+    used = 0
+    while True:
+        L = k + ri(0, extra)
+        if L % 2 == 0:
+            L += 1
+        if used + L > n:
+            break
+        lens.append(L)
+        used += L
+    nb = len(lens)
+    R = int(nb * rp)
+    a = []
+    for b, L in enumerate(lens):
+        h = (L + 1) // 2
+        if b < R and h < L:
+            h += 1
+        elif b >= nb - R:
+            h -= 1
+        hi = [x if random.random() < 0.5 else ri(x + 1, hi_top) for _ in range(h)]
+        lo = [ri(lo_bot, x - 1) for _ in range(L - h)]
+        o = order if order != "wave" else ("front" if b % 2 == 0 else "back")
+        if o == "front":
+            part = hi + lo
+        elif o == "back":
+            part = lo + hi
         else:
-            raise ValueError(kind)
-    return w
+            part = hi + lo
+            random.shuffle(part)
+        a += part
+    return nb, a
 
 
-def has_child(n, par):
-    ch = [False] * n
-    for i in range(1, n):
-        ch[par[i]] = True
-    return ch
+def clustered(n, lo_len, hi_len, p_hi, mix):
+    """runs of random length: a run is 'high' with probability p_hi; a value in a high run is >= 600 000 000
+    with probability mix (in a low run with probability 1 - mix): the big values come in clumps"""
+    a = []
+    while len(a) < n:
+        high = random.random() < p_hi
+        for _ in range(ri(lo_len, hi_len)):
+            big = (random.random() < mix) == high
+            a.append(ri(600000000, MAXV) if big else ri(1, 599999999))
+    return a[:n]
 
 
-def choose_plants(kind, n, par, cnt):
-    ch = has_child(n, par)
-    leaves = [v for v in range(n) if not ch[v]]
-    if kind == "random":
-        return set(random.sample(range(n), cnt))
-    if kind == "leaves":
-        return set(random.sample(leaves, min(cnt, len(leaves))))
-    raise ValueError(kind)
+def addp(res, k, slack=0):
+    add(res[0] - slack, k, res[1])
 
 
-def choose_order(kind, n, par, plants, start=None):
-    """order of joining towns (0-based vertices); start = c_1 if given"""
-    ch = has_child(n, par)
-    if start is None:
-        start = int(rnd() * n)
-    if kind == "random":
-        return [start] + shuf([v for v in range(n) if v != start])
-    if kind == "leaves":            # non-plant leaves first, then the plants, then everything else
-        lv = shuf([v for v in range(n) if not ch[v] and v != start and v not in plants])
-        pl = shuf(sorted(v for v in plants if v != start))
-        seen = set(lv) | set(pl) | {start}
-        rest = shuf([v for v in range(n) if v not in seen])
-        return [start] + lv + pl + rest
-    if kind == "bfs":               # every new town is next to the network
-        adj = [[] for _ in range(n)]
-        for i in range(1, n):
-            adj[i].append(par[i])
-            adj[par[i]].append(i)
-        seen = [False] * n
-        seen[start] = True
-        frontier = [start]
-        out = []
-        while frontier:
-            j = int(rnd() * len(frontier))
-            frontier[j], frontier[-1] = frontier[-1], frontier[j]
-            v = frontier.pop()
-            out.append(v)
-            for u in adj[v]:
-                if not seen[u]:
-                    seen[u] = True
-                    frontier.append(u)
-        return out
-    if kind == "zigzag":            # path 0..n-1: start in the middle, then the two ends inwards
-        lo, hi = 0, n - 1
-        out = [start]
-        while lo <= hi:
-            for v in (lo, hi):
-                if v != start and v not in out[-2:]:
-                    out.append(v)
-            lo += 1
-            hi -= 1
-        assert sorted(out) == list(range(n))
-        return out
-    raise ValueError(kind)
-
-
-def emit(n, par, w, plants, order, keep_one=None):
-    """random labels; keep_one: vertex that gets label 1 (else a vertex that is not c_1)"""
-    lab = shuf(list(range(1, n + 1)))
-    if n > 1:
-        one = keep_one
-        if one is None:             # town 1 is never c_1 here (c_1 = 1 is tested on its own)
-            one = order[0]
-            while one == order[0]:
-                one = int(rnd() * n)
-        j = lab.index(1)
-        lab[j], lab[one] = lab[one], lab[j]
-    assert sorted(lab) == list(range(1, n + 1))
-    assert n == 1 or (min(par[1:]) >= 0 and all(map(int.__lt__, par[1:], range(1, n))))
-    c = [lab[v] for v in order]
-    plant = ["0"] * n
-    for v in plants:
-        plant[lab[v] - 1] = "1"
-    # roads in the order of the label of their lower end (labels are random), random direction
-    idx = sorted(range(1, n), key=lab.__getitem__)
-    lo = list(map(lab.__getitem__, idx))
-    hi = [lab[par[i]] for i in idx]
-    flip = format(random.getrandbits(n - 1), "0%db" % (n - 1)) if n > 1 else ""
-    us = [b if f == "1" else a for a, b, f in zip(lo, hi, flip)]
-    vs = [a if f == "1" else b for a, b, f in zip(lo, hi, flip)]
-    ws = [w[i] for i in idx]
-    add(n, c, "".join(plant), (us, vs, ws), tree_ok=True)
-
-
-def build(n, kind, wkind="rand", pkind="random", pcnt=3, okind="random", start=None, c1_plant=False,
-          one=None):
-    par = shape(kind, n)
-    if pkind == "spurs":            # plants = the hanging leaves of some spine vertices
-        h = (n + 1) // 2
-        plants = set(random.sample(range(h, n), min(pcnt, n - h))) if n > h else {0}
-    else:
-        plants = choose_plants(pkind, n, par, pcnt)
-    if start is None:
-        cand = [v for v in range(n) if v not in plants] or [0]
-        start = cand[int(rnd() * len(cand))]
-    if c1_plant:
-        plants.add(start)
-    w = weights(wkind, n, par, plants)
-    order = choose_order(okind, n, par, plants, start)
-    emit(n, par, w, plants, order, one)
+def rnd(n, lo, hi):
+    return [ri(lo, hi) for _ in range(n)]
 
 
 # samples
-add_list(7, [3, 6, 1, 5, 2, 7, 4], "0000101",
-    [(1, 2, 4), (2, 3, 2), (2, 4, 3), (4, 5, 1), (4, 6, 5), (1, 7, 6)])
-add_list(5, [3, 2, 4, 1, 5], "10001", [(1, 2, 3), (2, 3, 4), (3, 4, 1), (4, 5, 2)])
-add_list(1, [1], "1", [])
-add_list(4, [2, 4, 1, 3], "0100", [(1, 2, 7), (2, 3, 9), (2, 4, 1)])
-add_list(5, [2, 5, 3, 1, 4], "10000", [(1, 3, 5), (3, 2, 2), (3, 4, 4), (4, 5, 1)])
-# hidden: small (brute checks these)
-add_list(2, [2, 1], "01", [(1, 2, MAXW)])
-build(12, "random", "small", "random", 2, "leaves")
-build(40, "spurs", "spur", "spurs", 3, "leaves")
-build(300, "random", "rand", "random", 1, "random")
-build(2000, "caterpillar", "spur", "leaves", 4, "leaves")
-build(3000, "path", "small", "random", 2, "zigzag", start=1500)
-build(9000, "deep", "rand", "random", 5, "random", c1_plant=True)
-# hidden: big
-build(MAXN, "path", "rand", "random", 2, "zigzag", start=MAXN // 2)
-build(MAXN, "path", "max", "random", 1, "random")
-build(MAXN, "path", "spur", "random", 30, "leaves", start=7)
-build(MAXN, "spurs", "spur", "spurs", 5, "leaves")
-build(MAXN, "random", "rand", "random", 3, "leaves")
-build(MAXN, "random", "spur", "leaves", 20, "leaves")
-build(MAXN, "deep", "spur", "leaves", 50, "leaves")
-build(MAXN, "caterpillar", "rand", "leaves", 3, "leaves")
-build(MAXN, "broom", "spur", "leaves", 10, "leaves", start=0)
-build(MAXN, "star", "rand", "random", 1, "random")
-build(MAXN, "binary", "spur", "leaves", 8, "leaves")
-build(MAXN, "long-arms", "rand", "random", 2, "leaves")
-build(MAXN, "random", "rand", "random", MAXN // 10, "bfs")
-build(MAXN, "deep", "max", "random", 1, "random", c1_plant=True)
-build(MAXN, "path", "max", "random", 1, "random", start=0, one=MAXN - 1)
+add(3, 2, [7, 8, 5, 2, 8, 7, 8, 3, 7])
+add(2, 2, [1, 10, 10, 2, 10, 3])
+add(1, 3, [4, 9, 2, 6])
+add(3, 2, [5, 1, 4, 4, 2, 8])
+add(2, 1, [10 ** 9, 1, 10 ** 9 - 1, 10 ** 9])
+# hidden: small (checked by the direct DP)
+add(1, 1, [5])
+add(2, 1, [3, 3])
+add(4, 1, [2, 9, 1, 7, 7, 3, 8])
+add(3, 3, rnd(12, 1, 3))
+addp(planted(14, 2, 2, 50, "front", 100), 2)
+addp(planted(25, 3, 3, 500, "mix", 1000), 3)
+add(7, 1, rnd(40, 1, 6))
+addp(planted(60, 4, 6, 10 ** 8, "wave"), 4)
+addp(planted(140, 5, 4, 7, "front", 9), 5)
+add(30, 2, rnd(150, 1, 1000))
+# hidden: special shapes (medium size)
+add(100, 10, [123456789] * 1000)                                 # all equal
+add(1000, 2, [MAXV - (i % 3 == 0) for i in range(3000)])         # two values, period 3
+# hidden: large (planted rows defeat a greedy cut; moving the surplus to the front and clumping the big values
+# defeat "enough fruits >= x in total")
+N = MAXN
+add(1, 1, rnd(N, 1, MAXV))                                       # one box: the median of everything
+add(N, 1, rnd(N, 1, MAXV))                                       # every fruit alone: the smallest value
+add(N // 50, 50, rnd(N, 1, 3))                                   # every box exactly 50 fruits
+addp(planted(N, 3, 4, 500000000, "front", rp=0.1), 3)
+addp(planted(N, 4, 6, 400000000, "mix", rp=0.05), 4)
+addp(planted(N, 30, 40, 700000000, "front", rp=0.2), 30)
+addp(planted(N, 8, 15, 600000000, "wave", rp=0.1), 8)
+addp(planted(N, 6, 8, 2, "front", 3, 1), 6)                      # values 1..3 only
+add(700, 200, clustered(N, 300, 900, 0.5, 1.0))                  # long clumps of big and small values
+addp(planted(N, 2, 10, 5, "front", 9, 1, rp=0.1), 2)            # values 1..9 only
+add(20000, 7, rnd(N, 1, 10))
+add(3000, 60, sorted(rnd(N, 1, MAXV)))                           # increasing row
+add(3000, 60, sorted(rnd(N, 1, MAXV), reverse=True))             # decreasing row
+addp(planted(N, 50, 20, 900000000, "front", rp=0.3), 50)
+addp(planted(N, 10, 10, 250000000, "mix", rp=0.05), 10)
+addp(planted(N, 5, 6, 800000000, "front", rp=0.1), 5, 3)        # three boxes of slack
+add(900, 120, clustered(N, 50, 400, 0.45, 0.8))                  # shorter, noisy clumps
+add(500, 300, [ri(500000000, MAXV) for _ in range(N // 4)] + [ri(1, 500000000) for _ in range(N // 2)]
+    + [ri(500000000, MAXV) for _ in range(N // 4)])               # big values at both ends only
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t
+assert len(tests) <= 35
 os.makedirs("tests", exist_ok=True)
 for i, t in enumerate(tests, 1):
     with open(f"tests/{i:02d}.in", "w") as f:

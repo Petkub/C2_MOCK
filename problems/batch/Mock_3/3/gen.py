@@ -1,109 +1,144 @@
 import random, os
-from operator import itemgetter
-random.seed(2613)
+from operator import ne, itemgetter
+g0, g1 = itemgetter(0), itemgetter(1)
+random.seed(2614)
 os.makedirs("tests", exist_ok=True)
 cases = []
-cases.append([(3, 5), (2, 4), (4, 9), (1, 3)])
-cases.append([(5, 5), (1, 5), (1, 5), (1, 5), (1, 5), (1, 5)])
-cases.append([(10, 4), (3, 3)])
-cases.append([(2, 2)])
-cases.append([(4, 4), (1, 5), (1, 6), (5, 7)])
+cases.append(([3, 2, 4, 1, 2], [(1, 2), (1, 3), (2, 4), (3, 4), (4, 5)]))
+cases.append(([2, 4, 3, 2], [(1, 2), (1, 3), (3, 4)]))   # 2026-11 port: ordinary sample (old one is the last test)
+cases.append(([1, 1, 1], [(1, 2), (2, 3), (3, 1)]))
+cases.append(([2, 3, 3], [(1, 3), (2, 3)]))
+cases.append(([4, 1, 1, 1, 6], [(1, 5), (2, 3), (3, 4), (4, 5), (2, 4)]))
+def dag(n, m, tmax, cyc=False, layered=None):
+    perm = list(range(1, n + 1)); random.shuffle(perm); E = []
+    while len(E) < m - cyc:
+        if layered:
+            i = random.randrange(n - layered); j = random.randint(i + 1, min(n - 1, i + layered))
+        else:
+            i, j = sorted(random.sample(range(n), 2))
+        E.append((perm[i], perm[j]))
+    if cyc:
+        a, b = random.choice(E) if E else (perm[0], perm[1]); E.append((b, a))   # reverse an existing edge: cycle
+    random.shuffle(E)
+    return ([random.randint(1, tmax) for _ in range(n)], E)
 for _ in range(6):
-    n = random.randint(1, 12); cases.append([(random.randint(1, 8), random.randint(1, 25)) for _ in range(n)])
-N, B = 50000, 10**9
-def rnd(n, tmax, dmax): return [(random.randint(1, tmax), random.randint(1, dmax)) for _ in range(n)]
-cases.append(rnd(3000, 1000, 10**5))
-cases.append(rnd(N, B, B))
-cases.append(rnd(N, B, 10**14 // 10**5) if False else rnd(N, 10**4, 10**8))
-cases.append(rnd(N, 10**9, 10**9))
-cases.append([(B, B)] * N)                               # only one fits
-cases.append([(1, B)] * N)                               # all fit
-cases.append([(random.randint(1, 100), random.randint(1, 10**6)) for _ in range(N)])
-# long job with early deadline should be dropped for many short ones
-cases.append([(B, B)] + [(1, B) for _ in range(N - 1)])
-# shortest-first trap: short jobs with late deadlines vs medium jobs with early deadlines
-J = [(5, 5 * (i + 1)) for i in range(N // 2)] + [(1, B) for _ in range(N // 2)]
-cases.append(J)
-cases.append([(random.randint(1, 10), i + random.randint(0, 5)) for i in range(1, N + 1)])
-for tmax, dmax in ((10**9, 10**9), (1000, 10**6), (10**5, 10**8), (10, 10**5)):
-    cases.append(rnd(random.randint(30000, 50000), tmax, dmax))
-cases.append(rnd(100000, B, B))
-cases.append(rnd(100000, 1000, 10**7))
-cases.append([(random.randint(11, 100), random.randint(1, 10)) for _ in range(1000)])
-# ---- legacy strengthening (2026-10): the O(N * answer) DP, SJF-with-feasibility-check and the exchange greedy
-# with a linear max scan all pass N = 5e4; big tests below are N = 10^5 with large answers and frequent drops.
-# The cases above are still generated (and shuffled) so the unchanged tests keep their bytes; `override`
-# replaces some of them, `extra` adds tests at the end. All new data comes from R, not from `random`;
-# i.i.d. lists are already in random order, structured ones go through shuf().
-R = random.Random(26133)
+    n = random.randint(1, 8)
+    cases.append(dag(n, random.randint(0, 10) if n > 1 else 0, 5, cyc=(n > 2 and random.random() < 0.3)))
+N, M, B = 50000, 50000, 10**9
+cases.append(dag(3000, 6000, 1000))
+cases.append(dag(N, M, B))
+cases.append(dag(N, M, 10, layered=5))                    # deep: long chains, many ties
+cases.append(dag(N, M, 1, layered=3))                     # all equal durations: many critical courses
+cases.append(dag(N, M, B, cyc=True, layered=50))          # one cycle hidden in a large graph
+cases.append(([B] * N, [(i, i + 1) for i in range(1, N)]))  # one long chain: 2*10^14
+cases.append(([random.randint(1, B) for _ in range(N)], []))
+cases.append(([1] * N, [(1, i) for i in range(2, N + 1)]))   # star: every course critical
+E = [(i, i + 1) for i in range(1, N)] + [(N, 1)]            # big cycle
+cases.append(([1] * N, E))
+# two parallel chains of equal length -> both critical; plus a short branch
+h = N // 2
+E = [(i, i + 1) for i in range(1, h)] + [(i, i + 1) for i in range(h + 1, N)]
+cases.append(([2] * N, E))
+cases.append(dag(N, M, 1000, layered=1000))
+for n, m, tmax, lay in ((30000, 60000, 10**9, None), (40000, 40000, 5, 4), (50000, 80000, 100, 20), (30000, 90000, 1, 2)):
+    cases.append(dag(n, m, tmax, layered=lay))
+cases.append(dag(100000, 100000, B))
+cases.append(([10**9] * 100000, [(i, i + 1) for i in range(1, 100000)]))
+cases.append(([10**9] * 5000, [(i, i + 1) for i in range(1, 5000)] + [(1, 5000)]))
+cases.append(dag(20000, 40000, 10**9, layered=3))
+# ---- legacy strengthening (2026-10): the big tests were mostly N = 5 * 10^4 and shallow, so repeated relaxation
+# over the edge list (Bellman-Ford style) and "count the courses on one longest path" scored 83%. The new big tests
+# use M = 10^5 with deep DAGs in shuffled edge order (thousands of relaxation rounds) and many tied longest paths.
+# The stars, cycles, the sorted chain and the all-equal shallow DAG keep their N = 5 * 10^4 tests (size does not
+# matter there).
+# The cases above are still generated so the unchanged tests keep their bytes; `override` replaces some of them,
+# `extra` adds tests at the end. All new data comes from R, not from `random`.
+R = random.Random(26142)
 rr = R.random
-def ri(a, b): return a + int(rr() * (b - a + 1))     # fast randint for the big tests
-def shuf(J):
-    R.shuffle(J)
-    return J
+def ri(a, b): return a + int(rr() * (b - a + 1))
+def shuffle(L):
+    """Fisher-Yates driven by rr() (faster than R.shuffle)"""
+    for i in range(len(L) - 1, 0, -1):
+        j = int(rr() * (i + 1)); L[i], L[j] = L[j], L[i]
+def dag2(n, m, tmax, cyc=False, layered=None, shuffled=True):
+    """like dag() above (random 1-D DAGs are shallow: every few hundred courses no edge crosses a gap)"""
+    perm = list(range(1, n + 1))
+    if shuffled: shuffle(perm)
+    k = m - cyc
+    if layered:
+        E = [(perm[i], perm[i + 1 + int(rr() * min(layered, n - 1 - i))]) for i in [int(rr() * (n - layered)) for _ in range(k)]]
+    else:
+        E = []
+        while len(E) < k:
+            E += [(perm[min(i, j)], perm[max(i, j)]) for i, j in [(int(rr() * n), int(rr() * n)) for _ in range(k - len(E))] if i != j]
+    if cyc:
+        a, b = E[int(rr() * len(E))]; E.append((b, a))
+    if shuffled: shuffle(E)
+    return ([ri(1, tmax) for _ in range(n)], E)
+def relabel(t, E):
+    """random course numbers and edge order for a graph built on 1..n"""
+    n = len(t); perm = list(range(1, n + 1)); shuffle(perm)
+    t2 = [0] * n
+    for i in range(n): t2[perm[i] - 1] = t[i]
+    E2 = [(perm[a - 1], perm[b - 1]) for a, b in E]; shuffle(E2)
+    return (t2, E2)
+def diamonds(k, w):
+    """(build on 1..n, then relabel) k diamonds in a row (a -> b, a -> c, b -> d, c -> d), all durations w: both sides of each diamond are critical"""
+    t = [w] * (3 * k + 1); E = []
+    for d in range(k):
+        a = 3 * d + 1
+        E += [(a, a + 1), (a, a + 2), (a + 1, a + 3), (a + 2, a + 3)]
+    return (t, E)
+def grid(layers, width, m, tmax):
+    """(build on 1..n, then relabel) deep DAG: layers of `width` courses, edges only between consecutive layers, every course has an edge in and
+    out (so with equal durations every course is critical, and longest paths end at many different courses)"""
+    n = layers * width; E = []
+    for L in range(layers - 1):
+        for x in range(width):
+            E.append((L * width + x + 1, (L + 1) * width + ri(0, width - 1) + 1))
+            E.append((L * width + ri(0, width - 1) + 1, (L + 1) * width + x + 1))
+    while len(E) < m:
+        L = ri(0, layers - 2); E.append((L * width + ri(1, width), (L + 1) * width + ri(1, width)))
+    assert len(E) == m
+    return ([ri(1, tmax) for _ in range(n)], E)
+def twin(g):
+    """two disjoint copies of the same graph: the longest paths (and the courses finishing at T) come in pairs"""
+    t, E = g; n = len(t)
+    return relabel(t + t, E + [(a + n, b + n) for a, b in E])
 M = 100000
-def rnd2(n, tmax, dmax): return [(1 + int(rr() * tmax), 1 + int(rr() * dmax)) for _ in range(n)]
-def corr(n, dmax, a, noise, sign=1):
-    """durations grow (sign 1) or shrink (sign -1) with the deadline: d * a (+ noise), so most jobs must be dropped"""
-    J = []
-    for _ in range(n):
-        d = ri(1, dmax)
-        J.append((max(1, int((d if sign > 0 else dmax - d) * a) + ri(0, noise)), d))
-    return J
-override = {                                             # the same families as before, at N = 10^5 with large answers
-    13: rnd2(M, 20000, 7 * 10**8),
-    14: rnd2(M, 10**4, 3 * 10**8),
-    15: rnd2(M, 30000, B),
-    17: [(1, B)] * M,                                    # all fit: answer 10^5
-    18: rnd2(M, 100, 4 * 10**6),
-    19: shuf([(B, B)] + [(1, B) for _ in range(M - 1)]),
-    20: shuf([(5, 5 * (i + 1)) for i in range(M // 2)] + [(1, B) for _ in range(M // 2)]),
-    21: shuf([(ri(1, 10), 4 * i + ri(0, 20)) for i in range(1, M + 1)]),
-    23: rnd2(M, 1000, 5 * 10**7),
-    24: rnd2(M, 40000, B),
-    25: rnd2(M, 10, 5 * 10**5),
+h = M // 2
+override = {
+    13: twin(dag2(h, h, B, shuffled=False)),
+    14: twin(grid(6250, 4, h, 10)),                            # deep instead of the shallow random layered DAGs
+    18: ([ri(1, 1000) for _ in range(M)], []),               # no conditions: every longest course is critical
+    21: relabel([2] * M, [(i, i + 1) for i in range(1, h)] + [(i, i + 1) for i in range(h + 1, M)]),
+    22: relabel(*grid(5000, 10, M, 1000)),
+    23: twin(dag2(h, h, B, shuffled=False)),
+    24: twin(grid(12500, 2, h, 5)),
+    25: twin(grid(3125, 8, h, 100)),
+    26: relabel(*grid(25000, 2, M, 1)),
+    30: twin(grid(5000, 5, h, B)),
 }
-extra = []
-# many cheap jobs fill the schedule, then every later job overflows it and one job must be dropped each time
-A = [(ri(1, 3), ri(1, 10**5)) for _ in range(M // 2)]
-A += [(ri(1, 1000), ri(10**5, 2 * 10**5)) for _ in range(M // 2)]
-extra.append(shuf(A))
-# one deadline for all: the answer is the most short jobs that fit
-extra.append([(ri(1, 20000), 6 * 10**8) for _ in range(M)])
-# few distinct deadlines, overloaded between them
-extra.append([(ri(1, 10000), 10**7 * ri(1, 30)) for _ in range(M)])
-# long job with an early deadline, then many short jobs: the long one must go (repeated in blocks)
-A = []
-for b in range(1000):
-    A.append((900, 1000 * b + 1000))
-    A += [(ri(5, 15), 1000 * b + ri(1, 1000)) for _ in range(99)]
-extra.append(shuf(A))
-# shortest-first trap at full size: medium jobs with early deadlines vs short jobs with late ones
-extra.append(shuf([(4, 4 * (i + 1)) for i in range(60000)] + [(1, B) for _ in range(40000)]))
-# deadlines growing with the index, durations a bit too long on average
-extra.append(shuf([(ri(1, 30), 10 * i + ri(0, 50)) for i in range(1, M + 1)]))
-# durations grow with the deadline (about 40% of the jobs must go), plus a few jobs that break shortest-first
-extra.append(shuf(corr(M - 3000, B, 4e-5, 10) + [(1000, B)] * 3000))
-extra.append(shuf(corr(M - 5000, 8 * 10**8, 5.5e-5, 20) + [(ri(1, 3000), ri(B // 2, B)) for _ in range(5000)]))
-extra.append(shuf(corr(M - 2000, B, 4.5e-5, 5) + [(ri(1, 100), ri(1, B)) for _ in range(2000)]))
-extra.append(shuf(corr(M, B, 3e-5, 1000, sign=-1)))     # durations shrink with the deadline
-# heavy-tailed durations
-extra.append([(R.choice((1, 10, 100, 1000, 10000)) * ri(1, 9), ri(1, 5 * 10**8)) for _ in range(M)])
-# every job alone fits, together far too many
-extra.append([(lambda d: (ri(1, min(d, 20000)), d))(ri(1, 6 * 10**8)) for _ in range(M)])
-
-def check(J):
-    ts, ds = list(map(itemgetter(0), J)), list(map(itemgetter(1), J))
-    assert 1 <= len(J) <= 100000 and min(ts) >= 1 and max(ts) <= B and min(ds) >= 1 and max(ds) <= B
-for i, J in enumerate(cases, 1):
-    random.shuffle(J) if i > 5 else None
+extra = [
+    relabel(*diamonds(25000, 1)),
+    twin(diamonds(12500, 10**9)),                              # 2.5 * 10^13, twice
+    twin(grid(5000, 5, h, 2)),
+    # long chain with a back edge from its end to its middle: a cycle hidden deep
+    relabel([ri(1, B) for _ in range(M)], [(i, i + 1) for i in range(1, M)] + [(M, M // 2)]),
+    # many chains of the same total length: every chain is critical, they end at different courses
+    relabel([1] * M, [(i, i + 1) for i in range(1, M) if i % 5000]),
+    # duplicated conditions along two deep chains of nearly equal length
+    relabel([3] * h, ([(i, i + 1) for i in range(1, h // 2)] + [(i, i + 1) for i in range(h // 2 + 1, h)]) * 2),
+]
+extra.append(([5, 5, 5], []))                      # old sample 2 (no conditions, equal durations), now hidden
+for i, (t, E) in enumerate(cases + extra, 1):
     if i in override:
-        J = override[i]
-    check(J)
-    open(f"tests/{i:02d}.in", "w").write(f"{len(J)}\n" + "".join(f"{t} {d}\n" for t, d in J))
-for i, J in enumerate(extra, len(cases) + 1):
-    check(J)
-    open(f"tests/{i:02d}.in", "w").write(f"{len(J)}\n" + "".join(f"{t} {d}\n" for t, d in J))
-n_tests = len(cases) + len(extra)
-assert n_tests <= 40
-print(n_tests, "tests")
+        t, E = override[i]
+    n = len(t)
+    assert 1 <= n <= 100000 and len(E) <= 100000 and 1 <= min(t) and max(t) <= B
+    if E:
+        As, Bs = list(map(g0, E)), list(map(g1, E))
+        assert 1 <= min(As) and max(As) <= n and 1 <= min(Bs) and max(Bs) <= n and all(map(ne, As, Bs))
+    open(f"tests/{i:02d}.in", "w").write(f"{n} {len(E)}\n" + " ".join(map(str, t)) + "\n" + "".join(f"{a} {b}\n" for a, b in E))
+assert len(cases) + len(extra) <= 40
+print(len(cases) + len(extra), "tests")

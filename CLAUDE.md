@@ -44,7 +44,7 @@ C2_MOCK/
   samples/                      # known-verdict programs used as regression tests
     batch/towers_ok.cpp, towers_smallhi.cpp, towers_slow.cpp, towers_crash.cpp, towers_syntax.cpp
     interactive/guess_ok.cpp, guess_noflush.cpp, guess_linear.cpp, guess_crash.cpp
-    expected.json               # {"batch/towers_ok.cpp": {"problem": "1-1", "verdict": "AC", "score": 100}, ...}
+    expected.json               # {"batch/towers_ok.cpp": {"problem": "7-2", "verdict": "AC", "score": 100}, ...}
                                 # verdict: AC/WA/TLE/RE/MLE/CE (first failing test); "score" optional (runs all tests)
   tools/
     build_manifest.py           # writes manifest.json (VERSION + SHA-256 of every file in Judge/); --check for CI
@@ -159,7 +159,7 @@ python3 tools/build_manifest.py          # after changing anything under core/, 
 python3 tools/build_manifest.py --check  # CI: fails if manifest.json is stale
 python3 tools/update_problem_manifest.py Mock_K/N   # after adding NN.in/NN.out to a problem (--check --all in CI)
 python3 tools/build_dist.py              # build dist/C2_Mock_Test/ + dist/C2_Mock_Test.zip (--out DIR, --no-zip)
-python3 core/judge.py samples/batch/towers_ok.cpp 1-1      # judge one file from the repo (creates big tests, see above)
+python3 core/judge.py samples/batch/towers_ok.cpp 7-2      # judge one file from the repo (creates big tests, see above)
 python3 core/interactive_judge.py guess samples/interactive/guess_ok.cpp
 ```
 

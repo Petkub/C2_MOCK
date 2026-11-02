@@ -1,244 +1,255 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-import os, random
+import os, random, re
 
-random.seed(60401)
-MAXN = MAXM = 100_000
-MAXK = 20
-MAXC = 10**9
+random.seed(920202)
+MAXN, MAXLEN = 100000, 3000000
+NM = r"[A-Z]{1,3}[1-9][0-9]{0,4}"
+TM = r"(?:" + NM + r"|0|[1-9][0-9]{0,9})"
+NAME = re.compile(NM + "$")
+LINE = re.compile(NM + "=-?" + TM + "(?:[+-]" + TM + ")*$")
+SPLIT = re.compile(r"[=+\n-]")
 tests = []
 
 
+def add(lines):
+    """lines: the cells as strings NAME=EXPR. Small tests are checked fully here; big ones are built only by
+    Sheet, whose names are distinct (checked in Sheet) with the right format (checked in names()), whose
+    references are names of its own cells and whose constants come from const() (checked there)"""
+    n = len(lines)
+    assert 1 <= n <= MAXN
+    body = "".join(s + "\n" for s in lines)
+    if n <= 5000:
+        assert all(map(LINE.match, lines))
+        defined = set(s[:s.index("=")] for s in lines)
+        toks = set(SPLIT.split(body))
+        assert len(defined) == n and set(t for t in toks if t[:1].isalpha()) == defined
+        assert all(int(t) <= 10 ** 9 for t in toks if t[:1].isdigit())
+    text = f"{n}\n" + body
+    assert len(text) <= MAXLEN, len(text)
+    tests.append(text)
+
+
 def ri(lo, hi):
+    """uniform integer in [lo, hi] (faster than randint, still deterministic)"""
     return lo + int(random.random() * (hi - lo + 1))
 
 
-def add(n, k, col, roads, relabel=True):
-    m = len(roads)
-    assert 2 <= n <= MAXN and 1 <= m <= MAXM and 1 <= k <= min(n, MAXK) and len(col) == n
-    assert 1 <= min(col) and max(col) <= MAXC
-    us, vs = zip(*roads)
-    assert 1 <= min(us) and max(us) <= n and 1 <= min(vs) and max(vs) <= n
-    assert not any(map(int.__eq__, us, vs))
-    if relabel:                                  # hide the construction order behind random house numbers
-        r = random.random
-        key = [0.0] + [r() for _ in range(n)]
-        lab = [0] + sorted(range(1, n + 1), key=key.__getitem__)
-        newcol = [0] * (n + 1)
-        for i, c in zip(lab[1:], col):
-            newcol[i] = c
-        col = newcol[1:]
-        us = [lab[u] for u in us]
-        vs = [lab[v] for v in vs]
-    tests.append(f"{n} {m} {k}\n" + " ".join(map(str, col)) + "\n"
-                 + "".join([f"{u} {v}\n" for u, v in zip(us, vs)]))
+LET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
-def orient(u, v, how):
-    """how: 'r' random, 'u' keep (u, v), 's' swap"""
-    if how == "s" or (how == "r" and random.random() < 0.5):
-        return (v, u)
-    return (u, v)
+_pool = {}
 
 
-def distinct_colours(n, hi=MAXC):
-    seen, out, r = set(), [], random.random
-    while len(out) < n:         # each draw adds at most one colour, so n - len(out) draws never overshoot
-        new = [c for c in dict.fromkeys([1 + int(r() * hi) for _ in range(n - len(out))]) if c not in seen]
-        seen.update(new)
-        out += new
-    return out
+def name_of(x, num):
+    """x in [0, 26 + 26^2 + 26^3): the x-th string of 1-3 capital letters, then the number"""
+    k = 1
+    while x >= 26 ** k:
+        x -= 26 ** k
+        k += 1
+    s = ""
+    for _ in range(k):
+        s += LET[x % 26]
+        x //= 26
+    return s + str(num)
 
 
-def rnd_colours(n, hi):
-    return [ri(1, hi) for _ in range(n)]
+def names(n, short=False):
+    """n distinct random names (short: numbers below 1000): a window of one random pool per kind (fast)"""
+    if short not in _pool:
+        seen, out = set(), []
+        top = 999 if short else 99999
+        while len(out) < MAXN + 5000:
+            k = ri(1, 3)
+            s = name_of(sum(26 ** j for j in range(1, k)) + ri(0, 26 ** k - 1), ri(1, top))
+            if s not in seen:
+                seen.add(s)
+                out.append(s)
+        assert all(map(NAME.match, out))
+        _pool[short] = out
+    s = ri(0, 5000)
+    return _pool[short][s:s + n]
 
 
-def chain(n, how):
-    """road j joins the district of houses 1..j with the lone house j + 1 (house j + 1 first when how = 'u')"""
-    r, roads = random.random, []
-    for j in range(1, n):           # = orient(j + 1, ri(1, j) if r() < 0.3 else j, how), written out (faster)
-        v = 1 + int(r() * j) if r() < 0.3 else j
-        roads.append((v, j + 1) if how == "s" or (how == "r" and r() < 0.5) else (j + 1, v))
-    return roads
+def const():
+    r = random.random()
+    if r < 0.15:
+        x = ri(0, 9)
+    elif r < 0.3:
+        x = ri(10 ** 9 - 1000, 10 ** 9)
+    else:
+        x = ri(0, 10 ** 9)
+    assert 0 <= x <= 10 ** 9
+    return str(x)
 
 
-def star(n, how):
-    return [orient(1, j, how) for j in range(2, n + 1)]
+def sgn(p_minus=0.4):
+    return -1 if random.random() < p_minus else 1
 
 
-def balanced(n):
-    """merge districts in pairs, then pairs of pairs, ... (equal sizes every time)"""
-    groups = [[i] for i in range(1, n + 1)]
-    roads = []
-    while len(groups) > 1:
-        nxt = []
-        for i in range(0, len(groups) - 1, 2):
-            a, b = groups[i], groups[i + 1]
-            roads.append(orient(random.choice(a), random.choice(b), "r"))
-            nxt.append(a + b if len(a) >= len(b) else b + a)
-        if len(groups) % 2:
-            nxt.append(groups[-1])
-        groups = nxt
-    return roads
+class Sheet:
+    """cells 0..n-1 with names; terms[i] = the terms of cell i as strings with their sign (`+X1`, `-5`)"""
+
+    def __init__(self, n, short=False):
+        self.n = n
+        self.nm = names(n, short)
+        assert len(set(self.nm)) == n
+        self.terms = [[] for _ in range(n)]
+
+    def ref(self, i, j, sg=1):
+        self.terms[i].append(("-" if sg < 0 else "+") + self.nm[j])
+
+    def num(self, i, sg=1):
+        self.terms[i].append(("-" if sg < 0 else "+") + const())
+
+    def lines(self, order):
+        out = []
+        for i in order:
+            if not self.terms[i]:
+                self.num(i)
+            e = "".join(self.terms[i])
+            out.append(self.nm[i] + "=" + (e[1:] if e[0] == "+" else e))
+        return out
 
 
-def rnd_roads(n, m):
-    roads = []
-    for _ in range(m):
-        u = ri(1, n)
-        v = ri(1, n - 1)
-        v += v >= u
-        roads.append((u, v))
-    return roads
+def chain_step(sh, i, j):
+    """cell i is built from cell j (the previous cell of a chain), often using it twice"""
+    r = random.random()
+    if r < 0.45:
+        sh.ref(i, j), sh.ref(i, j, sgn(0.3))
+    elif r < 0.6:
+        sh.ref(i, j), sh.ref(i, j), sh.ref(i, j, -1)
+    elif r < 0.8:
+        sh.ref(i, j, sgn()), sh.num(i, sgn())
+    else:
+        sh.ref(i, j, sgn())
+    if random.random() < 0.2:
+        sh.num(i, sgn())
 
 
-def shuffled(a):
-    r = random.random
-    return sorted(a, key=lambda _: r())
+def dag(sh, lo, hi, kmin, kmax, pick=None):
+    """cells lo..hi-1 refer to kmin..kmax random earlier cells (pick(i) chooses one), maybe a constant too"""
+    for i in range(lo, hi):
+        for _ in range(ri(kmin, kmax)):
+            j = pick(i) if pick else ri(0, i - 1)
+            sh.ref(i, j, sgn())
+        if random.random() < 0.3:
+            sh.num(i, sgn())
 
 
-def rnd_tree(n):
-    roads = [orient(j, ri(max(1, j - 1 - ri(0, 50)), j - 1), "r") for j in range(2, n + 1)]
-    return shuffled(roads)
+_perm = []
 
 
-def two_fronts(n, how):
-    """two districts grow side by side (each road adds one lone house to one of them), then they meet"""
-    roads = []
-    for j in range(3, n + 1):
-        side = 1 if random.random() < 0.5 else 2
-        roads.append(orient(j, side, how))
-    roads.append((1, 2))
-    return roads
+def order_of(n, kind):
+    if kind == "rev":
+        return list(range(n - 1, -1, -1))
+    if kind == "fwd":
+        return list(range(n))
+    if n < MAXN:
+        o = list(range(n))
+        random.shuffle(o)
+        return o
+    if not _perm:                   # every big test uses the same random line order (fast)
+        _perm.extend(range(MAXN))
+        random.shuffle(_perm)
+    return _perm
 
 
-def grow(n):
-    """road j joins the district of houses 1..j with the lone house j + 1 through a random house of 1..j"""
-    r = random.random
-    return [orient(j + 1, 1 + int(r() * j), "r") for j in range(1, n)]
-
-
-def beside(c, chain_roads, n, other_roads):
-    """houses 1..c: chain_roads; houses c + 1..n: other_roads (numbered 1..n - c); the two lists interleaved at
-    random (each keeps its order); one big district absorbs lone houses while the other part does its own thing"""
-    other = [(u + c, v + c) for u, v in other_roads]
-    out, i, j, r = [], 0, 0, random.random
-    while i < len(chain_roads) or j < len(other):
-        if j == len(other) or (i < len(chain_roads) and r() * (len(chain_roads) - i + len(other) - j) < len(chain_roads) - i):
-            out.append(chain_roads[i])
-            i += 1
-        else:
-            out.append(other[j])
-            j += 1
-    return out
-
-
-def pad(roads, n, m):
-    """fill up to m roads with roads inside existing districts or repeated roads"""
-    roads = roads[:]
-    while len(roads) < m:
-        u, v = random.choice(roads)
-        roads.insert(ri(len(roads) // 2, len(roads)), (v, u) if random.random() < 0.5 else (u, v))
-    return roads[:m]
-
-
-def skewed(n, p):
-    """colour 1 for most houses, the other colours 2..p are rare (colour c has weight 1 / c^2)"""
-    w = [1.0 / (c * c) for c in range(1, p + 1)]
-    return random.choices(range(1, p + 1), weights=w, k=n)
-
-
-def mixed(n, p, q, base=None):
-    """each house: a colour of 1..p with probability q (from base if given), otherwise a colour no other house has"""
-    d = distinct_colours(n, MAXC - 100)
-    r = random.random
-    return [(base[i] if base else ri(1, p)) if r() < q else d[i] + 100 for i in range(n)]
-
-
-def clustered(n, m, glo, ghi, cross):
-    """houses in groups of glo..ghi consecutive numbers, roads mostly inside a group; groups get joined slowly"""
-    bounds, x = [], 1
-    while x <= n:
-        y = min(n, x + ri(glo, ghi) - 1)
-        bounds.append((x, y))
-        x = y + 1
-    roads = []
-    while len(roads) < m:
-        if random.random() < cross:
-            u, v = ri(1, n), ri(1, n)
-        else:
-            lo, hi = random.choice(bounds)
-            if lo == hi:
-                continue
-            u, v = ri(lo, hi), ri(lo, hi)
-        if u != v:
-            roads.append((u, v))
-    return roads
+def mixed(n, L, kind, cycles=0, selfs=0, kmax=3, short=False):
+    """a chain of L cells (cell k uses cell k-1), then a random DAG over everything before it, then `cycles`
+    back references (a cell refers to a later cell) and `selfs` self references, all in the upper half of the
+    chain (everything built on them later breaks too)"""
+    sh = Sheet(n, short)
+    sh.num(0)
+    for k in range(1, L):
+        chain_step(sh, k, k - 1)
+    dag(sh, L, n, 1, kmax)
+    for _ in range(cycles):
+        i = ri(L // 2, min(L, n - 2))
+        sh.ref(i, ri(i + 1, min(n - 1, i + 1 + ri(0, n // 50 + 1))), sgn())
+    for _ in range(selfs):
+        i = ri(L // 2, L - 1)
+        sh.ref(i, i, sgn())
+    return sh.lines(order_of(n, kind))
 
 
 # samples
-add(6, 2, [3, 3, 5, 7, 7, 8], [(1, 2), (4, 5), (2, 3), (5, 6), (5, 4), (6, 3)], relabel=False)
-add(5, 3, [1, 2, 1, 2, 3], [(1, 2), (3, 4), (2, 3), (4, 5)], relabel=False)
-add(4, 1, [10, 20, 10, 30], [(1, 2), (2, 1), (3, 4)], relabel=False)
-add(4, 4, [1000000000, 5, 5, 7], [(1, 2), (3, 4), (2, 3)], relabel=False)
-add(6, 3, [2, 6, 2, 9, 6, 4], [(1, 3), (2, 5), (3, 5), (6, 4), (4, 1)], relabel=False)
-
-# hidden: small (checked by recounting from scratch)
-add(2, 2, [1, 2], [(2, 1)])
-add(2, 2, [7, 7], [(1, 2), (2, 1), (1, 2)])
-add(10, 3, rnd_colours(10, 4), rnd_roads(10, 15))
-add(50, 4, rnd_colours(50, 5), rnd_roads(50, 80))
-add(1000, 15, rnd_colours(1000, 18), clustered(1000, 1500, 5, 30, 0.02))
-add(2000, 10, skewed(2000, 12), star(2000, "r"))
-add(1500, 20, rnd_colours(1500, 22), balanced(1500))
-add(3000, 20, rnd_colours(3000, 24), clustered(3000, 3000, 10, 40, 0.01))
-
-# hidden: large
+add(["A1=B2+B2-3", "C7=A1+X1", "B2=10", "X1=Y2", "Y2=-X1+1"])
+add(["AB1=AB1", "Y1=45", "Z2=Y1+Y1-8", "CAT3=Z2-Z2+Z2", "D1=0"])
+add(["A1=A2+A2", "A2=A3+A3-1", "A3=A4+A4", "A4=-1000000000"])
+add(["X99999=-5"])
+add(["K1=K2+M3-7", "K2=5+P10", "M3=M3-M3+2", "P10=-4", "T6=-P10-P10+K2"])
+# hidden: small (brute checks these)
+add(["A1=0"])
+add(["Z1=-0"])
+add(["ZZZ99999=ZZZ99999+ZZZ99999"])
+add(["A1=B1", "B1=C1", "C1=A1", "D1=C1-C1", "E1=7-3+0"])
+add(mixed(30, 10, "rand", cycles=2, selfs=1, short=True))
+add(mixed(200, 60, "rev", cycles=0))
+add(mixed(500, 300, "rand", cycles=3, selfs=0))
+add(mixed(2000, 1200, "rev", cycles=1))
+add(mixed(4000, 3000, "rand", cycles=0))
+add(mixed(4000, 2000, "fwd", cycles=3, selfs=2))
+# hidden: big (N = 100000)
 N = MAXN
-add(N, 20, distinct_colours(N, 10**6), pad(chain(N, "r"), N, N))
-add(N, 17, distinct_colours(N, 10**6), pad(chain(N, "r"), N, N))
-add(N, 20, distinct_colours(N), pad(grow(N), N, N))
-add(N, 19, rnd_colours(N, N), pad(star(N, "r"), N, N))
-C = 3 * N // 5                                                  # a big district grows beside the other shapes
-add(N, 20, distinct_colours(C, 10**6) + rnd_colours(N - C, 25), pad(beside(C, chain(C, "r"), N, balanced(N - C)), N, N))
-add(N, 20, rnd_colours(N, N), rnd_roads(N, N))
-roads = []                                                      # ten chains grow together, then join
-for j in range(1, N // 10):
-    for t in range(10):
-        roads.append(orient(t * (N // 10) + j + 1, t * (N // 10) + ri(1, j), "r"))
-for t in range(1, 10):
-    roads.append(orient(ri(1, t * (N // 10)), t * (N // 10) + ri(1, N // 10), "r"))
-add(N, 20, mixed(N, 20, 0.5), pad(roads, N, N))
-add(N, 1, rnd_colours(N, MAXC), pad(chain(N, "r"), N, N))
-add(N, 20, [i % 20 + 1 for i in range(N)], pad(chain(N, "u"), N, N))   # exactly 20 colours in all
-add(N, 20, [i % 19 + 1 for i in range(N)], pad(chain(N, "s"), N, N))   # never colourful
-add(N, 20, mixed(N, 25, 0.6), pad(chain(N, "r"), N, N))
-half = N // 2                                                   # a chain over half the houses, every other
-roads = []                                                      # road inside a district or repeated
-for r in chain(half, "r"):
-    roads.append(r)
-    roads.append(random.choice(roads))
-add(N, 20, distinct_colours(N, 10**6), roads[:N])
-add(N, 20, distinct_colours(N), pad(two_fronts(N, "r"), N, N))
-add(N, 20, mixed(N, 21, 0.4), pad(two_fronts(N, "r"), N, N))
-add(N, 2, distinct_colours(N, 10**6), rnd_roads(N, N))
-add(N, 10, mixed(N, 10, 0.5, skewed(N, 10)), pad(chain(N, "r"), N, N))
-roads = []                                                      # ten districts grow side by side and each
-for j in range(1, N // 10):                                     # reaches K colours only near its end
-    for t in range(10):
-        roads.append(orient(t * (N // 10) + j + 1, t * (N // 10) + ri(max(1, j - 20), j), "r"))
-for t in range(1, 10):
-    roads.append(orient(ri(1, t * (N // 10)), t * (N // 10) + ri(1, N // 10), "r"))
-add(N, 18, mixed(N, 18, 0.7, skewed(N, 18)), pad(roads, N, N))
-add(N, 20, [ri(1, 20) if random.random() < 0.5 else ri(1, 10**6) for _ in range(N)], pad(star(N, "r"), N, N))
-add(N, 20, distinct_colours(C, 10**6) + rnd_colours(N - C, 22),
-    beside(C, grow(C), N, clustered(N - C, N - C + 1, 5, 40, 0.005)))
-add(N, 12, distinct_colours(C) + rnd_colours(N - C, 14), beside(C, chain(C, "r"), N, clustered(N - C, N - C + 1, 3, 25, 0.02)))
-add(N, 20, rnd_colours(C, 10**6) + mixed(N - C, 30, 0.9, skewed(N - C, 30)),
-    beside(C, chain(C, "r"), N, clustered(N - C, N - C + 1, 20, 200, 0.001)))
+add(mixed(N, N, "rev"))                                           # one long chain, lines in reverse order
+add(mixed(N, N, "rand"))                                          # the same in random order
+add(mixed(N, 60000, "rev", kmax=2, selfs=1))
+add(mixed(N, 50000, "rand", kmax=2, cycles=2))
+add(mixed(N, 40000, "rand", cycles=3))                            # a few cycles, everything after them breaks
+add(mixed(N, 40000, "rev", cycles=1, selfs=1))
+add(mixed(N, 70000, "rand", selfs=1))
+add(mixed(N, 30000, "rand", cycles=30, kmax=2, short=True))
+sh = Sheet(N)                                                     # one cycle through every cell
+for i in range(N):
+    sh.ref(i, (i + 1) % N, sgn())
+add(sh.lines(order_of(N, "rand")))
+sh = Sheet(N)                                                     # two interleaved long chains,
+sh.num(0)                                                         # one starts at a self reference
+sh.ref(1, 1, -1), sh.num(1)
+for i in range(2, N):
+    chain_step(sh, i, i - 2)
+add(sh.lines(order_of(N, "rev")))
+sh = Sheet(N)                                                     # a cycle in the middle of a long chain
+sh.num(0)
+for i in range(1, N):
+    chain_step(sh, i, i - 1)
+mid = N // 2
+sh.ref(mid, mid + 1000, -1)
+add(sh.lines(order_of(N, "rand")))
+sh = Sheet(N)                                                     # every cell uses the last one many times,
+sh.num(N - 1)                                                     # half of them also use a cell on a cycle
+sh.ref(N - 2, N - 3), sh.ref(N - 3, N - 2, -1)
+for i in range(N - 3):
+    for _ in range(ri(1, 3)):
+        sh.ref(i, N - 1, sgn(0.5))
+    if i % 2:
+        sh.ref(i, N - 2 - i % 4 // 2, sgn(0.5))
+add(sh.lines(order_of(N, "rand")))
+sh = Sheet(N, short=True)                                         # two long chains, one huge sum of all cells
+sh.num(0)
+for i in range(1, N - 1):
+    chain_step(sh, i, i - 1 if i != N // 2 else 0)
+for i in range(N - 1):
+    sh.ref(N - 1, i, sgn(0.5))
+add(sh.lines(order_of(N, "rev")))
+sh = Sheet(N)                                                     # chain where each cell also uses the cell two back
+sh.num(0)
+sh.ref(1, 0)
+for i in range(2, N):
+    sh.ref(i, i - 1, sgn()), sh.ref(i, i - 2, sgn())
+add(sh.lines(order_of(N, "rand")))
+sh = Sheet(N)                                                     # many small cycles and self references
+dag(sh, 1, N, 1, 2)
+sh.num(0)
+for _ in range(2000):
+    i = ri(0, N - 1)
+    sh.ref(i, i if random.random() < 0.5 else ri(i, min(N - 1, i + 5)), sgn())
+add(sh.lines(order_of(N, "rand")))
+add(mixed(N, 80000, "rand", cycles=1, kmax=2))
+add(["AB1=AB1", "Y1=900000000", "Z2=Y1+Y1", "CAT3=Z2-Z2+Z2", "D1=0"])         # sum above 2^31 (was sample 2)
 
 for t in tests:
-    assert t.endswith("\n") and "  " not in t and " \n" not in t
+    assert t.endswith("\n") and " " not in t
 os.makedirs("tests", exist_ok=True)
 for i, t in enumerate(tests, 1):
     with open(f"tests/{i:02d}.in", "w") as f:

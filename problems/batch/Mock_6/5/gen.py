@@ -1,8 +1,8 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
 import os, random
 
-random.seed(650521)
-MAXN, MAXM, MAXK, MAXW = 3000, 10000, 100, 10 ** 6
+random.seed(905)
+MAXN, MAXW = 100000, 10 ** 6
 tests = []
 rnd = random.random
 
@@ -12,210 +12,249 @@ def ri(a, b):
     return a + int(rnd() * (b - a + 1))
 
 
-def add(n, edges, s, cap, pas):
-    m, k = len(edges), len(pas)
-    assert 1 <= n <= MAXN and 0 <= m <= MAXM and 1 <= cap <= k <= MAXK and 1 <= s <= n
-    for u, v, w in edges:
-        assert 1 <= u <= n and 1 <= v <= n and u != v and 1 <= w <= MAXW
-    for a, b in pas:
-        assert 1 <= a <= n and 1 <= b <= n
-    lines = [f"{n} {m} {k} {cap} {s}", " ".join(str(a) for a, b in pas), " ".join(str(b) for a, b in pas)]
-    lines += [f"{u} {v} {w}" for u, v, w in edges]
+def shuf(a):
+    """a shuffled copy of the list a (Fisher-Yates with rnd(): faster than random.shuffle)"""
+    b = list(a)
+    for i in range(len(b) - 1, 0, -1):
+        j = int(rnd() * (i + 1))
+        b[i], b[j] = b[j], b[i]
+    return b
+
+
+def add(n, c, plant, edges, tree_ok=False):
+    """edges = (us, vs, ws); tree_ok: emit() already proved the roads form a tree
+    (par[i] < i, relabelled by a permutation)"""
+    us, vs, ws = edges
+    assert 1 <= n <= MAXN and len(us) == len(vs) == len(ws) == n - 1
+    assert sorted(c) == list(range(1, n + 1))
+    assert len(plant) == n and set(plant) <= {"0", "1"} and "1" in plant
+    if n > 1:
+        assert 1 <= min(us) and max(us) <= n and 1 <= min(vs) and max(vs) <= n
+        assert all(map(int.__ne__, us, vs)) and 1 <= min(ws) and max(ws) <= MAXW
+    if not tree_ok:             # n - 1 roads that connect all towns: a tree
+        check_tree(n, us, vs)
+    lines = [str(n), " ".join(map(str, c)), plant] + list(map("{} {} {}".format, us, vs, ws))
     tests.append("\n".join(lines) + "\n")
 
 
-def relabel(n, edges, s, pas):
-    """random town numbers and road order (the build order would show the structure)"""
-    perm = list(range(1, n + 1))
-    random.shuffle(perm)
-    lab = [0] + perm
-    e = [(lab[u], lab[v], w) if rnd() < 0.5 else (lab[v], lab[u], w) for u, v, w in edges]
-    random.shuffle(e)
-    return e, lab[s], [(lab[a], lab[b]) for a, b in pas]
+def add_list(n, c, plant, roads):
+    """roads given as (u, v, w) triples (samples)"""
+    add(n, c, plant, tuple(map(list, zip(*roads))) if roads else ([], [], []))
 
 
-def wgt(lo=1, hi=MAXW):
-    return ri(lo, hi)
+def check_tree(n, us, vs):
+    adj = [[] for _ in range(n + 1)]
+    for u, v in zip(us, vs):
+        adj[u].append(v)
+        adj[v].append(u)
+    seen = [False] * (n + 1)
+    seen[1] = True
+    stack = [1]
+    cnt = 1
+    while stack:
+        for u in adj[stack.pop()]:
+            if not seen[u]:
+                seen[u] = True
+                cnt += 1
+                stack.append(u)
+    assert cnt == n
 
 
-def random_graph(n, m, w=(1, MAXW)):
-    """connected: random tree (attach to a recent town, so it is deep) plus random extra roads"""
-    e = []
-    for v in range(2, n + 1):
-        u = ri(max(1, v - 30), v - 1) if rnd() < 0.7 else ri(1, v - 1)
-        e.append((u, v, wgt(*w)))
-    while len(e) < m:
-        u, v = ri(1, n), ri(1, n)
-        if u != v:
-            e.append((u, v, wgt(*w)))
-    return e
+# ---------------------------------------------------------------- tree shapes on 0..n-1 (par[i] < i)
+def shape(kind, n):
+    par = [-1] * n
+    if kind == "random":
+        for i in range(1, n):
+            par[i] = int(rnd() * i)
+    elif kind == "deep":
+        for i in range(1, n):
+            par[i] = ri(max(0, i - 4), i - 1)
+    elif kind == "path":
+        for i in range(1, n):
+            par[i] = i - 1
+    elif kind == "caterpillar":
+        spine = max(1, n // 2)
+        for i in range(1, n):
+            par[i] = i - 1 if i < spine else int(rnd() * spine)
+    elif kind == "spurs":           # spine 0..h-1, vertex h + j hangs below spine vertex j
+        h = (n + 1) // 2
+        for i in range(1, n):
+            par[i] = i - 1 if i < h else i - h
+    elif kind == "star":
+        for i in range(1, n):
+            par[i] = 0
+    elif kind == "broom":
+        h = n // 2
+        for i in range(1, n):
+            par[i] = i - 1 if i <= h else h
+    elif kind == "binary":
+        for i in range(1, n):
+            par[i] = (i - 1) // 2
+    elif kind == "long-arms":       # a few long paths out of vertex 0
+        arms = 5
+        for i in range(1, n):
+            par[i] = i - arms if i > arms else 0
+    else:
+        raise ValueError(kind)
+    return par
 
 
-def grid_graph(rows, cols, extra, w=(1, MAXW)):
-    e = []
-    idx = lambda r, c: r * cols + c + 1
-    for r in range(rows):
-        for c in range(cols):
-            if c + 1 < cols:
-                e.append((idx(r, c), idx(r, c + 1), wgt(*w)))
-            if r + 1 < rows:
-                e.append((idx(r, c), idx(r + 1, c), wgt(*w)))
-    n = rows * cols
-    for _ in range(extra):
-        u, v = ri(1, n), ri(1, n)
-        if u != v:
-            e.append((u, v, wgt(*w)))
-    return e
+def weights(kind, n, par, plants):
+    w = [0] * n
+    for i in range(1, n):
+        if kind == "rand":
+            w[i] = ri(1, MAXW)
+        elif kind == "max":
+            w[i] = MAXW
+        elif kind == "small":
+            w[i] = ri(1, 10)
+        elif kind == "spur":        # roads into a plant leaf are short, the rest long
+            w[i] = ri(1, 3) if i in plants else ri(30000, 99999)
+        else:
+            raise ValueError(kind)
+    return w
 
 
-def line_graph(n, extra, w=(1, MAXW), ew=None):
-    e = [(v, v + 1, wgt(*w)) for v in range(1, n)]
-    for _ in range(extra):
-        u = ri(1, n - 1)
-        v = min(n, u + ri(2, 40))
-        if u != v:
-            e.append((u, v, wgt(*(ew or w))))
-    return e
+def has_child(n, par):
+    ch = [False] * n
+    for i in range(1, n):
+        ch[par[i]] = True
+    return ch
 
 
-def clusters(sizes, inner_m, bridge_w):
-    """clusters of towns (random graphs with short roads) joined in a chain by long bridges;
-    returns edges and the list of towns of every cluster"""
-    e, groups, base = [], [], 0
-    for sz, mm in zip(sizes, inner_m):
-        g = random_graph(sz, mm, (1, 1000))
-        e += [(u + base, v + base, w) for u, v, w in g]
-        groups.append(list(range(base + 1, base + sz + 1)))
-        base += sz
-    for a, b in zip(groups, groups[1:]):
-        for _ in range(2):
-            e.append((random.choice(a), random.choice(b), ri(bridge_w // 2, bridge_w)))
-    return e, groups
+def choose_plants(kind, n, par, cnt):
+    ch = has_child(n, par)
+    leaves = [v for v in range(n) if not ch[v]]
+    if kind == "random":
+        return set(random.sample(range(n), cnt))
+    if kind == "leaves":
+        return set(random.sample(leaves, min(cnt, len(leaves))))
+    raise ValueError(kind)
 
 
-def pick(pool, k):
-    return [random.choice(pool) for _ in range(k)]
+def choose_order(kind, n, par, plants, start=None):
+    """order of joining towns (0-based vertices); start = c_1 if given"""
+    ch = has_child(n, par)
+    if start is None:
+        start = int(rnd() * n)
+    if kind == "random":
+        return [start] + shuf([v for v in range(n) if v != start])
+    if kind == "leaves":            # non-plant leaves first, then the plants, then everything else
+        lv = shuf([v for v in range(n) if not ch[v] and v != start and v not in plants])
+        pl = shuf(sorted(v for v in plants if v != start))
+        seen = set(lv) | set(pl) | {start}
+        rest = shuf([v for v in range(n) if v not in seen])
+        return [start] + lv + pl + rest
+    if kind == "bfs":               # every new town is next to the network
+        adj = [[] for _ in range(n)]
+        for i in range(1, n):
+            adj[i].append(par[i])
+            adj[par[i]].append(i)
+        seen = [False] * n
+        seen[start] = True
+        frontier = [start]
+        out = []
+        while frontier:
+            j = int(rnd() * len(frontier))
+            frontier[j], frontier[-1] = frontier[-1], frontier[j]
+            v = frontier.pop()
+            out.append(v)
+            for u in adj[v]:
+                if not seen[u]:
+                    seen[u] = True
+                    frontier.append(u)
+        return out
+    if kind == "zigzag":            # path 0..n-1: start in the middle, then the two ends inwards
+        lo, hi = 0, n - 1
+        out = [start]
+        while lo <= hi:
+            for v in (lo, hi):
+                if v != start and v not in out[-2:]:
+                    out.append(v)
+            lo += 1
+            hi -= 1
+        assert sorted(out) == list(range(n))
+        return out
+    raise ValueError(kind)
 
 
-def emit(n, e, s, cap, pas, shuffle=True):
-    if shuffle:
-        e, s, pas = relabel(n, e, s, pas)
-    add(n, e, s, cap, pas)
+def emit(n, par, w, plants, order, keep_one=None):
+    """random labels; keep_one: vertex that gets label 1 (else a vertex that is not c_1)"""
+    lab = shuf(list(range(1, n + 1)))
+    if n > 1:
+        one = keep_one
+        if one is None:             # town 1 is never c_1 here (c_1 = 1 is tested on its own)
+            one = order[0]
+            while one == order[0]:
+                one = int(rnd() * n)
+        j = lab.index(1)
+        lab[j], lab[one] = lab[one], lab[j]
+    assert sorted(lab) == list(range(1, n + 1))
+    assert n == 1 or (min(par[1:]) >= 0 and all(map(int.__lt__, par[1:], range(1, n))))
+    c = [lab[v] for v in order]
+    plant = ["0"] * n
+    for v in plants:
+        plant[lab[v] - 1] = "1"
+    # roads in the order of the label of their lower end (labels are random), random direction
+    idx = sorted(range(1, n), key=lab.__getitem__)
+    lo = list(map(lab.__getitem__, idx))
+    hi = [lab[par[i]] for i in idx]
+    flip = format(random.getrandbits(n - 1), "0%db" % (n - 1)) if n > 1 else ""
+    us = [b if f == "1" else a for a, b, f in zip(lo, hi, flip)]
+    vs = [a if f == "1" else b for a, b, f in zip(lo, hi, flip)]
+    ws = [w[i] for i in idx]
+    add(n, c, "".join(plant), (us, vs, ws), tree_ok=True)
 
 
-# ---------------------------------------------------------------- samples
-add(3, [(1, 2, 1), (2, 3, 10)], 1, 2, [(2, 3), (2, 3), (1, 3)])
-add(3, [(1, 2, 1), (2, 3, 10)], 1, 2, [(1, 3), (2, 1)])
-add(3, [(1, 2, 5)], 1, 1, [(2, 3)])
-add(3, [(1, 2, 4), (2, 3, 3)], 2, 1, [(2, 2), (3, 1), (3, 3)])
-add(4, [(1, 2, 3), (2, 3, 2), (3, 4, 4), (4, 1, 6)], 3, 2, [(2, 4), (4, 1), (1, 1), (4, 2)])
-
-# ---------------------------------------------------------------- small hidden (brute checks these)
-add(1, [], 1, 1, [(1, 1)])
-n = 40
-emit(n, random_graph(n, 70, (1, 50)), 1, 2, [(ri(1, n), ri(1, n)) for _ in range(10)])
-n = 30
-emit(n, line_graph(n, 5, (1, 100)), ri(1, n), 3, [(ri(1, n), ri(1, n)) for _ in range(11)])
-e, gr = clusters([12, 12], [20, 20], 5000)
-emit(24, e, gr[0][0], 2, [(random.choice(gr[0]), random.choice(gr[1])) for _ in range(11)])
-n = 25
-emit(n, random_graph(n, 40, (1, 9)), 5, 1, [(v, v) if rnd() < 0.5 else (v, ri(1, n)) for v in pick(range(1, n + 1), 10)])
-# towns outside the shuttle's part exist, but every stop is reachable
-e = random_graph(20, 35, (1, MAXW)) + [(21, 22, 7), (22, 23, 7)]
-emit(23, e, 3, 4, [(ri(1, 20), ri(1, 20)) for _ in range(9)])
-# the last destination cannot be reached
-e = random_graph(20, 30, (1, 1000)) + [(21, 22, 1)]
-pas = [(ri(1, 20), ri(1, 20)) for _ in range(8)] + [(ri(1, 20), 22)]
-emit(22, e, 1, 3, pas)
-n = 50
-emit(n, random_graph(n, 49, (1, MAXW)), 1, 11, [(ri(1, n), ri(1, n)) for _ in range(11)])
-
-# ---------------------------------------------------------------- big hidden
-K = MAXK
+def build(n, kind, wkind="rand", pkind="random", pcnt=3, okind="random", start=None, c1_plant=False,
+          one=None):
+    par = shape(kind, n)
+    if pkind == "spurs":            # plants = the hanging leaves of some spine vertices
+        h = (n + 1) // 2
+        plants = set(random.sample(range(h, n), min(pcnt, n - h))) if n > h else {0}
+    else:
+        plants = choose_plants(pkind, n, par, pcnt)
+    if start is None:
+        cand = [v for v in range(n) if v not in plants] or [0]
+        start = cand[int(rnd() * len(cand))]
+    if c1_plant:
+        plants.add(start)
+    w = weights(wkind, n, par, plants)
+    order = choose_order(okind, n, par, plants, start)
+    emit(n, par, w, plants, order, one)
 
 
-def big_random(cap, w=(1, MAXW), stops=None):
-    e = random_graph(MAXN, MAXM, w)
-    towns = random.sample(range(1, MAXN + 1), 2 * K + 1)
-    pas = [(towns[2 * j + 1], towns[2 * j + 2]) for j in range(K)] if stops is None else stops
-    emit(MAXN, e, towns[0], cap, pas)
-
-
-big_random(2)
-big_random(3)
-big_random(7)
-big_random(25, (1, 1000))
-big_random(K)
-
-# grid road network
-e = grid_graph(50, 60, MAXM - 5890)
-towns = random.sample(range(1, MAXN + 1), 2 * K + 1)
-emit(MAXN, e, towns[0], 4, [(towns[2 * j + 1], towns[2 * j + 2]) for j in range(K)])
-e = grid_graph(60, 50, MAXM - 5890, (900000, MAXW))
-towns = random.sample(range(1, MAXN + 1), 2 * K + 1)
-emit(MAXN, e, towns[0], 2, [(towns[2 * j + 1], towns[2 * j + 2]) for j in range(K)])
-
-# commuters: everyone waits in the first cluster and goes to the far one
-for cap, sizes in ((3, [1500, 1500]), (10, [1000, 1000, 1000]), (2, [1200, 600, 1200])):
-    e, gr = clusters(sizes, [s * 3 for s in sizes[:-1]] + [MAXM - 3 * sum(sizes[:-1]) - 2 * (len(sizes) - 1)], 10 ** 6)
-    assert len(e) <= MAXM
-    pas = [(random.choice(gr[0]), random.choice(gr[-1] if rnd() < 0.8 else random.choice(gr))) for _ in range(K)]
-    emit(MAXN, e, gr[0][0], cap, pas)
-
-# two-way traffic between two clusters
-for cap in (2, 5):
-    e, gr = clusters([1500, 1500], [4990, 4990], 10 ** 6)
-    pas = []
-    for j in range(K):
-        a, b = (0, 1) if (j // ri(1, 4)) % 2 == 0 else (1, 0)
-        pas.append((random.choice(gr[a]), random.choice(gr[b])))
-    emit(MAXN, e, gr[0][0], cap, pas)
-
-# a long line with heavy roads (lengths beyond 32 bits), stops jump between the two ends
-e = line_graph(MAXN, 0, (MAXW, MAXW))
-pas = [(ri(1, 30), ri(MAXN - 30, MAXN)) if j % 2 == 0 else (ri(MAXN - 30, MAXN), ri(1, 30)) for j in range(K)]
-emit(MAXN, e, 1, 1, pas, shuffle=False)
-e = line_graph(MAXN, MAXM - MAXN + 1, (1, MAXW), (MAXW, MAXW))
-pas = [(ri(1, MAXN), ri(1, MAXN)) for _ in range(K)]
-emit(MAXN, e, ri(1, MAXN), 3, pas)
-# along a line: passengers ride forward, each a short way, waiting places interleaved
-e = line_graph(MAXN, MAXM - MAXN + 1, (1, MAXW), (MAXW, MAXW))
-pos = sorted(random.sample(range(1, MAXN + 1), K))
-pas = [(pos[j], min(MAXN, pos[j] + ri(1, 400))) for j in range(K)]
-emit(MAXN, e, 1, 2, pas)
-pas = [(pos[j], max(1, pos[j] - ri(1, 400))) for j in range(K)]
-emit(MAXN, e, MAXN, 4, pas)
-
-# few stop towns used many times, some passengers going nowhere
-e = random_graph(MAXN, MAXM)
-hot = random.sample(range(1, MAXN + 1), 6)
-pas = []
-for _ in range(K):
-    a = random.choice(hot)
-    pas.append((a, a) if rnd() < 0.3 else (a, random.choice(hot)))
-emit(MAXN, e, hot[0], 3, pas)
-
-# star around the start
-e = [(1, v, ri(1, MAXW)) for v in range(2, MAXN + 1)] + [(ri(2, MAXN), ri(2, MAXN), ri(1, MAXW)) for _ in range(MAXM - MAXN + 1)]
-e = [x for x in e if x[0] != x[1]]
-towns = random.sample(range(2, MAXN + 1), 2 * K)
-emit(MAXN, e, 1, 6, [(towns[2 * j], towns[2 * j + 1]) for j in range(K)])
-
-# disconnected: big second part without stops; and the -1 version
-e = random_graph(2000, 7000) + [(u + 2000, v + 2000, w) for u, v, w in random_graph(1000, 3000)]
-towns = random.sample(range(1, 2001), 2 * K + 1)
-pas = [(towns[2 * j + 1], towns[2 * j + 2]) for j in range(K)]
-emit(MAXN, e, towns[0], 5, pas)
-pas[K // 2] = (pas[K // 2][0], ri(2001, MAXN))
-emit(MAXN, e, towns[0], 5, pas)
-# long roads along a line (totals far beyond 32 bits), stops anywhere
-e = line_graph(MAXN, 3000, (MAXW // 2, MAXW), (MAXW, MAXW))
-pas = [(ri(1, MAXN), ri(1, MAXN)) for _ in range(K)]
-emit(MAXN, e, ri(1, MAXN), 5, pas)
-# the shuttle starts in a part that holds no stop: -1
-e = random_graph(1000, 3000) + [(u + 1000, v + 1000, w) for u, v, w in random_graph(MAXN - 1000, MAXM - 3000)]
-towns = random.sample(range(1001, MAXN + 1), 2 * K)
-emit(MAXN, e, ri(1, 1000), 3, [(towns[2 * j], towns[2 * j + 1]) for j in range(K)])
+# samples
+add_list(7, [3, 6, 1, 5, 2, 7, 4], "0000101",
+    [(1, 2, 4), (2, 3, 2), (2, 4, 3), (4, 5, 1), (4, 6, 5), (1, 7, 6)])
+add_list(5, [3, 2, 4, 1, 5], "10001", [(1, 2, 3), (2, 3, 4), (3, 4, 1), (4, 5, 2)])
+add_list(1, [1], "1", [])
+add_list(4, [2, 4, 1, 3], "0100", [(1, 2, 7), (2, 3, 9), (2, 4, 1)])
+add_list(5, [2, 5, 3, 1, 4], "10000", [(1, 3, 5), (3, 2, 2), (3, 4, 4), (4, 5, 1)])
+# hidden: small (brute checks these)
+add_list(2, [2, 1], "01", [(1, 2, MAXW)])
+build(12, "random", "small", "random", 2, "leaves")
+build(40, "spurs", "spur", "spurs", 3, "leaves")
+build(300, "random", "rand", "random", 1, "random")
+build(2000, "caterpillar", "spur", "leaves", 4, "leaves")
+build(3000, "path", "small", "random", 2, "zigzag", start=1500)
+build(9000, "deep", "rand", "random", 5, "random", c1_plant=True)
+# hidden: big
+build(MAXN, "path", "rand", "random", 2, "zigzag", start=MAXN // 2)
+build(MAXN, "path", "max", "random", 1, "random")
+build(MAXN, "path", "spur", "random", 30, "leaves", start=7)
+build(MAXN, "spurs", "spur", "spurs", 5, "leaves")
+build(MAXN, "random", "rand", "random", 3, "leaves")
+build(MAXN, "random", "spur", "leaves", 20, "leaves")
+build(MAXN, "deep", "spur", "leaves", 50, "leaves")
+build(MAXN, "caterpillar", "rand", "leaves", 3, "leaves")
+build(MAXN, "broom", "spur", "leaves", 10, "leaves", start=0)
+build(MAXN, "star", "rand", "random", 1, "random")
+build(MAXN, "binary", "spur", "leaves", 8, "leaves")
+build(MAXN, "long-arms", "rand", "random", 2, "leaves")
+build(MAXN, "random", "rand", "random", MAXN // 10, "bfs")
+build(MAXN, "deep", "max", "random", 1, "random", c1_plant=True)
+build(MAXN, "path", "max", "random", 1, "random", start=0, one=MAXN - 1)
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

@@ -10,7 +10,7 @@ that gen.py rebuilds and progress.json are never written into the repo.
 2. Every sample in samples/expected.json is judged and must get its verdict (and score, when given; that run
    also rebuilds the problem's big tests with gen.py and checks them).
    Verdict = CE if it does not compile, else the first non-AC verdict, else AC.
-3. The judge's command line is run like a student would (inside Mock_1, --ascii, --list, --progress).
+3. The judge's command line is run like a student would (inside a Mock_K folder, --ascii, --list, --progress).
 4. Self-update: a local HTTP server serves a modified copy of the repo as v9.9; a package must update itself
    (hashes, backups, restart, create-only set files), and must refuse bad hashes, bad paths and no network.
 5. manifest.json is up to date.
@@ -37,6 +37,8 @@ NAME = "C2_Mock_Test"
 FAILED = []
 os.environ["JUDGE_NO_UPDATE"] = "1"       # the judge never contacts GitHub during the tests
 judge = None        # the package's judge.py, imported by main()
+# the towers_*.cpp samples solve Signal Towers: set 7, problem 2 (id 32); TOWERS_SET/TOWERS_CPP is its student file
+TOWERS, TOWERS_ID, TOWERS_SET, TOWERS_CPP = "7-2", "32", "Mock_7", "2.cpp"
 
 
 def check(ok, name, detail=""):
@@ -98,7 +100,7 @@ def test_crlf_generator():
 def test_stale_tests():
     """An update that changes a problem's tests leaves the old files of its big tests behind (the updater never
     deletes): a big input whose sha256 differs is rebuilt, and an old .out of a hash-only test is ignored."""
-    pdir, _ = judge.find_problem("1-1", judge.load_meta())
+    pdir, _ = judge.find_problem(TOWERS, judge.load_meta())
     td = judge.tests_dir(pdir)
     mpath = os.path.join(td, "manifest.json")
     with open(mpath, encoding="utf-8") as f:
@@ -116,7 +118,7 @@ def test_stale_tests():
             f.write(b"1 1 0 1\n1 1\n")
         with open(fout, "wb") as f:
             f.write(b"0\n")
-        verdict, score = judge_sample(os.path.join(SAMPLES, "batch", "towers_ok.cpp"), "1-1", True)
+        verdict, score = judge_sample(os.path.join(SAMPLES, "batch", "towers_ok.cpp"), TOWERS, True)
         check(verdict == "AC" and score == 100 and sha(fin) == t_in["in"],
               "old test files left by an update: big input rebuilt, old .out ignored", f"{verdict} {score}")
     finally:
@@ -197,7 +199,7 @@ def test_missed_last_reading():
         return 1024 * 1024
     setattr(judge, name, first_only)
     try:
-        verdict, _ = judge_sample(os.path.join(SAMPLES, "batch", "towers_mle.cpp"), "1-1", False)
+        verdict, _ = judge_sample(os.path.join(SAMPLES, "batch", "towers_mle.cpp"), TOWERS, False)
     finally:
         setattr(judge, name, real)
     check(verdict == "MLE", "the MLE sample is MLE even when the readings miss its growth", f"got {verdict}")
@@ -212,39 +214,39 @@ def run_judge(args, cwd):
 
 def test_cli(root):
     print("Command line")
-    set1 = os.path.join(root, "Mock_1")
-    shutil.copy(os.path.join(SAMPLES, "batch", "towers_ok.cpp"), os.path.join(set1, "1.cpp"))
+    set1 = os.path.join(root, TOWERS_SET)
+    shutil.copy(os.path.join(SAMPLES, "batch", "towers_ok.cpp"), os.path.join(set1, TOWERS_CPP))
     shutil.copy(os.path.join(SAMPLES, "batch", "towers_smallhi.cpp"), os.path.join(set1, "wrong.cpp"))
-    code, out, _ = run_judge(["1.cpp", "--no-color"], set1)
-    check(code == 0 and "ACCEPTED" in out, "inside Mock_1: judge.py 1.cpp", f"exit {code}\n{out}")
+    code, out, _ = run_judge([TOWERS_CPP, "--no-color"], set1)
+    check(code == 0 and "ACCEPTED" in out, f"inside {TOWERS_SET}: judge.py {TOWERS_CPP}", f"exit {code}\n{out}")
     progress = os.path.join(root, "Judge", "progress.json")
     try:
         with open(progress, encoding="utf-8") as f:
-            best = json.load(f)["problems"]["1"]["best"]
+            best = json.load(f)["problems"][TOWERS_ID]["best"]
     except (OSError, ValueError, KeyError):
         best = None
-    check(best == 100, "progress.json records best 100 for problem 1", f"best = {best}")
+    check(best == 100, f"progress.json records best 100 for problem {TOWERS_ID}", f"best = {best}")
     for name in ("towers_throw.cpp", "towers_warn.cpp"):
         shutil.copy(os.path.join(SAMPLES, "batch", name), os.path.join(set1, name))
-    code, out, _ = run_judge(["towers_throw.cpp", "1-1", "--no-color", "--stop"], set1)
+    code, out, _ = run_judge(["towers_throw.cpp", TOWERS, "--no-color", "--stop"], set1)
     check("out_of_range" in out and "stderr" in out, "RE shows the program's stderr (out_of_range)", out)
-    code, out, _ = run_judge(["towers_warn.cpp", "1-1", "--no-color", "--stop"], set1)
+    code, out, _ = run_judge(["towers_warn.cpp", TOWERS, "--no-color", "--stop"], set1)
     check("g++ warning" in out and "unused" in out, "warnings are shown after Compiled", out)
-    code, out, _ = run_judge(["1.cpp", "--no-color", "--stop"], set1)
+    code, out, _ = run_judge([TOWERS_CPP, "--no-color", "--stop"], set1)
     check("warning" not in out and "Memory  peak" in out and "256 MB per test" in out,
           "clean program: no warnings, memory line, limit in header", out)
     shutil.copy(os.path.join(SAMPLES, "batch", "towers_mle.cpp"), os.path.join(set1, "towers_mle.cpp"))
-    code, out, _ = run_judge(["towers_mle.cpp", "1-1", "--no-color", "--stop", "--ml", "200"], set1)    # 400 MB
+    code, out, _ = run_judge(["towers_mle.cpp", TOWERS, "--no-color", "--stop", "--ml", "200"], set1)    # 400 MB
     check("Memory Limit Exceeded" in out and "limit is 200 MB" in out, "--ml 200: a 400 MB program is MLE", out)
-    code, out, _ = run_judge(["towers_mle.cpp", "1-1", "--no-color", "--stop", "--ml", "1024"], set1)
+    code, out, _ = run_judge(["towers_mle.cpp", TOWERS, "--no-color", "--stop", "--ml", "1024"], set1)
     check(code == 0 and "ACCEPTED" in out, "--ml 1024: the same program is accepted", f"exit {code}\n{out}")
     code, out, _ = run_judge(["--ml", "0"], set1)
     check(code == 2 and "--ml must be" in out, "judge.py --ml 0 is rejected", f"exit {code}\n{out}")
-    code, out, plain = run_judge(["wrong.cpp", "1-1", "--ascii", "--no-color"], set1)
+    code, out, plain = run_judge(["wrong.cpp", TOWERS, "--ascii", "--no-color"], set1)
     check(code == 0 and "First failure" in out and plain, "judge.py --ascii shows the failure, ASCII only",
           f"exit {code}, ascii={plain}\n{out}")
     code, out, _ = run_judge(["--no-color"], set1)
-    check(code == 0 and "Total" in out and "Problem 5" in out, "inside Mock_1: judge.py (whole set)",
+    check(code == 0 and "Total" in out and "Problem 5" in out, f"inside {TOWERS_SET}: judge.py (whole set)",
           f"exit {code}\n{out}")
     code, out, plain = run_judge(["--progress", "--ascii"], set1)
     check(code == 0 and plain, "judge.py --progress --ascii", f"exit {code}, ascii={plain}\n{out}")
@@ -334,17 +336,18 @@ def test_updater():
         subprocess.run([sys.executable, os.path.join(REPO, "tools", "build_dist.py"), "--out", tmp, "--no-zip"],
                        check=True, stdout=subprocess.DEVNULL)
         root = os.path.join(tmp, NAME)
-        judge_dir, set1 = os.path.join(root, "Judge"), os.path.join(root, "Mock_1")
-        shutil.copy(os.path.join(SAMPLES, "batch", "towers_ok.cpp"), os.path.join(set1, "1.cpp"))
-        student_hash, old_judge = sha(os.path.join(set1, "1.cpp")), sha(os.path.join(judge_dir, "judge.py"))
-        template = sha(os.path.join(set1, "2.cpp"))
+        judge_dir, set1 = os.path.join(root, "Judge"), os.path.join(root, TOWERS_SET)
+        other = "1.cpp" if TOWERS_CPP != "1.cpp" else "2.cpp"      # a starter the student has not touched
+        shutil.copy(os.path.join(SAMPLES, "batch", "towers_ok.cpp"), os.path.join(set1, TOWERS_CPP))
+        student_hash, old_judge = sha(os.path.join(set1, TOWERS_CPP)), sha(os.path.join(judge_dir, "judge.py"))
+        template = sha(os.path.join(set1, other))
 
         # a) automatic update during a normal run: new files, backup, restart with the new judge
         repo2 = make_repo2(tmp, "9.9", "marker-v9.9")
         edit_manifest(repo2, lambda m: m["create_only"].update(
-            {"Mock_1/6.cpp": [sha(os.path.join(REPO, "student", "set_files", "template.cpp")), "student/set_files/template.cpp"]}))
+            {TOWERS_SET + "/6.cpp": [sha(os.path.join(REPO, "student", "set_files", "template.cpp")), "student/set_files/template.cpp"]}))
         srv, url = serve(repo2)
-        code, out, _ = run_student(["1.cpp", "--no-color"], set1, url)
+        code, out, _ = run_student([TOWERS_CPP, "--no-color"], set1, url)
         check(code == 0 and "restarting" in out and "ACCEPTED" in out and "Judge v9.9" in out,
               "normal run updates to v9.9, restarts, judges", f"exit {code}\n{out}")
         with open(os.path.join(judge_dir, "judge.py"), encoding="utf-8") as f:
@@ -356,16 +359,16 @@ def test_updater():
         with open(os.path.join(set1, "Makefile"), encoding="utf-8") as f:
             makefile = f.read()
         check("marker-v9.9" in readme and "marker-v9.9" in makefile
-              and os.path.exists(os.path.join(judge_dir, ".backup", "_package", "Mock_1", "Makefile")),
-              "managed files README.txt and Mock_1/Makefile replaced, old copies in Judge/.backup/_package/")
-        check(sha(os.path.join(set1, "1.cpp")) == student_hash and sha(os.path.join(set1, "2.cpp")) == template,
+              and os.path.exists(os.path.join(judge_dir, ".backup", "_package", TOWERS_SET, "Makefile")),
+              f"managed files README.txt and {TOWERS_SET}/Makefile replaced, old copies in Judge/.backup/_package/")
+        check(sha(os.path.join(set1, TOWERS_CPP)) == student_hash and sha(os.path.join(set1, other)) == template,
               "student files untouched")
         check(os.path.exists(os.path.join(set1, "6.cpp")) and sha(os.path.join(set1, "6.cpp")) == template,
-              "create-only Mock_1/6.cpp added")
+              f"create-only {TOWERS_SET}/6.cpp added")
         check(not os.path.exists(os.path.join(judge_dir, ".update_tmp")), "no temp folder left behind")
         progress = os.path.join(judge_dir, "progress.json")
         with open(progress, encoding="utf-8") as f:
-            best = json.load(f)["problems"].get("1", {}).get("best")
+            best = json.load(f)["problems"].get(TOWERS_ID, {}).get("best")
         check(best == 100 and not os.path.exists(os.path.join(judge_dir, ".backup", "progress.json")),
               "progress.json kept (best 100) and not backed up", f"best = {best}")
         code, out, _ = run_student(["--update", "--no-color"], set1, url)
@@ -373,7 +376,7 @@ def test_updater():
 
         # b) a newer version appears: normal runs wait 10 minutes, --update takes it now
         repo2 = make_repo2(tmp, "9.11", "marker-v9.11")
-        code, out, _ = run_student(["1.cpp", "--no-color"], set1, url)
+        code, out, _ = run_student([TOWERS_CPP, "--no-color"], set1, url)
         check(code == 0 and "Judge v9.9" in out and "restarting" not in out, "checked recently: no update yet")
         code, out, _ = run_student(["--update", "--no-color"], set1, url)
         check(code == 0 and "updated to v9.11" in out, "--update: updated to v9.11", f"exit {code}\n{out}")
@@ -394,10 +397,10 @@ def test_updater():
               "path outside Judge/: refused", f"exit {code}\n{out}")
         rebuild_manifest(repo2)
         edit_manifest(repo2, lambda m: m["managed"].update(
-            {"Mock_1/1.cpp": [sha(os.path.join(repo2, "student", "set_files", "template.cpp")), "student/set_files/template.cpp"]})
+            {TOWERS_SET + "/" + TOWERS_CPP: [sha(os.path.join(repo2, "student", "set_files", "template.cpp")), "student/set_files/template.cpp"]})
             or m.update(version="9.14"))
         code, out, _ = run_student(["--update", "--no-color"], set1, url)
-        check(code == 1 and "bad managed entry" in out and sha(os.path.join(set1, "1.cpp")) == student_hash,
+        check(code == 1 and "bad managed entry" in out and sha(os.path.join(set1, TOWERS_CPP)) == student_hash,
               "a .cpp listed as managed: refused, student file untouched", f"exit {code}\n{out}")
 
         # e) recovery: a damaged file is re-downloaded by python Judge/updater.py
@@ -416,7 +419,7 @@ def test_updater():
 
         # f) no network: the judge works as usual, quickly
         os.remove(os.path.join(judge_dir, ".update_check"))
-        code, out, dt = run_student(["1.cpp", "--no-color"], set1, f"http://127.0.0.1:{free_port()}/")
+        code, out, dt = run_student([TOWERS_CPP, "--no-color"], set1, f"http://127.0.0.1:{free_port()}/")
         check(code == 0 and "ACCEPTED" in out and "restarting" not in out and dt < 30,
               f"offline: judge works ({dt:.1f} s)", f"exit {code}\n{out}")
     finally:

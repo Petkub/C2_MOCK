@@ -1,4 +1,4 @@
-// Wrong Answer: binary search upper bound too small (sample 5: the answer is 2000000000, not 10^9).
+// Wrong Answer: binary search upper bound too small (some answers are near 2 * 10^9).
 #include <bits/stdc++.h>
 using namespace std;
 using ll = long long;

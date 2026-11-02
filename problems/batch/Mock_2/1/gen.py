@@ -6,7 +6,7 @@ cases.append((3, 2, [1, 2, 3, 4, 5]))
 cases.append((5, 1, [-5, 5, 10, -3, 3]))
 cases.append((4, 3, [2, 2, 2, 2, 2, 2]))
 cases.append((7, 1, [7]))
-cases.append((1000000000, 1, [1000000000, -1000000000, 1000000000]))
+cases.append((6, 2, [4, -1, 3, 5, -2, 2, 1]))
 for _ in range(6):
     n = random.randint(1, 15)
     cases.append((random.randint(1, 10), random.randint(1, n), [random.randint(-20, 20) for _ in range(n)]))
@@ -29,6 +29,7 @@ cases.append(rnd(100000, 3, 10, -B, B))
 cases.append(rnd(80000, 1, 7, -5, 5))
 cases.append(rnd(100000, 2, 3, -9, 9))
 cases.append(rnd(100000, 4, 100, 0, 0))
+cases.append((1000000000, 1, [1000000000, -1000000000, 1000000000]))   # old sample 5, now a hidden test
 for i, (K, L, a) in enumerate(cases, 1):
     n = len(a)
     assert 1 <= n <= 100000 and 1 <= K <= 10**9 and 1 <= L <= n and all(abs(x) <= 10**9 for x in a)

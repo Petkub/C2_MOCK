@@ -1,129 +1,137 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
+# A test is kept as two lists (prices, ratings) so that the big tests are built quickly.
 import os, random
 
-random.seed(5101)
-MAXN = 200000
-MAXV = 10 ** 9
+random.seed(740218)
+MAXN, MAXV = 150000, 10 ** 9
 tests = []
+rnd = random.random
 
 
-def ri(lo, hi):
-    """uniform integer in [lo, hi] (faster than randint, still deterministic)"""
-    return lo + int(random.random() * (hi - lo + 1))
+def add(h):
+    ps, rs = h
+    n = len(ps)
+    assert 1 <= n <= MAXN and len(rs) == n
+    assert 1 <= min(ps) and max(ps) <= MAXV and 1 <= min(rs) and max(rs) <= MAXV
+    flat = [0] * (2 * n)
+    flat[0::2] = ps
+    flat[1::2] = rs
+    tests.append(f"{n}\n" + "%d %d\n" * n % tuple(flat))
 
 
-def add(m, k, a):
-    n = len(a)
-    assert 1 <= n <= MAXN and 1 <= m and 1 <= k and m * k <= n
-    assert all(1 <= x <= MAXV for x in a)
-    tests.append(f"{n} {m} {k}\n" + " ".join(map(str, a)) + "\n")
+def pairs(lst):
+    return [p for p, r in lst], [r for p, r in lst]
 
 
-def planted(n, k, extra, x, order, hi_top=MAXV, lo_bot=1, rp=0.0):
-    """boxes of odd length between k and k + extra while they fit in n fruits; returns (number of boxes, row).
-    In a box of length L exactly (L + 1) / 2 fruits are >= x (about half of them equal to x), the others < x.
-    rp > 0: the first rp share of the boxes get one more fruit >= x and the last rp share one fewer
-    (the total stays the same, but the surplus is far from where it is needed).
-    order: 'front' = big fruits first, 'back' = last, 'mix' = shuffled, 'wave' = alternate boxes front/back"""
-    lens = []
-    used = 0
-    while True:
-        L = k + ri(0, extra)
-        if L % 2 == 0:
-            L += 1
-        if used + L > n:
-            break
-        lens.append(L)
-        used += L
-    nb = len(lens)
-    R = int(nb * rp)
-    a = []
-    for b, L in enumerate(lens):
-        h = (L + 1) // 2
-        if b < R and h < L:
-            h += 1
-        elif b >= nb - R:
-            h -= 1
-        hi = [x if random.random() < 0.5 else ri(x + 1, hi_top) for _ in range(h)]
-        lo = [ri(lo_bot, x - 1) for _ in range(L - h)]
-        o = order if order != "wave" else ("front" if b % 2 == 0 else "back")
-        if o == "front":
-            part = hi + lo
-        elif o == "back":
-            part = lo + hi
-        else:
-            part = hi + lo
-            random.shuffle(part)
-        a += part
-    return nb, a
+def band(n, width, slope, wp, wr):
+    """points along a falling line: x in [0, width), price x + noise, rating (width - x) * slope + noise"""
+    xs = [int(rnd() * width) for _ in range(n)]
+    ps = [x + 1 + int(rnd() * (wp + 1)) for x in xs]
+    rs = [(width - x) * slope + 1 + int(rnd() * (wr + 1)) for x in xs]
+    return ps, rs
 
 
-def clustered(n, lo_len, hi_len, p_hi, mix):
-    """runs of random length: a run is 'high' with probability p_hi; a value in a high run is >= 600 000 000
-    with probability mix (in a low run with probability 1 - mix): the big values come in clumps"""
-    a = []
-    while len(a) < n:
-        high = random.random() < p_hi
-        for _ in range(ri(lo_len, hi_len)):
-            big = (random.random() < mix) == high
-            a.append(ri(600000000, MAXV) if big else ri(1, 599999999))
-    return a[:n]
+def layers(n, count, size, step):
+    """`count` copies of one random antichain (price and rating both increasing), each copy moved by
+    (+step, -step): a hotel of a copy is beaten by the same hotel of the copies before"""
+    bp, br, p, r = [], [], 1, 1
+    for _ in range(size):
+        p += random.randint(0, 3)
+        r += random.randint(0, 3)
+        bp.append(p)
+        br.append(r)
+    top = count * step
+    ks = [int(rnd() * count) * step for _ in range(n)]
+    js = [int(rnd() * size) for _ in range(n)]
+    return [bp[j] + k for j, k in zip(js, ks)], [br[j] + top - k for j, k in zip(js, ks)]
 
 
-def addp(res, k, slack=0):
-    add(res[0] - slack, k, res[1])
+def blocks(n, cnt, side, grid):
+    """`cnt` squares on a falling diagonal, random points inside each, coordinates divided by `grid`"""
+    ks = [int(rnd() * cnt) for _ in range(n)]
+    ps = [(k * side + int(rnd() * side)) // grid + 1 for k in ks]
+    rs = [((cnt - k) * side + int(rnd() * side)) // grid + 1 for k in ks]
+    return ps, rs
 
 
-def rnd(n, lo, hi):
-    return [ri(lo, hi) for _ in range(n)]
+def dup(h, share):
+    """replace a share of the hotels by copies of other hotels"""
+    ps, rs = h[0][:], h[1][:]
+    n = len(ps)
+    for _ in range(int(n * share)):
+        i, j = int(rnd() * n), int(rnd() * n)
+        ps[i], rs[i] = ps[j], rs[j]
+    return ps, rs
+
+
+def spread(h):
+    """map prices and ratings to random large values in the same order (the rounds do not change)"""
+    out = []
+    for col in h:
+        vals = sorted(set(col))
+        m = dict(zip(vals, sorted(random.sample(range(1, MAXV + 1), len(vals)))))
+        out.append([m[v] for v in col])
+    return tuple(out)
+
+
+_perm = []
+
+
+def mixed(h):
+    """h in a random order; every big test has MAXN hotels, so one shuffled order is reused (fast)"""
+    n = len(h[0])
+    if n < MAXN:
+        idx = list(range(n))
+        random.shuffle(idx)
+    else:
+        if not _perm:
+            _perm.extend(range(MAXN))
+            random.shuffle(_perm)
+        idx = _perm
+    return [h[0][i] for i in idx], [h[1][i] for i in idx]
 
 
 # samples
-add(3, 2, [7, 8, 5, 2, 8, 7, 8, 3, 7])
-add(2, 2, [1, 10, 10, 2, 10, 3])
-add(1, 3, [4, 9, 2, 6])
-add(3, 2, [5, 1, 4, 4, 2, 8])
-add(2, 1, [10 ** 9, 1, 10 ** 9 - 1, 10 ** 9])
-# hidden: small (checked by the direct DP)
-add(1, 1, [5])
-add(2, 1, [3, 3])
-add(4, 1, [2, 9, 1, 7, 7, 3, 8])
-add(3, 3, rnd(12, 1, 3))
-addp(planted(14, 2, 2, 50, "front", 100), 2)
-addp(planted(25, 3, 3, 500, "mix", 1000), 3)
-add(7, 1, rnd(40, 1, 6))
-addp(planted(60, 4, 6, 10 ** 8, "wave"), 4)
-addp(planted(140, 5, 4, 7, "front", 9), 5)
-add(30, 2, rnd(150, 1, 1000))
-# hidden: special shapes (medium size)
-add(100, 10, [123456789] * 1000)                                 # all equal
-add(1000, 2, [MAXV - (i % 3 == 0) for i in range(3000)])         # two values, period 3
-# hidden: large (planted rows defeat a greedy cut; moving the surplus to the front and clumping the big values
-# defeat "enough fruits >= x in total")
+add(pairs([(300, 4), (200, 5), (300, 4), (100, 3), (200, 2), (400, 5), (500, 1)]))
+add(pairs([(5, 1), (5, 2), (5, 3), (5, 3)]))
+add(pairs([(7, 7)]))
+add(pairs([(3, 3), (5, 1), (1, 5), (4, 2), (2, 4)]))
+add(pairs([(4, 6), (2, 2), (6, 5), (3, 6), (2, 7), (5, 3), (4, 6), (1, 1)]))
+# hidden: small (brute checks these)
+add(pairs([(1, 1), (1, 1)]))
+add(pairs([(10 ** 9, 1), (1, 10 ** 9), (10 ** 9, 10 ** 9), (1, 1)]))
+add(mixed(dup(band(40, 10, 1, 2, 2), 0.2)))
+add(mixed(dup(blocks(300, 30, 4, 2), 0.1)))
+add(([random.randint(1, 4) for _ in range(500)], [random.randint(1, 4) for _ in range(500)]))
+add(mixed(dup(layers(2000, 200, 50, 3), 0.05)))
+add(mixed(band(3000, 1500, 2, 3, 3)))
+add(mixed(dup(band(8000, 4000, 1, 5, 5), 0.1)))
+add(spread(mixed(dup(blocks(10000, 2000, 3, 1), 0.05))))
+# hidden: big (N = 150000)
 N = MAXN
-add(1, 1, rnd(N, 1, MAXV))                                       # one box: the median of everything
-add(N, 1, rnd(N, 1, MAXV))                                       # every fruit alone: the smallest value
-add(N // 50, 50, rnd(N, 1, 3))                                   # every box exactly 50 fruits
-addp(planted(N, 3, 4, 500000000, "front", rp=0.1), 3)
-addp(planted(N, 4, 6, 400000000, "mix", rp=0.05), 4)
-addp(planted(N, 30, 40, 700000000, "front", rp=0.2), 30)
-addp(planted(N, 8, 15, 600000000, "wave", rp=0.1), 8)
-addp(planted(N, 6, 8, 2, "front", 3, 1), 6)                      # values 1..3 only
-add(700, 200, clustered(N, 300, 900, 0.5, 1.0))                  # long clumps of big and small values
-addp(planted(N, 2, 10, 5, "front", 9, 1, rp=0.1), 2)            # values 1..9 only
-add(20000, 7, rnd(N, 1, 10))
-add(3000, 60, sorted(rnd(N, 1, MAXV)))                           # increasing row
-add(3000, 60, sorted(rnd(N, 1, MAXV), reverse=True))             # decreasing row
-addp(planted(N, 50, 20, 900000000, "front", rp=0.3), 50)
-addp(planted(N, 10, 10, 250000000, "mix", rp=0.05), 10)
-addp(planted(N, 5, 6, 800000000, "front", rp=0.1), 5, 3)        # three boxes of slack
-add(900, 120, clustered(N, 50, 400, 0.45, 0.8))                  # shorter, noisy clumps
-add(500, 300, [ri(500000000, MAXV) for _ in range(N // 4)] + [ri(1, 500000000) for _ in range(N // 2)]
-    + [ri(500000000, MAXV) for _ in range(N // 4)])               # big values at both ends only
+add(mixed(dup(band(N, 60000, 1, 3, 3), 0.05)))
+add(mixed(dup(band(N, 40000, 2, 8, 2), 0.1)))
+add(mixed(dup(band(N, 100000, 1, 1, 1), 0.02)))
+add(mixed(dup(band(N, 25000, 1, 10, 40), 0.05)))
+add(mixed(band(N, 30000, 3, 0, 5)))                         # many equal prices
+add(mixed(band(N, 30000, 1, 6, 0)))                         # many equal ratings
+add(mixed(dup(layers(N, 60000, 20, 6), 0.03)))
+add(mixed(dup(layers(N, 70000, 60, 2), 0.05)))
+add(mixed(layers(N, 50000, 40, 8)))
+add(mixed(dup(blocks(N, 25000, 6, 2), 0.05)))
+add(mixed(dup(blocks(N, 50000, 3, 1), 0.1)))
+add(mixed(blocks(N, 40000, 8, 3)))
+add(spread(mixed(dup(band(N, 70000, 1, 2, 2), 0.05))))
+add(spread(mixed(dup(layers(N, 80000, 10, 2), 0.05))))
+x = range(1, N + 1)
+add(mixed(([i for i in x], [N + 1 - i for i in x])))                         # one chain: rounds 1..N
+add(mixed(([(i + 1) // 2 for i in x], [(N + 2 - i) // 2 for i in x])))      # a chain through equal values
+add(mixed(dup(([i // 3 + 1 for i in x], [(N - i) // 3 + 1 for i in x]), 0.3)))
+add(([int(rnd() * MAXV) + 1 for _ in x], [int(rnd() * MAXV) + 1 for _ in x]))
+add(([5] * N, [5] * N))
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t
-assert len(tests) <= 35
 os.makedirs("tests", exist_ok=True)
 for i, t in enumerate(tests, 1):
     with open(f"tests/{i:02d}.in", "w") as f:

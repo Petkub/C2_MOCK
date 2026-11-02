@@ -87,15 +87,17 @@ Add one line to `core/CHANGELOG.txt` for each version; students can read it.
    `samples/expected.json`, so the bug cannot come back.
 3. Run the tests, release. If it cannot be tested on Linux (a Windows-only problem), rely on CI's Windows job.
 
-### 4c. Add a new mock set (e.g. set 5)
-1. Test data: `problems/batch/Mock_5/1/ ... Mock_5/5/` with `NN.in`/`NN.out` (and `gen.py` if big inputs are
+### 4c. Add a new mock set (e.g. set 12)
+Sets are written in the private `C2_MOCK_SRC` (sources of every set, ordered from easy to hard); its
+`python3 build.py all` does steps 1-4 here. By hand:
+1. Test data: `problems/batch/Mock_12/1/ ... Mock_12/5/` with `NN.in`/`NN.out` (and `gen.py` if big inputs are
    generated), then `python3 tools/update_problem_manifest.py --all`.
-2. `problems/batch/problems.json`: one entry per new problem (`"en"`, `"title"`, `"tier"`, `"dir": "Mock_5/1"`,
-   `"samples"`), with new ids.
-3. `problems/batch/sets.json`: append `{"set": 5, ..., "problems": [ids in order]}`.
-4. `student/Mock_5/Mock_5.pdf` (the statement).
-5. Release. Existing students get the test data, `Mock_5/Mock_5.pdf`, `Makefile`, `judge.bat`, and the
-   updater **creates** `Mock_5/1.cpp ... 5.cpp` (templates are only ever created, never overwritten).
+2. `problems/batch/problems.json`: one entry per new problem (`"en"`, `"title"`, `"tier"`, `"dir": "Mock_12/1"`,
+   `"samples"`), with ids 5 (set - 1) + 1 ... + 5.
+3. `problems/batch/sets.json`: append `{"set": 12, ..., "problems": [ids in order]}`.
+4. `student/Mock_12/Mock_12.pdf` (the statement).
+5. Release. Existing students get the test data, `Mock_12/Mock_12.pdf`, `Makefile`, `judge.bat`, and the
+   updater **creates** `Mock_12/1.cpp ... 5.cpp` (templates are only ever created, never overwritten).
 
 ### 4d. Change something students see outside Judge/ (README, Makefile, judge.bat, template, Progress.md)
 Edit it under `student/` and release. These are *managed* files: the updater replaces them on every student's

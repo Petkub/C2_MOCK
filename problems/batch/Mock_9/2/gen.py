@@ -1,254 +1,280 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-import os, random, re
+import heapq, os, random
 
-random.seed(920202)
-MAXN, MAXLEN = 100000, 3000000
-NM = r"[A-Z]{1,3}[1-9][0-9]{0,4}"
-TM = r"(?:" + NM + r"|0|[1-9][0-9]{0,9})"
-NAME = re.compile(NM + "$")
-LINE = re.compile(NM + "=-?" + TM + "(?:[+-]" + TM + ")*$")
-SPLIT = re.compile(r"[=+\n-]")
+random.seed(540504)
+MAXN, MAXM, MAXW = 400, 20_000, 10**9
 tests = []
-
-
-def add(lines):
-    """lines: the cells as strings NAME=EXPR. Small tests are checked fully here; big ones are built only by
-    Sheet, whose names are distinct (checked in Sheet) with the right format (checked in names()), whose
-    references are names of its own cells and whose constants come from const() (checked there)"""
-    n = len(lines)
-    assert 1 <= n <= MAXN
-    body = "".join(s + "\n" for s in lines)
-    if n <= 5000:
-        assert all(map(LINE.match, lines))
-        defined = set(s[:s.index("=")] for s in lines)
-        toks = set(SPLIT.split(body))
-        assert len(defined) == n and set(t for t in toks if t[:1].isalpha()) == defined
-        assert all(int(t) <= 10 ** 9 for t in toks if t[:1].isdigit())
-    text = f"{n}\n" + body
-    assert len(text) <= MAXLEN, len(text)
-    tests.append(text)
+_rnd = random.random
 
 
 def ri(lo, hi):
-    """uniform integer in [lo, hi] (faster than randint, still deterministic)"""
-    return lo + int(random.random() * (hi - lo + 1))
+    return lo + int(_rnd() * (hi - lo + 1))
 
 
-LET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+def shuf(x):
+    for i in range(len(x) - 1, 0, -1):
+        j = int(_rnd() * (i + 1))
+        x[i], x[j] = x[j], x[i]
 
 
-_pool = {}
+def add(n, terms, edges):
+    """terms = (a, b, c, t); edges = [(u, v, w)], written as given"""
+    m = len(edges)
+    assert 4 <= n <= MAXN and 3 <= m <= MAXM
+    assert len(terms) == 4 and len(set(terms)) == 4 and all(1 <= x <= n for x in terms)
+    for u, v, w in edges:
+        assert 1 <= u <= n and 1 <= v <= n and u != v and 1 <= w <= MAXW
+    t = (f"{n} {m}\n" + " ".join(map(str, terms)) + "\n"
+         + "".join(f"{u} {v} {w}\n" for u, v, w in edges))
+    assert len(t) <= 3_000_000
+    tests.append(t)
 
 
-def name_of(x, num):
-    """x in [0, 26 + 26^2 + 26^3): the x-th string of 1-3 capital letters, then the number"""
-    k = 1
-    while x >= 26 ** k:
-        x -= 26 ** k
-        k += 1
-    s = ""
-    for _ in range(k):
-        s += LET[x % 26]
-        x //= 26
-    return s + str(num)
+def relabel(n, terms, edges):
+    """random vertex numbers, random edge order and direction; vertices are 0..n-1 here"""
+    lab = list(range(1, n + 1))
+    shuf(lab)
+    es = [(lab[u], lab[v], w) if _rnd() < 0.5 else (lab[v], lab[u], w) for u, v, w in edges]
+    shuf(es)
+    add(n, tuple(lab[x] for x in terms), es)
 
 
-def names(n, short=False):
-    """n distinct random names (short: numbers below 1000): a window of one random pool per kind (fast)"""
-    if short not in _pool:
-        seen, out = set(), []
-        top = 999 if short else 99999
-        while len(out) < MAXN + 5000:
-            k = ri(1, 3)
-            s = name_of(sum(26 ** j for j in range(1, k)) + ri(0, 26 ** k - 1), ri(1, top))
-            if s not in seen:
-                seen.add(s)
-                out.append(s)
-        assert all(map(NAME.match, out))
-        _pool[short] = out
-    s = ri(0, 5000)
-    return _pool[short][s:s + n]
+def grid(h, w, wfun, drop=0.0):
+    """h x w grid, vertex r * w + c; each edge is removed with probability drop (the spine stays)"""
+    es = []
+    for r in range(h):
+        for c in range(w):
+            v = r * w + c
+            if c + 1 < w and (r == 0 or _rnd() >= drop):
+                es.append((v, v + 1, wfun()))
+            if r + 1 < h and (c == 0 or _rnd() >= drop):
+                es.append((v, v + w, wfun()))
+    return es
 
 
-def const():
-    r = random.random()
-    if r < 0.15:
-        x = ri(0, 9)
-    elif r < 0.3:
-        x = ri(10 ** 9 - 1000, 10 ** 9)
-    else:
-        x = ri(0, 10 ** 9)
-    assert 0 <= x <= 10 ** 9
-    return str(x)
+def corners(h, w, inset, order):
+    """four vertices near the corners (top-left, bottom-left, top-right, bottom-right), each moved inwards by up to
+    inset rows / columns; order says which of a, b, c, t gets which corner"""
+    pts = []
+    for (r0, c0) in ((0, 0), (h - 1, 0), (0, w - 1), (h - 1, w - 1)):
+        dr, dc = ri(0, inset[0]), ri(0, inset[1])
+        r = r0 + dr if r0 == 0 else r0 - dr
+        c = c0 + dc if c0 == 0 else c0 - dc
+        pts.append(r * w + c)
+    return tuple(pts[i] for i in order)
 
 
-def sgn(p_minus=0.4):
-    return -1 if random.random() < p_minus else 1
+def rand_connected(n, extra, wfun, base=0):
+    """random tree on base..base+n-1 plus extra random edges"""
+    es = []
+    for i in range(1, n):
+        es.append((base + int(_rnd() * i), base + i, wfun()))
+    for _ in range(extra):
+        u, v = ri(0, n - 1), ri(0, n - 1)
+        if u != v:
+            es.append((base + u, base + v, wfun()))
+    return es
 
 
-class Sheet:
-    """cells 0..n-1 with names; terms[i] = the terms of cell i as strings with their sign (`+X1`, `-5`)"""
-
-    def __init__(self, n, short=False):
-        self.n = n
-        self.nm = names(n, short)
-        assert len(set(self.nm)) == n
-        self.terms = [[] for _ in range(n)]
-
-    def ref(self, i, j, sg=1):
-        self.terms[i].append(("-" if sg < 0 else "+") + self.nm[j])
-
-    def num(self, i, sg=1):
-        self.terms[i].append(("-" if sg < 0 else "+") + const())
-
-    def lines(self, order):
-        out = []
-        for i in order:
-            if not self.terms[i]:
-                self.num(i)
-            e = "".join(self.terms[i])
-            out.append(self.nm[i] + "=" + (e[1:] if e[0] == "+" else e))
-        return out
+def unif(lo, hi):
+    return lambda: ri(lo, hi)
 
 
-def chain_step(sh, i, j):
-    """cell i is built from cell j (the previous cell of a chain), often using it twice"""
-    r = random.random()
-    if r < 0.45:
-        sh.ref(i, j), sh.ref(i, j, sgn(0.3))
-    elif r < 0.6:
-        sh.ref(i, j), sh.ref(i, j), sh.ref(i, j, -1)
-    elif r < 0.8:
-        sh.ref(i, j, sgn()), sh.num(i, sgn())
-    else:
-        sh.ref(i, j, sgn())
-    if random.random() < 0.2:
-        sh.num(i, sgn())
+# order of the corners (TL, BL, TR, BR) -> (a, b, c, t): the left pair and the right pair belong together
+PAIR_AB = (0, 1, 2, 3)      # {a, b} left, {c, t} right
+PAIR_AC = (0, 2, 1, 3)      # {a, c} left, {b, t} right
+PAIR_AT = (0, 2, 3, 1)      # {a, t} left, {b, c} right
+
+def clusters(sizes, links, wf, lw):
+    """random connected clusters of the given sizes; links: (i, j, k) = k roads between clusters i and j"""
+    es, base = [], [0]
+    for sz in sizes:
+        es += rand_connected(sz, sz // 2, wf, base=base[-1])
+        base.append(base[-1] + sz)
+    for i, j, k in links:
+        for _ in range(k):
+            es.append((ri(base[i], base[i + 1] - 1), ri(base[j], base[j + 1] - 1), lw()))
+    return base, es
 
 
-def dag(sh, lo, hi, kmin, kmax, pick=None):
-    """cells lo..hi-1 refer to kmin..kmax random earlier cells (pick(i) chooses one), maybe a constant too"""
-    for i in range(lo, hi):
-        for _ in range(ri(kmin, kmax)):
-            j = pick(i) if pick else ri(0, i - 1)
-            sh.ref(i, j, sgn())
-        if random.random() < 0.3:
-            sh.num(i, sgn())
+def pad(es, m, extra=(0, 10)):
+    """add heavier parallel copies of random roads until there are m roads"""
+    es = list(es)
+    k = len(es)
+    while len(es) < m:
+        u, v, w = es[int(_rnd() * k)]
+        es.append((u, v, min(MAXW, w + ri(*extra))))
+    return es
 
 
-_perm = []
+def shortcuts(n, terms, es):
+    """for every two friends / concert junctions p, q: a direct road slightly cheaper than their shortest path
+    (when it fits the limits), so every shortest path between two of them is that road; this beats the greedy
+    ways that join the four junctions one by one along shortest paths (their tree has no other branching point)"""
+    adj = [[] for _ in range(n)]
+    for u, v, w in es:
+        adj[u].append((v, w))
+        adj[v].append((u, w))
+    dist = []
+    for s0 in terms:
+        d = [None] * n
+        d[s0] = 0
+        pq = [(0, s0)]
+        while pq:
+            dv, v = heapq.heappop(pq)
+            if dv > d[v]:
+                continue
+            for u, w in adj[v]:
+                if d[u] is None or dv + w < d[u]:
+                    d[u] = dv + w
+                    heapq.heappush(pq, (dv + w, u))
+        dist.append(d)
+    es = list(es)
+    for i in range(4):
+        for j in range(i + 1, 4):
+            d = dist[i][terms[j]]
+            if d is None or d < 2:
+                continue
+            w = d - 1 - ri(0, d // 200)
+            if w <= MAXW:
+                es.append((terms[i], terms[j], w))
+    assert len(es) <= MAXM
+    return es
 
 
-def order_of(n, kind):
-    if kind == "rev":
-        return list(range(n - 1, -1, -1))
-    if kind == "fwd":
-        return list(range(n))
-    if n < MAXN:
-        o = list(range(n))
-        random.shuffle(o)
-        return o
-    if not _perm:                   # every big test uses the same random line order (fast)
-        _perm.extend(range(MAXN))
-        random.shuffle(_perm)
-    return _perm
+def hshape(n, m, legs, bridge, legw, noisew, order):
+    """an H: junction 0 with legs to two friends / the concert, junction 1 with legs to the other two, a path of
+    `bridge` roads between the junctions; legs[k] roads per leg, light roads legw; the other vertices and roads are
+    heavy noise (noisew) that no cheapest set uses; returns (terms, edges) with vertices 0..n-1"""
+    es, nxt = [], [2]
+
+    def path(u, k):
+        for _ in range(k):
+            es.append((u, nxt[0], legw()))
+            u = nxt[0]
+            nxt[0] += 1
+        return u
+
+    ends = [path(0, legs[0]), path(0, legs[1]), path(1, legs[2]), path(1, legs[3])]
+    u = 0
+    for i in range(bridge - 1):
+        es.append((u, nxt[0], legw()))
+        u = nxt[0]
+        nxt[0] += 1
+    es.append((u, 1, legw()))
+    used = nxt[0]
+    assert used <= n
+    for v in range(used, n):
+        es.append((ri(0, v - 1), v, noisew()))
+    while len(es) < m - 6:
+        u, v = ri(0, n - 1), ri(0, n - 1)
+        if u != v:
+            es.append((u, v, noisew()))
+    terms = tuple(ends[i] for i in order)
+    return terms, shortcuts(n, terms, es)
 
 
-def mixed(n, L, kind, cycles=0, selfs=0, kmax=3, short=False):
-    """a chain of L cells (cell k uses cell k-1), then a random DAG over everything before it, then `cycles`
-    back references (a cell refers to a later cell) and `selfs` self references, all in the upper half of the
-    chain (everything built on them later breaks too)"""
-    sh = Sheet(n, short)
-    sh.num(0)
-    for k in range(1, L):
-        chain_step(sh, k, k - 1)
-    dag(sh, L, n, 1, kmax)
-    for _ in range(cycles):
-        i = ri(L // 2, min(L, n - 2))
-        sh.ref(i, ri(i + 1, min(n - 1, i + 1 + ri(0, n // 50 + 1))), sgn())
-    for _ in range(selfs):
-        i = ri(L // 2, L - 1)
-        sh.ref(i, i, sgn())
-    return sh.lines(order_of(n, kind))
+def pick(base, cl):
+    """distinct random vertices, the k-th one inside cluster cl[k]"""
+    while True:
+        pts = tuple(ri(base[c], base[c + 1] - 1) for c in cl)
+        if len(set(pts)) == len(pts):
+            return pts
 
 
 # samples
-add(["A1=B2+B2-3", "C7=A1+X1", "B2=10", "X1=Y2", "Y2=-X1+1"])
-add(["AB1=AB1", "Y1=900000000", "Z2=Y1+Y1", "CAT3=Z2-Z2+Z2", "D1=0"])
-add(["A1=A2+A2", "A2=A3+A3-1", "A3=A4+A4", "A4=-1000000000"])
-add(["X99999=-5"])
-add(["K1=K2+M3-7", "K2=5+P10", "M3=M3-M3+2", "P10=-4", "T6=-P10-P10+K2"])
-# hidden: small (brute checks these)
-add(["A1=0"])
-add(["Z1=-0"])
-add(["ZZZ99999=ZZZ99999+ZZZ99999"])
-add(["A1=B1", "B1=C1", "C1=A1", "D1=C1-C1", "E1=7-3+0"])
-add(mixed(30, 10, "rand", cycles=2, selfs=1, short=True))
-add(mixed(200, 60, "rev", cycles=0))
-add(mixed(500, 300, "rand", cycles=3, selfs=0))
-add(mixed(2000, 1200, "rev", cycles=1))
-add(mixed(4000, 3000, "rand", cycles=0))
-add(mixed(4000, 2000, "fwd", cycles=3, selfs=2))
-# hidden: big (N = 100000)
-N = MAXN
-add(mixed(N, N, "rev"))                                           # one long chain, lines in reverse order
-add(mixed(N, N, "rand"))                                          # the same in random order
-add(mixed(N, 60000, "rev", kmax=2, selfs=1))
-add(mixed(N, 50000, "rand", kmax=2, cycles=2))
-add(mixed(N, 40000, "rand", cycles=3))                            # a few cycles, everything after them breaks
-add(mixed(N, 40000, "rev", cycles=1, selfs=1))
-add(mixed(N, 70000, "rand", selfs=1))
-add(mixed(N, 30000, "rand", cycles=30, kmax=2, short=True))
-sh = Sheet(N)                                                     # one cycle through every cell
-for i in range(N):
-    sh.ref(i, (i + 1) % N, sgn())
-add(sh.lines(order_of(N, "rand")))
-sh = Sheet(N)                                                     # two interleaved long chains,
-sh.num(0)                                                         # one starts at a self reference
-sh.ref(1, 1, -1), sh.num(1)
-for i in range(2, N):
-    chain_step(sh, i, i - 2)
-add(sh.lines(order_of(N, "rev")))
-sh = Sheet(N)                                                     # a cycle in the middle of a long chain
-sh.num(0)
-for i in range(1, N):
-    chain_step(sh, i, i - 1)
-mid = N // 2
-sh.ref(mid, mid + 1000, -1)
-add(sh.lines(order_of(N, "rand")))
-sh = Sheet(N)                                                     # every cell uses the last one many times,
-sh.num(N - 1)                                                     # half of them also use a cell on a cycle
-sh.ref(N - 2, N - 3), sh.ref(N - 3, N - 2, -1)
-for i in range(N - 3):
-    for _ in range(ri(1, 3)):
-        sh.ref(i, N - 1, sgn(0.5))
-    if i % 2:
-        sh.ref(i, N - 2 - i % 4 // 2, sgn(0.5))
-add(sh.lines(order_of(N, "rand")))
-sh = Sheet(N, short=True)                                         # two long chains, one huge sum of all cells
-sh.num(0)
-for i in range(1, N - 1):
-    chain_step(sh, i, i - 1 if i != N // 2 else 0)
-for i in range(N - 1):
-    sh.ref(N - 1, i, sgn(0.5))
-add(sh.lines(order_of(N, "rev")))
-sh = Sheet(N)                                                     # chain where each cell also uses the cell two back
-sh.num(0)
-sh.ref(1, 0)
-for i in range(2, N):
-    sh.ref(i, i - 1, sgn()), sh.ref(i, i - 2, sgn())
-add(sh.lines(order_of(N, "rand")))
-sh = Sheet(N)                                                     # many small cycles and self references
-dag(sh, 1, N, 1, 2)
-sh.num(0)
-for _ in range(2000):
-    i = ri(0, N - 1)
-    sh.ref(i, i if random.random() < 0.5 else ri(i, min(N - 1, i + 5)), sgn())
-add(sh.lines(order_of(N, "rand")))
-add(mixed(N, 80000, "rand", cycles=1, kmax=2))
+add(6, (1, 2, 3, 4), [(1, 5, 3), (2, 5, 2), (3, 5, 4), (5, 4, 5), (3, 6, 1), (6, 4, 5)])
+add(5, (1, 2, 5, 3), [(1, 2, 4), (2, 3, 1), (3, 1, 2), (4, 5, 3)])
+add(4, (1, 2, 3, 4), [(1, 4, 5), (2, 4, 3), (1, 4, 2), (3, 4, 1)])
+add(5, (1, 2, 3, 4), [(1, 5, MAXW), (2, 5, MAXW), (5, 3, MAXW), (4, 5, MAXW)])
+add(5, (3, 4, 5, 2), [(1, 2, 6), (1, 3, 6), (1, 4, 7), (2, 5, 9), (1, 5, 6), (3, 1, 2)])
+# hidden: small
+add(4, (4, 3, 2, 1), [(1, 2, 5), (2, 3, 5), (3, 4, 5)])
+add(6, (1, 2, 3, 4), [(1, 5, 1), (5, 2, 1), (3, 6, 1), (6, 4, 1), (1, 2, 1), (3, 4, 1)])         # two parts: -1
+for n, extra, wmax, sc in ((8, 6, 9, False), (12, 10, 20, True), (60, 40, 10**6, True)):
+    es = rand_connected(n, extra, unif(1, wmax))
+    pts = tuple(random.sample(range(n), 4))
+    relabel(n, pts, shortcuts(n, pts, es) if sc else es)
+pts = corners(6, 8, (1, 2), PAIR_AC)
+relabel(48, pts, shortcuts(48, pts, grid(6, 8, unif(1, 9), 0.2)))
+base, es = clusters((40, 40), ((0, 1, 2),), unif(1, 50), unif(200, 400))
+pts = pick(base, (0, 1, 1, 0))
+relabel(80, pts, shortcuts(80, pts, es))
+pts, es = hshape(150, 400, (12, 15, 10, 14), 8, unif(1, 100), unif(10**4, 10**5), PAIR_AC)
+relabel(150, pts, es)
+# hidden: maximum size (N = 400)
+# grids with the four friends near the corners: the left pair and the right pair belong together
+for (h, w), pairing, inset, wf, drop, m in (
+        ((10, 40), PAIR_AC, (1, 8), unif(1, 10**6), 0.0, MAXM),
+        ((10, 40), PAIR_AT, (2, 10), unif(1, 30), 0.0, 0),
+        ((8, 50), PAIR_AB, (0, 0), unif(1, 1000), 0.1, MAXM),
+        ((20, 20), PAIR_AT, (4, 4), unif(1, 1000), 0.0, 5000),
+        ((16, 25), PAIR_AC, (3, 5), unif(1, 1000), 0.1, MAXM),
+        ((4, 100), PAIR_AT, (0, 20), unif(MAXW - 10**6, MAXW), 0.0, MAXM),
+        ((5, 80), PAIR_AC, (1, 15), unif(1, 10**6), 0.0, 12_000),
+        ((8, 50), PAIR_AT, (2, 10), unif(1, 100), 0.05, MAXM),
+        ((20, 20), PAIR_AC, (6, 6), unif(1, 10**6), 0.0, MAXM)):
+    es = grid(h, w, wf, drop)
+    pts = corners(h, w, inset, pairing)
+    relabel(h * w, pts, shortcuts(h * w, pts, pad(es, m - 6, (0, 1000)) if m else es))
+# two dense clusters joined by a few expensive roads
+for pairing in (PAIR_AT, PAIR_AB, PAIR_AC):
+    base, es = clusters((200, 200), ((0, 1, 5),), unif(1, 1000), unif(10**4, 10**5))
+    for _ in range(MAXM - 6 - len(es)):             # more roads inside the clusters
+        c = ri(0, 1)
+        u, v = ri(base[c], base[c + 1] - 1), ri(base[c], base[c + 1] - 1)
+        if u != v:
+            es.append((u, v, ri(500, 5000)))
+    pts = pick(base, (0, 0, 1, 1))
+    pts = tuple(pts[i] for i in pairing)
+    relabel(MAXN, pts, shortcuts(MAXN, pts, es))
+# three clusters in a row: two friends in the first, the others in the second and the third
+base, es = clusters((160, 80, 160), ((0, 1, 4), (1, 2, 4)), unif(1, 1000), unif(10**5, 10**6))
+pts = pick(base, (0, 0, 1, 2))
+pts = (pts[0], pts[2], pts[3], pts[1])
+relabel(MAXN, pts, shortcuts(MAXN, pts, pad(es, MAXM - 6, (0, 10**6))))
+# a sparse H: long legs, a long bridge
+pts, es = hshape(MAXN, 700, (30, 35, 25, 40), 100, unif(1, 10**6), unif(10**8, MAXW), PAIR_AC)
+relabel(MAXN, pts, es)
+# a long path, all roads at the maximum (the largest answer)
+pos = random.sample(range(MAXN), 4)
+relabel(MAXN, tuple(pos), pad([(i, i + 1, MAXW) for i in range(MAXN - 1)], MAXM))
+# a deep tree (every road is needed)
+es = [(ri(max(0, i - 3), i - 1), i, ri(1, 10**6)) for i in range(1, MAXN)]
+relabel(MAXN, tuple(random.sample(range(MAXN), 4)), es)
+# random dense graphs
+es = rand_connected(MAXN, MAXM - MAXN + 1 - 6, unif(1, 10**6))
+pts = tuple(random.sample(range(MAXN), 4))
+relabel(MAXN, pts, shortcuts(MAXN, pts, es))
+# H shapes hidden among heavy roads
+pts, es = hshape(MAXN, MAXM, (40, 45, 50, 42), 60, unif(1, 2 * 10**5), unif(10**8, MAXW), PAIR_AT)
+relabel(MAXN, pts, es)
+pts, es = hshape(MAXN, MAXM, (70, 60, 65, 75), 5, unif(1, 1000), unif(10**6, 10**7), PAIR_AB)
+relabel(MAXN, pts, es)
+# a spider: four long legs from a hub to the four friends, plus direct roads between the friends that are
+# slightly cheaper than going through the hub
+legs, es, ends, lens = [99, 100, 100, 100], [], [], []
+v = 1
+for k in legs:
+    prev, tot = 0, 0
+    for _ in range(k):
+        w = ri(1, 10**6)
+        es.append((prev, v, w))
+        prev, tot = v, tot + w
+        v += 1
+    ends.append(prev)
+    lens.append(tot)
+for i in range(4):
+    for j in range(i + 1, 4):
+        es.append((ends[i], ends[j], lens[i] + lens[j] - ri(1, 1000)))
+relabel(v, (ends[1], ends[2], ends[3], ends[0]), pad(es, MAXM, (10**6, 10**7)))
+# two components: c cannot reach the concert
+base, es = clusters((MAXN // 2, MAXN // 2), (), unif(1, 10**6), None)
+pts = pick(base, (0, 0, 1, 0))
+relabel(MAXN, pts, pad(es, MAXM))
 
 for t in tests:
-    assert t.endswith("\n") and " " not in t
+    assert t.endswith("\n") and "  " not in t and " \n" not in t
 os.makedirs("tests", exist_ok=True)
 for i, t in enumerate(tests, 1):
     with open(f"tests/{i:02d}.in", "w") as f:

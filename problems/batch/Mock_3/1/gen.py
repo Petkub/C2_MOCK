@@ -5,7 +5,7 @@ random.seed(2611)
 os.makedirs("tests", exist_ok=True)
 cases = []
 cases.append([(1, 5), (3, 8), (4, 6)])
-cases.append([(0, 10), (0, 10)])
+cases.append([(0, 4), (6, 10), (2, 8)])   # 2026-11 port: ordinary sample (old one is the last test)
 cases.append([(1, 2), (2, 3), (5, 9)])
 cases.append([(0, 1000000000)])
 cases.append([(2, 7), (1, 9), (3, 4), (3, 4)])
@@ -83,6 +83,7 @@ extra.append(shuf([(l, B) for l in sorted_points(M, 0, B)]))     # all stay unti
 extra.append([(ri(0, B // 3), ri(2 * B // 3, B)) for _ in range(M)])
 extra.append(shuf([(ri(0, 10**6), B - ri(0, 10**6)) for _ in range(M // 2)] + rnd2(M // 2, B, B)))
 extra.append([(lambda l: (l, l + ri(B // 4, B - l)))(ri(0, 3 * B // 4 - 1)) for _ in range(M)])
+extra.append([(0, 10), (0, 10)])                # old sample 2 (identical intervals), now hidden
 for i, I in enumerate(cases + extra, 1):
     if i <= len(cases):
         random.shuffle(I) if i > 5 else None

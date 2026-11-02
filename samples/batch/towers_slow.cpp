@@ -1,4 +1,4 @@
-// Time Limit Exceeded: correct, but tries P = 0, 1, 2, ... (sample 5 needs P = 2000000000).
+// Time Limit Exceeded: correct, but tries P = 0, 1, 2, ... (some tests need P near 2 * 10^9).
 #include <bits/stdc++.h>
 using namespace std;
 using ll = long long;
