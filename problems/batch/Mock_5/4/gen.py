@@ -1,115 +1,111 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
 import os, random
 
-random.seed(7404)
-MAXN, MAXK, MAXC = 50000, 700, 10 ** 9
+random.seed(1404001)
+MAXN, MAXW = 150000, 10 ** 9
 tests = []
 rnd = random.random
 
 
 def ri(a, b):
+    """random integer in [a, b] (faster than randint, still deterministic)"""
     return a + int(rnd() * (b - a + 1))
 
 
-def add(k, c):
-    n = len(c)
-    assert 1 <= n <= MAXN and 1 <= k <= min(n, MAXK)
-    assert all(x == -1 or 1 <= x <= MAXC for x in c)
-    tests.append(f"{n} {k}\n" + " ".join(map(str, c)) + "\n")
+def add(people):
+    n = len(people)
+    assert 1 <= n <= MAXN
+    for w, c in people:
+        assert 1 <= w <= MAXW and 1 <= c <= n
+    tests.append(f"{n}\n" + "".join(f"{w} {c}\n" for w, c in people))
 
 
-def costs(n, lo=1, hi=MAXC, broken=0.0):
-    return [-1 if rnd() < broken else ri(lo, hi) for _ in range(n)]
+def shuffled(people):
+    people = list(people)
+    random.shuffle(people)
+    return people
 
 
-def wrap_trap(n, k, cheap=1, dear=MAXC, base=(10 ** 6, 10 ** 7)):
-    """posts near the cut 1|N are dear, except one cheap post at K and one at N-K+1: a line DP that only asks
-    for a guard among posts 1..K and among posts N-K+1..N takes both, leaving a gap of 2K-1 around the ring"""
-    c = costs(n, *base)
-    for i in range(k):
-        c[i] = dear - ri(0, 1000)
-        c[n - 1 - i] = dear - ri(0, 1000)
-    c[k - 1] = cheap
-    c[n - k] = cheap
-    return c
+def cheap_small(n, wmax, noise=0):
+    """the cheaper the applicant, the smaller the team he accepts"""
+    ws = sorted(ri(1, wmax) for _ in range(n))
+    cs = sorted(ri(1, n) for _ in range(n))
+    out = []
+    for w, c in zip(ws, cs):
+        if noise and ri(1, noise) == 1:
+            c = ri(1, n)
+        out.append((w, c))
+    return shuffled(out)
 
 
-def periodic(n, k, period, cheap=(1, 10), dear=(10 ** 8, MAXC), shift=0):
-    return [ri(*cheap) if (i + shift) % period == 0 else ri(*dear) for i in range(n)]
+def cheap_big(n, wmax):
+    """the cheaper the applicant, the larger the team he accepts"""
+    ws = sorted(ri(1, wmax) for _ in range(n))
+    cs = sorted((ri(1, n) for _ in range(n)), reverse=True)
+    return shuffled(zip(ws, cs))
 
 
-def break_run(c, start, length):
-    """posts start..start+length-1 (0-based, around the ring) become broken"""
-    n = len(c)
-    for t in range(length):
-        c[(start + t) % n] = -1
-    return c
+def few_limits(n, k, wmax):
+    """only k different limits, many applicants share each"""
+    lim = [ri(1, n) for _ in range(k)]
+    return [(ri(1, wmax), lim[int(rnd() * k)]) for _ in range(n)]
+
+
+def upper_half(n, wmax):
+    """every applicant accepts at least half of n, so most sizes have an answer"""
+    return [(ri(1, wmax), ri(n // 2, n)) for _ in range(n)]
+
+
+def steps(n, wmax):
+    """limit c is taken by about c applicants... a staircase where c applicants accept exactly c"""
+    out = []
+    c = n
+    while len(out) < n:
+        take = min(n - len(out), max(1, c // 3))
+        out += [(ri(1, wmax), c) for _ in range(take)]
+        c = max(1, c - take)
+    return shuffled(out)
 
 
 # samples
-add(3, [4, 1, 5, 3, 2, 6, 2, 5])
-add(2, [3, -1, -1, 4, 2, 5])
-add(1, [7])
-add(4, [6, -1, 3, 8])
-add(3, [2, 9, 4, -1, 1, 7, 7, 3, -1, 5])
-
-def decoys(c, k, spots, cost=1):
-    """the cheapest posts of all sit between the posts of a cheap every-K pattern (or elsewhere)"""
-    for p in spots:
-        c[p] = cost
-    return c
-
-
-def trap(n, k, r, rr, cheap=(10, 99), dec=(1, 9), dear=(10 ** 6, MAXC), broken=0.0, base=None):
-    """K divides n; the cheap posts r, r + K, ... (0-based) are the only cheapest cover; decoys rr, rr + 2K, ...
-    (rr != r, never K apart, not even across the join) are the cheapest posts of all and one of them lies in
-    1..K, but a cover using a decoy needs an extra guard: forcing the cheapest post (globally or in 1..K) fails"""
-    assert n % k == 0 and r != rr and 0 <= min(r, rr) and max(r, rr) < k
-    c = base if base is not None else costs(n, *dear, broken)
-    for i in range(r, n, k):
-        c[i] = ri(*cheap)
-    for i in range(rr, rr + n - 2 * k + 1, 2 * k):
-        c[i] = ri(*dec)
-    return c
-
-
-# hidden: small (the brute checks these)
-add(2, [-1, 5])
-add(3, break_run(costs(12, 1, 20), 10, 3))               # three broken posts across the join of N and 1
-add(5, wrap_trap(40, 5, base=(100, 200), dear=1000))
-add(4, decoys(periodic(60, 4, 4, cheap=(5, 6), dear=(50, 90)), 4, (2, 30)))
-add(15, trap(300, 15, 9, 2, dear=(1000, MAXC)))
-add(300, costs(300, 1, MAXC, 0.3))
-add(5, decoys(periodic(500, 5, 5, cheap=(20, 30), dear=(40, 100)), 5, (2, 97, 242)))
-add(25, trap(1000, 25, 3, 20, broken=0.3))
-add(20, trap(400, 20, 0, 13, cheap=(5, 9), dec=(1, 4), dear=(100, 1000)))
-add(9, break_run(costs(700, 1, 1000, 0.1), 300, 9))      # a run of K broken posts in the middle: -1
-
-# hidden: big
-N, K = MAXN, MAXK
-NK = N - N % K                                            # the largest ring that K divides
-add(K, costs(N))
-add(K - 1, costs(N, 1, MAXC, 0.05))
-add(K, decoys(periodic(NK, K, K, cheap=(100, 300), dear=(301, 1000), shift=17), K, (200, 30 * K + 250, 31 * K + 260)))
-add(K, wrap_trap(N, K))
-add(625, trap(N, 625, 624, 0))
-add(K, decoys(periodic(NK, K, K, cheap=(2, 10), shift=K // 2), K, (0, 40 * K, 42 * K)))  # cheap posts exactly K apart
-add(K, decoys(periodic(NK, K, K, cheap=(2, 9), shift=100), K, (25, 50 * K + 25)))
-add(1, [MAXC] * N)
-add(K, [MAXC] * N)
-add(K, trap(NK, K, 0, K - 1, cheap=(10 ** 8, 10 ** 8 + 99), dec=(10 ** 8 - 99, 10 ** 8 - 1), dear=(MAXC, MAXC)))
-add(K, trap(NK, K, 123, 45, base=[MAXC - i * 9000 for i in range(NK)]))          # decreasing, with a trap
-add(625, trap(N, 625, 77, 200, cheap=(5000, 9000), dec=(1, 4999)))
-add(K, trap(NK, K, 7, 150, broken=0.4))
-add(K, break_run(costs(N), N - 250, K))                   # K broken posts across the join of N and 1: -1
-add(K, trap(NK, K, 77, 5, broken=1.0))                    # only the cheap posts and the decoys work
-# every K-th post works (the gap across the join is shorter), plus cheaper decoys that never replace one of them
-c = [-1 if i % K != 5 else ri(10, 99) for i in range(N)]
-add(K, decoys(c, K, range(K - 200, N - 2 * K + 1, 2 * K)))
-add(K, trap(NK, K, 4, 6, cheap=(10 ** 5, 10 ** 6), dec=(1, 10 ** 5 - 1), dear=(10 ** 7, MAXC)))
-add(K, [ri(1, 10) if i < K or i >= N - K else ri(10 ** 6, 10 ** 9) for i in range(N)])
-add(K, trap(NK, K, K - 7, K // 2, cheap=(5, 10), dec=(1, 4), broken=0.1))
-add(500, decoys(periodic(N, 500, 500, cheap=(100, 200), dear=(10 ** 5, MAXC)), 500, (123, 25000 + 200, 37777)))
+add([(5, 2), (3, 4), (8, 5), (1, 1), (4, 3)])
+add([(6, 4), (2, 3), (7, 4), (1, 2)])
+add([(3, 2), (3, 2), (3, 2)])
+add([(10, 6), (4, 2), (9, 5), (2, 3), (7, 6), (5, 1)])
+add([(1, 7), (8, 3), (6, 4), (2, 2), (9, 7), (3, 5), (4, 6)])
+# hidden: small (brute checks these)
+add([(MAXW, 1)])
+add([(ri(1, 9), ri(1, 8)) for _ in range(8)])
+add(cheap_small(1000, 1000))
+add(cheap_big(1000, MAXW))
+add(few_limits(2000, 3, 50))
+add(upper_half(2000, MAXW))
+add(steps(2000, 10 ** 6))
+add([(MAXW, 3000)] * 3000)
+# hidden: big (each with its own seed)
+N = MAXN
+BIG = [
+    (1407000, lambda: [(MAXW, N)] * N),
+    (1407001, lambda: [(ri(1, MAXW), ri(1, N)) for _ in range(N)]),
+    (1407002, lambda: cheap_small(N, MAXW)),
+    (1407003, lambda: cheap_small(N, 1000, 50)),
+    (1407004, lambda: cheap_big(N, MAXW)),
+    (1407005, lambda: few_limits(N, 5, 10 ** 6)),
+    (1407006, lambda: few_limits(N, 100, 1000)),
+    (1407007, lambda: upper_half(N, 10 ** 6)),
+    (1407008, lambda: steps(N, 10 ** 6)),
+    (1407009, lambda: [(ri(MAXW - 1000, MAXW), ri(N - 1000, N)) for _ in range(N)]),
+    (1407010, lambda: shuffled([(i + 1, i + 1) for i in range(N)])),
+    (1407011, lambda: shuffled([(MAXW - i, i + 1) for i in range(N)])),
+    (1407012, lambda: [(ri(1, 10 ** 6), N if ri(0, 1) else ri(1, 10)) for _ in range(N)]),
+    (1407013, lambda: [(ri(1, 10), ri(1, N)) for _ in range(N)]),
+    (1407014, lambda: cheap_small(N, 10 ** 6, 1000)),
+    (1407015, lambda: [(ri(1, 10 ** 6), N - int(N * rnd() ** 3)) for _ in range(N)]),
+    (1407016, lambda: [(ri(1, 10 ** 5), N // 2) for _ in range(N)]),
+]
+for seed, make in BIG:
+    random.seed(seed)
+    add(make())
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

@@ -1,118 +1,101 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
 import os, random
 
-random.seed(810451)
-MAXN, MAXT = 200000, 10 ** 9
+random.seed(1302001)
+MAXQ, MAXV = 50000, 10 ** 18
 tests = []
 
 
-def add(k, t):
-    n = len(t)
-    assert 1 <= n <= MAXN and 1 <= k <= n
-    assert all(1 <= x <= MAXT for x in t)
-    tests.append(f"{n} {k}\n" + " ".join(map(str, t)) + "\n")
+def add(qs):
+    assert 1 <= len(qs) <= MAXQ
+    for a, b in qs:
+        assert 0 <= a <= MAXV and 0 <= b <= MAXV
+    tests.append("\n".join([str(len(qs))] + [f"{a} {b}" for a, b in qs]) + "\n")
 
 
-def relabel(t, big):
-    """replace type numbers by distinct random labels (up to 10^9 when big)"""
-    used = sorted(set(t))
-    hi = MAXT if big else max(len(used) * 3, 10)
-    lab = random.sample(range(1, hi + 1), len(used))
-    m = dict(zip(used, lab))
-    return [m[x] for x in t]
+def isqrt(x):
+    r = int(x ** 0.5)
+    while r * r > x:
+        r -= 1
+    while (r + 1) * (r + 1) <= x:
+        r += 1
+    return r
 
 
-def uniform(n, m):
-    return [random.randint(1, m) for _ in range(n)]
+def clip(v):
+    return max(0, min(MAXV, v))
 
 
-def rare(n, common, rares, gaps, tail, late=False):
-    """`common` frequent types everywhere, rare types (labels common+1 .. common+rares) at spaced positions:
-    the gaps between consecutive rare items are drawn from `gaps` (a (lo, hi) range), the last rare item is
-    `tail` positions before the end; late: the longest gaps come last"""
-    t = [random.randint(1, common) for _ in range(n)]
-    g = [random.randint(*gaps) for _ in range(n // gaps[0] + 1)]
-    if late:
-        g.sort(reverse=True)
-    pos, j = n - 1 - tail, 0
-    while pos >= 0:
-        t[pos] = common + random.randint(1, rares)
-        pos -= g[j]
-        j += 1
-    return t
+def logu(hi):
+    """a value spread over all orders of magnitude up to hi"""
+    return min(hi, int(10 ** random.uniform(0, 18.0001)))
 
 
-def tailfix(t, k, x):
-    """the last x items get only k - 1 of the types that occur in t"""
-    keep = random.sample(sorted(set(t)), k - 1)
-    return t[:len(t) - x] + [random.choice(keep) for _ in range(x)]
+def square_edge(p):
+    """the cans of p odd rows, give or take one"""
+    return clip(p * p + random.choice((-1, -1, 0, 1)))
 
 
-def runs(n, m, mean):
-    """runs of one type with random lengths 1 .. 2 * mean"""
-    t = []
-    while len(t) < n:
-        t += [random.randint(1, m)] * random.randint(1, 2 * mean)
-    return t[:n]
+def even_edge(q):
+    """the cans of q even rows, give or take one"""
+    return clip(q * (q + 1) + random.choice((-1, -1, 0, 1)))
 
 
-def cyc(n, m, noise):
-    """a fixed order of m types repeated, with a few positions changed"""
-    p = list(range(1, m + 1))
-    random.shuffle(p)
-    t = [p[i % m] for i in range(n)]
-    for _ in range(noise):
-        t[random.randrange(n)] = random.randint(1, m)
-    return t
+def edge_pair(lo, hi):
+    """one colour exactly at a boundary, the other with enough cans or just one row short of it"""
+    p = random.randint(lo, hi)
+    kind = random.randint(0, 3)
+    if kind == 0:
+        a, b = square_edge(p), even_edge(p + random.randint(-1, 1))
+    elif kind == 1:
+        a, b = square_edge(p), even_edge(p - 1 + random.randint(0, 1))
+    elif kind == 2:
+        a, b = even_edge(p), square_edge(p + random.randint(-1, 1))
+    else:
+        a, b = square_edge(p), clip(random.randint(p * p - 2 * p, p * p + 2 * p))
+    return (a, b) if random.random() < 0.5 else (b, a)
 
 
 # samples
-add(3, [5, 2, 5, 5, 7, 2, 2, 7])
-add(4, [3, 1, 3, 1, 2])
-add(1, [4, 4, 4, 4, 4, 4])
-add(3, [1, 2, 3, 1, 2, 3, 4, 4, 4, 4])
-add(3, [9, 4, 4, 9, 1, 4, 1, 1, 9, 9, 4, 4])
+add([(5, 6), (0, 7), (10, 2)])
+add([(3, 1), (2, 2)])
+add([(0, 0), (1, 0), (0, 1), (6, 3), (100, 100)])
+add([(7, 12), (12, 7), (16, 20), (20, 16), (1, 1000)])
+add([(1000000, 1000000), (123456789, 987654321), (999999999999, 0)])
 # hidden: small (brute checks these)
-add(1, [7])
-add(2, [3, 8])
-add(2, [8, 8])
-add(6, [6, 1, 5, 2, 4, 3])
-add(30, relabel(uniform(30, 29), True))                      # K = N, a repeated type: -1
-add(7, relabel(rare(500, 6, 2, (20, 60), 120), False))     # long tail without rare types
-add(25, relabel(tailfix(runs(3000, 40, 6), 25, 900), False))
-add(40, relabel(cyc(4000, 45, 300), False))
-add(300, relabel(tailfix(uniform(20000, 330), 300, 2500), False))
-# hidden: big (N = 200000)
-N = MAXN
-add(5, relabel(rare(N, 4, 1, (10000, 30000), 95000), False))      # the tail decides
-add(5, relabel(rare(N, 4, 1, (25000, 50000), 2000, True), True))  # the last inner gap decides
-add(9, relabel(rare(N, 7, 3, (1, 70000), 80000), False))
-add(30, relabel(rare(N, 28, 5, (8000, 30000), 25000, True), True))
-add(3000, relabel(tailfix(uniform(N, 3000), 3000, 70000), False))
-add(4000, relabel(uniform(N, 4200), True))
-add(2500, relabel(tailfix(uniform(N, 2500), 2500, 100000), False))
-add(50, relabel(tailfix(uniform(N, 50), 50, 110000), True))
-add(100, relabel(tailfix(runs(N, 120, 300), 100, 90000), False))
-add(50, relabel(runs(N, 400, 150), True))
-add(60000, relabel(tailfix(uniform(N, 150000), 60000, 100000), True))
-add(20000, relabel(cyc(N, 20000, 0), False))                     # answer = K
-add(19000, relabel(tailfix(cyc(N, 20000, 5000), 19000, 40000), True))
-add(60000, relabel(cyc(N, 60001, 1), False))
-t = tailfix(rare(N, 12, 4, (5000, 20000), 0, True), 14, 110000)
-add(14, relabel(t, False))
-t = relabel(uniform(N, 5000), False)
-add(len(set(t)) + 1, t)                                            # -1
-add(1, relabel(uniform(N, 2), True))                               # K = 1
-t = [1] + [random.randint(2, 50) for _ in range(N - 1)]
-add(len(set(t)), relabel(t, True))                                 # type 1 only first: answer N
-t = rare(N, 10, 1, (1000, 40000), 0, True)
-t[-1] = 11
-add(11, relabel(t, False))                                         # a rare item at the very end
-add(2, relabel(tailfix(runs(N, 2, 20000), 2, 120000), False))
-add(N, list(range(1, N + 1)))                                      # K = N, all different
+add([(a, b) for a in range(0, 30) for b in range(0, 30)])
+add([(random.randint(0, 10 ** 4), random.randint(0, 10 ** 4)) for _ in range(2000)])
+add([edge_pair(1, 3000) for _ in range(2000)])
+add([(random.randint(0, 10 ** 8), random.randint(0, 10 ** 8)) for _ in range(300)])
+add([edge_pair(1000, 30000) for _ in range(300)])
+add([(random.randint(0, 10 ** 9), random.randint(0, 50)) for _ in range(200)]
+    + [(random.randint(0, 50), random.randint(0, 10 ** 9)) for _ in range(200)])
+add([(MAXV, MAXV)])
+# hidden: big
+add([(MAXV - random.randint(1, 10 ** 9), MAXV) if i % 2 else (MAXV, MAXV - random.randint(1, 10 ** 9))
+     for i in range(MAXQ)])
+add([(MAXV - i, MAXV - random.randint(0, 3)) for i in range(MAXQ)])
+add([edge_pair(900000000, 1000000000) for _ in range(MAXQ)])
+add([edge_pair(900000000, 1000000000) for _ in range(MAXQ)])
+add([edge_pair(1, 1000000000) for _ in range(MAXQ)])
+add([edge_pair(100000000, 1000000000) for _ in range(MAXQ)])
+add([(logu(MAXV), logu(MAXV)) for _ in range(MAXQ)])
+add([(random.randint(0, MAXV), random.randint(0, MAXV)) if i % 2 else edge_pair(1, 1000000000) for i in range(MAXQ)])
+add([edge_pair(500000000, 1000000000) for _ in range(MAXQ)])
+add([edge_pair(200000000, 1000000000) for _ in range(MAXQ)])
+bigp = [(p * p - 1, MAXV) for p in range(10 ** 9, 10 ** 9 - MAXQ // 2, -1)]
+add(bigp + [(b, a) for a, b in bigp])
+bigq = [(MAXV, q * (q + 1) - 1) for q in range(999999999, 999999999 - MAXQ // 2, -1)]
+add(bigq + [(b, a) for a, b in bigq])
+add([(clip(p * p - 1), clip(p * p - p - 1)) for p in (random.randint(5 * 10 ** 8, 10 ** 9) for _ in range(MAXQ))])
+add([(clip(x), clip(x + random.randint(-2 * 10 ** 9, 2 * 10 ** 9)))
+     for x in (random.randint(10 ** 17, MAXV) for _ in range(MAXQ))])
+add([edge_pair(100000000, 1000000000) if i % 10 else edge_pair(1, 1000) for i in range(MAXQ)])
+add([(random.randint(0, 10 ** 12), random.randint(0, 10 ** 12)) for _ in range(MAXQ)])
+add([(random.randint(0, 10 ** 14), random.randint(0, MAXV)) if i % 2 else (random.randint(0, MAXV), random.randint(0, 10 ** 14))
+     for i in range(MAXQ)])
+add([edge_pair(999000000, 1000000000) for _ in range(MAXQ)])
 
-for t in tests:
-    assert t.endswith("\n") and "  " not in t and " \n" not in t
 os.makedirs("tests", exist_ok=True)
 for i, t in enumerate(tests, 1):
     with open(f"tests/{i:02d}.in", "w") as f:

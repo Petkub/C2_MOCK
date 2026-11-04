@@ -1,241 +1,153 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
 import os, random
 
-random.seed(60401)
-MAXN = MAXM = 100_000
-MAXK = 20
-MAXC = 10**9
+random.seed(730101)
+MAXRC, MAXM, MAXQ = 3000, 20000, 100000
 tests = []
+rnd = random.random
 
 
-def ri(lo, hi):
-    return lo + int(random.random() * (hi - lo + 1))
+def ri(a, b):
+    """random integer in [a, b] (faster than randint, still deterministic)"""
+    return a + int(rnd() * (b - a + 1))
 
 
-def add(n, k, col, roads, relabel=True):
-    m = len(roads)
-    assert 2 <= n <= MAXN and 1 <= m <= MAXM and 1 <= k <= min(n, MAXK) and len(col) == n
-    assert 1 <= min(col) and max(col) <= MAXC
-    us, vs = zip(*roads)
-    assert 1 <= min(us) and max(us) <= n and 1 <= min(vs) and max(vs) <= n
-    assert not any(map(int.__eq__, us, vs))
-    if relabel:                                  # hide the construction order behind random house numbers
-        r = random.random
-        key = [0.0] + [r() for _ in range(n)]
-        lab = [0] + sorted(range(1, n + 1), key=key.__getitem__)
-        newcol = [0] * (n + 1)
-        for i, c in zip(lab[1:], col):
-            newcol[i] = c
-        col = newcol[1:]
-        us = [lab[u] for u in us]
-        vs = [lab[v] for v in vs]
-    tests.append(f"{n} {m} {k}\n" + " ".join(map(str, col)) + "\n"
-                 + "".join([f"{u} {v}\n" for u, v in zip(us, vs)]))
+def add(R, C, s, segs, qs):
+    assert 1 <= R <= MAXRC and 1 <= C <= MAXRC and 1 <= s <= C
+    assert 0 <= len(segs) <= MAXM and 1 <= len(qs) <= MAXQ
+    for r1, c1, r2, c2 in segs:
+        assert 1 <= r1 <= r2 <= R and 1 <= c1 <= c2 <= C and (r1 == r2 or c1 == c2)
+        assert not (r1 <= 1 <= r2 and c1 <= s <= c2), "the source is a rock"
+    for r, c in qs:
+        assert 1 <= r <= R and 1 <= c <= C
+    lines = [f"{R} {C} {s} {len(segs)}"] + [f"{a} {b} {c} {d}" for a, b, c, d in segs]
+    lines += [str(len(qs))] + [f"{r} {c}" for r, c in qs]
+    tests.append("\n".join(lines) + "\n")
 
 
-def orient(u, v, how):
-    """how: 'r' random, 'u' keep (u, v), 's' swap"""
-    if how == "s" or (how == "r" and random.random() < 0.5):
-        return (v, u)
-    return (u, v)
+def safe(segs, s):
+    """drop the segments that would cover the source (1, s)"""
+    return [g for g in segs if not (g[0] <= 1 <= g[2] and g[1] <= s <= g[3])]
 
 
-def distinct_colours(n, hi=MAXC):
-    seen, out, r = set(), [], random.random
-    while len(out) < n:         # each draw adds at most one colour, so n - len(out) draws never overshoot
-        new = [c for c in dict.fromkeys([1 + int(r() * hi) for _ in range(n - len(out))]) if c not in seen]
-        seen.update(new)
-        out += new
+def queries(R, C, s, segs, q):
+    """random cells, rock cells, the source, cells near the source and repeats"""
+    qs = [(ri(1, R), ri(1, C)) for _ in range(q * 6 // 10)]
+    for _ in range(q // 10):
+        if not segs:
+            break
+        r1, c1, r2, c2 = segs[int(rnd() * len(segs))]
+        qs.append((ri(r1, r2), ri(c1, c2)))
+    qs.append((1, s))
+    while len(qs) < q * 9 // 10:
+        qs.append((ri(1, min(R, 40)), max(1, min(C, s + ri(-40, 40)))))
+    k = len(qs)
+    while len(qs) < q:          # repeats
+        qs.append(qs[int(rnd() * k)])
+    return qs
+
+
+def shelves(R, C, k, lmin, lmax, rmin=3):
+    """k horizontal rock shelves at random places; a shelf at row r is at most r // 2 long, so no single
+    shelf closes the cone of cells the source reaches"""
+    out = []
+    for _ in range(k):
+        r = ri(rmin, R)
+        ln = min(ri(lmin, lmax), max(1, r // 2))
+        c = ri(1, max(1, C - ln + 1))
+        out.append((r, c, r, min(C, c + ln - 1)))
     return out
 
 
-def rnd_colours(n, hi):
-    return [ri(1, hi) for _ in range(n)]
-
-
-def chain(n, how):
-    """road j joins the district of houses 1..j with the lone house j + 1 (house j + 1 first when how = 'u')"""
-    r, roads = random.random, []
-    for j in range(1, n):           # = orient(j + 1, ri(1, j) if r() < 0.3 else j, how), written out (faster)
-        v = 1 + int(r() * j) if r() < 0.3 else j
-        roads.append((v, j + 1) if how == "s" or (how == "r" and r() < 0.5) else (j + 1, v))
-    return roads
-
-
-def star(n, how):
-    return [orient(1, j, how) for j in range(2, n + 1)]
-
-
-def balanced(n):
-    """merge districts in pairs, then pairs of pairs, ... (equal sizes every time)"""
-    groups = [[i] for i in range(1, n + 1)]
-    roads = []
-    while len(groups) > 1:
-        nxt = []
-        for i in range(0, len(groups) - 1, 2):
-            a, b = groups[i], groups[i + 1]
-            roads.append(orient(random.choice(a), random.choice(b), "r"))
-            nxt.append(a + b if len(a) >= len(b) else b + a)
-        if len(groups) % 2:
-            nxt.append(groups[-1])
-        groups = nxt
-    return roads
-
-
-def rnd_roads(n, m):
-    roads = []
-    for _ in range(m):
-        u = ri(1, n)
-        v = ri(1, n - 1)
-        v += v >= u
-        roads.append((u, v))
-    return roads
-
-
-def shuffled(a):
-    r = random.random
-    return sorted(a, key=lambda _: r())
-
-
-def rnd_tree(n):
-    roads = [orient(j, ri(max(1, j - 1 - ri(0, 50)), j - 1), "r") for j in range(2, n + 1)]
-    return shuffled(roads)
-
-
-def two_fronts(n, how):
-    """two districts grow side by side (each road adds one lone house to one of them), then they meet"""
-    roads = []
-    for j in range(3, n + 1):
-        side = 1 if random.random() < 0.5 else 2
-        roads.append(orient(j, side, how))
-    roads.append((1, 2))
-    return roads
-
-
-def grow(n):
-    """road j joins the district of houses 1..j with the lone house j + 1 through a random house of 1..j"""
-    r = random.random
-    return [orient(j + 1, 1 + int(r() * j), "r") for j in range(1, n)]
-
-
-def beside(c, chain_roads, n, other_roads):
-    """houses 1..c: chain_roads; houses c + 1..n: other_roads (numbered 1..n - c); the two lists interleaved at
-    random (each keeps its order); one big district absorbs lone houses while the other part does its own thing"""
-    other = [(u + c, v + c) for u, v in other_roads]
-    out, i, j, r = [], 0, 0, random.random
-    while i < len(chain_roads) or j < len(other):
-        if j == len(other) or (i < len(chain_roads) and r() * (len(chain_roads) - i + len(other) - j) < len(chain_roads) - i):
-            out.append(chain_roads[i])
-            i += 1
-        else:
-            out.append(other[j])
-            j += 1
+def walls(R, C, k, hmin, hmax, s=None, gap=0):
+    """k vertical rock walls standing on random rows (none within `gap` columns of the source column s)"""
+    out = []
+    while len(out) < k:
+        c = ri(1, C)
+        if s is not None and abs(c - s) < gap:
+            continue
+        ln = ri(hmin, hmax)
+        r = ri(2, max(2, R - ln + 1))
+        out.append((r, c, min(R, r + ln - 1), c))
     return out
 
 
-def pad(roads, n, m):
-    """fill up to m roads with roads inside existing districts or repeated roads"""
-    roads = roads[:]
-    while len(roads) < m:
-        u, v = random.choice(roads)
-        roads.insert(ri(len(roads) // 2, len(roads)), (v, u) if random.random() < 0.5 else (u, v))
-    return roads[:m]
+def stair(r, c, length, d, C):
+    """a watertight diagonal wall from (r, c) going down, d = -1 (left) or +1 (right): pieces of 2 cells"""
+    out = []
+    for i in range(length):
+        a, b = sorted((c + d * i, c + d * (i + 1)))
+        a, b = max(a, 1), min(b, C)
+        if a <= b:
+            out.append((r + i, a, r + i, b))
+    return out
 
 
-def skewed(n, p):
-    """colour 1 for most houses, the other colours 2..p are rare (colour c has weight 1 / c^2)"""
-    w = [1.0 / (c * c) for c in range(1, p + 1)]
-    return random.choices(range(1, p + 1), weights=w, k=n)
+def cup(r, c, half, C):
+    """a V-shaped cup whose bottom is at (r + half - 1, c) and whose rim is at row r"""
+    return stair(r, c - half + 1, half, 1, C) + stair(r, c + half - 1, half, -1, C)
 
 
-def mixed(n, p, q, base=None):
-    """each house: a colour of 1..p with probability q (from base if given), otherwise a colour no other house has"""
-    d = distinct_colours(n, MAXC - 100)
-    r = random.random
-    return [(base[i] if base else ri(1, p)) if r() < q else d[i] + 100 for i in range(n)]
+def cups(R, C, s, k, hmin, hmax):
+    out = []
+    for _ in range(k):
+        half = ri(hmin, hmax)
+        r = ri(max(3, 3 * half), max(3, R - half))        # deep enough not to close the source's cone
+        out += cup(r, ri(1, C), half, C)
+    return out
 
 
-def clustered(n, m, glo, ghi, cross):
-    """houses in groups of glo..ghi consecutive numbers, roads mostly inside a group; groups get joined slowly"""
-    bounds, x = [], 1
-    while x <= n:
-        y = min(n, x + ri(glo, ghi) - 1)
-        bounds.append((x, y))
-        x = y + 1
-    roads = []
-    while len(roads) < m:
-        if random.random() < cross:
-            u, v = ri(1, n), ri(1, n)
-        else:
-            lo, hi = random.choice(bounds)
-            if lo == hi:
-                continue
-            u, v = ri(lo, hi), ri(lo, hi)
-        if u != v:
-            roads.append((u, v))
-    return roads
+def gaps(R, C, first, step):
+    """nearly full-width shelves from row `first` every `step` rows, the gap alternating sides"""
+    return [(r, 1, r, C - 1) if i % 2 else (r, 2, r, C) for i, r in enumerate(range(first, R + 1, step))]
+
+
+def big(R, C, s, segs, q=MAXQ):
+    segs = safe(segs, s)[:MAXM]
+    add(R, C, s, segs, queries(R, C, s, segs, q))
 
 
 # samples
-add(6, 2, [3, 3, 5, 7, 7, 8], [(1, 2), (4, 5), (2, 3), (5, 6), (5, 4), (6, 3)], relabel=False)
-add(5, 3, [1, 2, 1, 2, 3], [(1, 2), (3, 4), (2, 3), (4, 5)], relabel=False)
-add(4, 1, [10, 20, 10, 30], [(1, 2), (2, 1), (3, 4)], relabel=False)
-add(4, 4, [1000000000, 5, 5, 7], [(1, 2), (3, 4), (2, 3)], relabel=False)
-add(6, 3, [2, 6, 2, 9, 6, 4], [(1, 3), (2, 5), (3, 5), (6, 4), (4, 1)], relabel=False)
-
-# hidden: small (checked by recounting from scratch)
-add(2, 2, [1, 2], [(2, 1)])
-add(2, 2, [7, 7], [(1, 2), (2, 1), (1, 2)])
-add(10, 3, rnd_colours(10, 4), rnd_roads(10, 15))
-add(50, 4, rnd_colours(50, 5), rnd_roads(50, 80))
-add(1000, 15, rnd_colours(1000, 18), clustered(1000, 1500, 5, 30, 0.02))
-add(2000, 10, skewed(2000, 12), star(2000, "r"))
-add(1500, 20, rnd_colours(1500, 22), balanced(1500))
-add(3000, 20, rnd_colours(3000, 24), clustered(3000, 3000, 10, 40, 0.01))
-
-# hidden: large
-N = MAXN
-add(N, 20, distinct_colours(N, 10**6), pad(chain(N, "r"), N, N))
-add(N, 17, distinct_colours(N, 10**6), pad(chain(N, "r"), N, N))
-add(N, 20, distinct_colours(N), pad(grow(N), N, N))
-add(N, 19, rnd_colours(N, N), pad(star(N, "r"), N, N))
-C = 3 * N // 5                                                  # a big district grows beside the other shapes
-add(N, 20, distinct_colours(C, 10**6) + rnd_colours(N - C, 25), pad(beside(C, chain(C, "r"), N, balanced(N - C)), N, N))
-add(N, 20, rnd_colours(N, N), rnd_roads(N, N))
-roads = []                                                      # ten chains grow together, then join
-for j in range(1, N // 10):
-    for t in range(10):
-        roads.append(orient(t * (N // 10) + j + 1, t * (N // 10) + ri(1, j), "r"))
-for t in range(1, 10):
-    roads.append(orient(ri(1, t * (N // 10)), t * (N // 10) + ri(1, N // 10), "r"))
-add(N, 20, mixed(N, 20, 0.5), pad(roads, N, N))
-add(N, 1, rnd_colours(N, MAXC), pad(chain(N, "r"), N, N))
-add(N, 20, [i % 20 + 1 for i in range(N)], pad(chain(N, "u"), N, N))   # exactly 20 colours in all
-add(N, 20, [i % 19 + 1 for i in range(N)], pad(chain(N, "s"), N, N))   # never colourful
-add(N, 20, mixed(N, 25, 0.6), pad(chain(N, "r"), N, N))
-half = N // 2                                                   # a chain over half the houses, every other
-roads = []                                                      # road inside a district or repeated
-for r in chain(half, "r"):
-    roads.append(r)
-    roads.append(random.choice(roads))
-add(N, 20, distinct_colours(N, 10**6), roads[:N])
-add(N, 20, distinct_colours(N), pad(two_fronts(N, "r"), N, N))
-add(N, 20, mixed(N, 21, 0.4), pad(two_fronts(N, "r"), N, N))
-add(N, 2, distinct_colours(N, 10**6), rnd_roads(N, N))
-add(N, 10, mixed(N, 10, 0.5, skewed(N, 10)), pad(chain(N, "r"), N, N))
-roads = []                                                      # ten districts grow side by side and each
-for j in range(1, N // 10):                                     # reaches K colours only near its end
-    for t in range(10):
-        roads.append(orient(t * (N // 10) + j + 1, t * (N // 10) + ri(max(1, j - 20), j), "r"))
-for t in range(1, 10):
-    roads.append(orient(ri(1, t * (N // 10)), t * (N // 10) + ri(1, N // 10), "r"))
-add(N, 18, mixed(N, 18, 0.7, skewed(N, 18)), pad(roads, N, N))
-add(N, 20, [ri(1, 20) if random.random() < 0.5 else ri(1, 10**6) for _ in range(N)], pad(star(N, "r"), N, N))
-add(N, 20, distinct_colours(C, 10**6) + rnd_colours(N - C, 22),
-    beside(C, grow(C), N, clustered(N - C, N - C + 1, 5, 40, 0.005)))
-add(N, 12, distinct_colours(C) + rnd_colours(N - C, 14), beside(C, chain(C, "r"), N, clustered(N - C, N - C + 1, 3, 25, 0.02)))
-add(N, 20, rnd_colours(C, 10**6) + mixed(N - C, 30, 0.9, skewed(N - C, 30)),
-    beside(C, chain(C, "r"), N, clustered(N - C, N - C + 1, 20, 200, 0.001)))
+add(5, 7, 4, [(3, 3, 3, 5), (4, 7, 5, 7)], [(5, 4), (1, 4), (3, 4), (4, 4)])
+add(3, 3, 2, [], [(3, 1), (2, 1), (1, 2)])
+add(1, 5, 3, [], [(1, 3), (1, 2)])
+add(4, 3, 1, [(3, 1, 3, 2)], [(4, 1), (2, 2), (1, 1)])
+add(6, 8, 5, [(4, 2, 4, 4), (5, 6, 6, 6)], [(6, 5), (5, 8)])
+# hidden: small (brute checks these)
+for R, C, k in [(8, 9, 4), (20, 15, 12), (40, 60, 30), (60, 40, 80), (50, 50, 0)]:
+    s = ri(1, C)
+    segs = safe(shelves(R, C, k // 2, 1, C // 2, 2) + walls(R, C, k - k // 2, 1, R // 2), s)
+    add(R, C, s, segs, queries(R, C, s, segs, 300))
+add(MAXRC, 1, 1, [(2500, 1, 2500, 1)], [(2499, 1), (2500, 1), (2501, 1), (1, 1), (MAXRC, 1)])
+add(2, MAXRC, 1500, [], [(2, 1499), (2, 1500), (2, 1501), (1, 1500), (2, 1)])
+add(MAXRC, MAXRC, 7, [(2, 6, 2, 8)], [(1, 7), (2, 7), (MAXRC, MAXRC)])        # the source is closed in
+add(300, 300, 150, safe(shelves(300, 300, 40, 5, 60) + cups(300, 300, 150, 3, 5, 30), 150),
+    [(ri(1, 300), ri(1, 300)) for _ in range(2000)])
+# hidden: big
+M = MAXRC
+# each big test has its own seed, so changing one test does not change the others
+BIG = [
+    (731000, lambda: (M, M, M // 2, [])),
+    (731001, lambda: (M, M, 1, [])),
+    (734002, lambda: (M, M, M, walls(M, M, 30, 100, 2000))),
+    (731003, lambda: (M, M, 2777, shelves(M, M, 60, 100, 900))),
+    (731004, lambda: (M, M, 1500, shelves(M, M, 400, 20, 300))),
+    (731005, lambda: (M, M, 1300, shelves(M, M, 3000, 3, 15) + walls(M, M, 1000, 3, 30))),
+    (731006, lambda: (M, M, 1500, [(ri(2, M), ri(1, M)) * 2 for _ in range(MAXM)])),
+    (731007, lambda: (M, M, 1499, walls(M, M, 300, 100, 2000, 1499, 400) + shelves(M, M, 100, 50, 300))),
+    (731008, lambda: (M, M, 1500, cups(M, M, 1500, 25, 20, 300))),
+    (740009, lambda: (M, M, 1200, gaps(M, M, 1700, 260) + walls(M, M, 40, 200, 1200))),
+    (731010, lambda: (M, M, 1500, walls(M, M, 2000, 1, 50) + shelves(M, M, 2000, 1, 50) + cups(M, M, 1500, 10, 5, 100))),
+    (742011, lambda: (M, M, 2222, cups(M, M, 2222, 40, 10, 200) + shelves(M, M, 300, 10, 300))),
+    (731012, lambda: (M, 1500, 700, walls(M, 1500, 60, 50, 1000, 700, 300) + shelves(M, 1500, 100, 5, 40))),
+    (740013, lambda: (1500, M, 1500, shelves(1500, M, 150, 10, 60) + walls(1500, M, 100, 5, 500, 1500, 300))),
+    (731014, lambda: (M, 900, 450, walls(M, 900, 100, 50, 600))),
+    (731015, lambda: (M, M, 1500, [(r, c, r, c) for r in range(2, M, 9) for c in range(1 + r % 5, M + 1, 150)][:MAXM])),
+    (731016, lambda: (M, M, M, stair(2, M - 1, 1200, -1, M) + shelves(M, M, 500, 10, 200))),
+]
+for seed, make in BIG:
+    random.seed(seed)
+    big(*make())
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

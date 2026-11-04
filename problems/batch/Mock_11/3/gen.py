@@ -1,121 +1,81 @@
-# Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-import os, random
-
-random.seed(1103)
-MAXN, MAXQ, MAXH = 100000, 100000, 10 ** 9
-tests = []
-rnd = random.random
-
-
-def add(h, qs):
-    n, q = len(h), len(qs)
-    assert 1 <= n <= MAXN and 1 <= q <= MAXQ
-    assert all(1 <= x <= MAXH for x in h)
-    assert all(1 <= l <= r <= n and 0 <= e <= MAXH for l, r, e in qs)
-    tests.append(f"{n} {q}\n" + " ".join(map(str, h)) + "\n" + "".join(f"{l} {r} {e}\n" for l, r, e in qs))
-
-
-def clamp(x):
-    return min(MAXH, max(1, x))
-
-
-# heights: value(i) for building i (1-based)
-def trend(step, noise, base=1):
-    return lambda i: clamp(base + i * step + int(rnd() * (noise + 1)))
-
-
-def uniform(top):
-    return lambda i: 1 + int(rnd() * top)
-
-
-def make(n, value):
-    return [value(i) for i in range(1, n + 1)]
-
-
-def photos(h, q, rstyles=("long",), estyles=("zero", "low")):
-    """q photos; each picks a range style and an eye-level style at random"""
-    n = len(h)
-    w = max(1, n // 50)
-    half, cut = n // 2, n // 20 + 1
-    nr, ne = len(rstyles), len(estyles)
-    out = []
-    for _ in range(q):
-        rs = rstyles[int(rnd() * nr)]
-        if rs == "long":          # almost the whole street
-            l, r = 1 + int(rnd() * w), n - int(rnd() * w)
-            if l > r:
-                l, r = r, l
-        elif rs == "half":
-            l = 1 + int(rnd() * half)
-            r = max(l, min(n, l + half - 1 - int(rnd() * cut)))
-        elif rs == "short":
-            l = 1 + int(rnd() * n)
-            r = min(n, l + int(rnd() * 20))
-        else:
-            l, r = 1 + int(rnd() * n), 1 + int(rnd() * n)
-            if l > r:
-                l, r = r, l
-        es = estyles[int(rnd() * ne)]
-        if es == "zero":
-            e = 0
-        elif es == "low":         # below building l: the eye level changes nothing
-            e = int(rnd() * h[l - 1])
-        elif es == "tie":         # exactly the height of a building of the range (or one below)
-            e = max(0, h[l - 1 + int(rnd() * (r - l + 1))] - int(rnd() * 2))
-        elif es == "early":       # the height of a building in the first tenth of the range
-            e = h[l - 1 + int(rnd() * ((r - l) // 10 + 1))]
-        elif es == "high":
-            e = MAXH - int(rnd() * 3)
-        else:
-            e = int(rnd() * (MAXH + 1))
-        out.append((l, r, e))
-    return out
-
-
-# samples
-add([3, 1, 4, 1, 5, 9, 2, 6], [(1, 8, 0), (1, 8, 4), (2, 5, 3), (7, 8, 5), (4, 6, 9)])
-add([2, 2, 3, 3, 1], [(1, 5, 0), (1, 5, 2), (5, 5, 0), (5, 5, 1), (2, 4, 3)])
-add([7], [(1, 1, 6), (1, 1, 7), (1, 1, 1000000000)])
-add([9, 8, 7, 6, 5, 4], [(1, 6, 0), (2, 6, 8), (3, 6, 6), (6, 6, 3)])
-add([5, 6, 5, 7, 7, 8, 3, 9, 9, 1], [(1, 10, 0), (3, 8, 5), (2, 9, 7), (5, 10, 8), (1, 10, 9)])
-
-ALL = ("zero", "low", "tie", "early", "any", "high")
-# hidden: small (the brute checks these)
-add([1], [(1, 1, 0), (1, 1, 1)])
-h = make(300, uniform(6)); add(h, photos(h, 300, ("any", "short"), ALL))
-h = make(1000, trend(3, 5)); add(h, photos(h, 1000, ("any", "long"), ALL))
-h = make(1500, uniform(MAXH)); add(h, photos(h, 2000, ("any", "half"), ALL))
-h = make(800, lambda i: 1 + i // 4); add(h, photos(h, 1500, ("any", "long"), ALL))
-h = make(1200, lambda i: 2000 - i + int(rnd() * 3)); add(h, photos(h, 1500, ("any", "long"), ALL))
-h = make(2000, lambda i: abs(1000 - i) * 3 + int(rnd() * 4) + 1); add(h, photos(h, 2000, ("any", "half"), ALL))
-h = make(1000, lambda i: 5); add(h, photos(h, 1000, ("any",), ("zero", "tie", "low")))
-
-# hidden: big
-N, Q = MAXN, MAXQ
-h = make(N, lambda i: i); add(h, photos(h, Q, ("long",), ("zero", "low", "early")))
-h = make(N, lambda i: i * 10000); add(h, photos(h, Q, ("long",), ("zero", "low", "early", "tie")))
-h = make(N, trend(10, 9)); add(h, photos(h, Q, ("long", "half"), ("zero", "low", "early")))
-h = make(N, trend(10, 30)); add(h, photos(h, Q, ("long",), ("zero", "low", "tie")))
-h = make(N, lambda i: 1 + i // 3); add(h, photos(h, Q, ("long",), ("zero", "low", "tie", "early")))
-h = make(N, lambda i: 2 * i + 3 * (i % 2)); add(h, photos(h, Q, ("long",), ("zero", "low", "tie")))
-h = make(N, lambda i: (i // 1000) * 30000 + (i % 1000) * 50 + 1); add(h, photos(h, Q, ("long",), ("zero", "early", "any")))
-h = make(N, lambda i: i * 9000 + (i % 7) * 4000 + 1); add(h, photos(h, Q, ("long", "any"), ALL))
-h = make(N, lambda i: N + 1 - i); add(h, photos(h, Q, ("long",), ALL))
-h = make(N, uniform(MAXH)); add(h, photos(h, Q, ("long",), ALL))
-h = make(N, uniform(5)); add(h, photos(h, Q, ("long", "any"), ("zero", "tie", "low")))
-h = make(N, lambda i: abs(N // 2 - i) * 4 + 1 + int(rnd() * 4)); add(h, photos(h, Q, ("long", "half"), ALL))
-h, cur = [], 1
-for i in range(N):
-    cur = max(1, cur + int(rnd() * 9) - 3)
-    h.append(cur)
-add(h, photos(h, Q, ("long", "half"), ("zero", "low", "tie", "early")))
-h = make(N, lambda i: MAXH); add(h, photos(h, Q, ("long", "any"), ("zero", "tie", "high")))
-h = make(N, lambda i: clamp(MAXH - (N - i) * 10000 + int(rnd() * 3))); add(h, photos(h, Q, ("long",), ("zero", "tie", "any")))
-h = make(N, lambda i: i if i <= N // 2 else N + 1 - i + N // 2); add(h, photos(h, Q, ("long",), ("zero", "low", "early")))
-
-for t in tests:
-    assert t.endswith("\n") and "  " not in t and " \n" not in t
+import random, os
+random.seed(2603)
 os.makedirs("tests", exist_ok=True)
-for i, t in enumerate(tests, 1):
-    with open(f"tests/{i:02d}.in", "w") as f:
-        f.write(t)
+cases = []
+# ---- samples ----
+cases.append((2, 2, [3, -1, 4, -10, 5, -9, 2]))
+cases.append((1, 1, [1, 2, 3, 4, 5]))
+cases.append((2, 1, [4, 4, 4]))
+cases.append((1, 6, [-3, 1, -4, 1, -5, 9]))
+cases.append((3, 2, [-1, -2, 7, 8, -100, -3, -4, 6, 6]))
+# ---- small random ----
+def rnd(n, k, L, lo, hi):
+    return (k, L, [random.randint(lo, hi) for _ in range(n)])
+for _ in range(6):
+    n = random.randint(3, 12); L = random.randint(1, 3)
+    k = random.randint(1, max(1, (n + 1) // (L + 1)))
+    cases.append(rnd(n, k, L, -20, 20))
+# ---- large ----
+N = 100000
+B = 10**9
+cases.append(rnd(N, 100, 1, -B, B))
+cases.append(rnd(N, 100, 50, -B, B))
+cases.append(rnd(N, 100, 990, -B, B))                 # K(L+1) = N + 1 - 1 + ... near tight
+cases.append(rnd(N, 1, 1000, -B, B))
+cases.append(rnd(N, 100, 1, 1, B))                    # all positive: rest days are the only loss
+cases.append(rnd(N, 100, 3, -B, -1))                  # all negative
+cases.append(rnd(N, 50, 1999, -B, B))                 # 50 * 2000 = 100000 <= N + 1 (tight)
+cases.append((100, 999, [B if (i // 1000) % 2 == 0 else -B for i in range(N)]))
+cases.append(rnd(N, 37, 7, -1000, 1000))
+cases.append((100, 1, [B] * N))                        # sum fits only in 64-bit
+cases.append(rnd(N, 100, 1, -B, B // 10))              # mostly negative, must still pick 100
+cases.append((1, 1, [-7]))                              # N = 1
+cases.append(rnd(3000, 100, 2, -B, B))                  # medium: O(N^2 K) still too slow
+cases.append(rnd(5000, 20, 10, -B, B))
+cases.append(rnd(N, 100, 999, -B, B))                   # tight: 100 * 1000 = N
+cases.append(rnd(N, 80, 1, -5, 5))                      # many ties
+cases.append(rnd(N, 2, 30000, -B, B))
+cases.append(rnd(N, 100, 7, -B, B // 3))
+# ---- stronger tests (2026-10-20): long runs, so the O(N K L) DP over the run length is too slow ----
+# (a separate random stream, so the tests that stay as they were keep their bytes)
+rng = random.Random(260320)
+def big(k, L, lo, hi): return (k, L, [rng.randint(lo, hi) for _ in range(N)])
+cases[14] = big(1, 40000, -B, B)                         # test 15: one long run
+cases[15] = big(100, 300, 1, B)                          # test 16: all positive, rest days are the only loss
+cases[16] = big(100, 600, -B, -1)                        # test 17: all negative
+cases[19] = big(37, 2000, 1, 1000)                       # test 20: small positive values, every rest day costs
+cases[20] = (100, 900, [B] * N)                          # test 21: sum fits only in 64-bit
+cases[21] = big(100, 400, -B, B // 10)                   # test 22: mostly negative, must still pick 100
+cases[26] = big(80, 250, -5, 5)                          # test 27: many ties
+cases[28] = big(100, 700, -B, B // 3)                    # test 29
+cases.append((100, 999, [rng.randint(1, B) for _ in range(N)]))   # K (L + 1) = N: no slack at all
+# positive days with about 40 negative valleys: fewer valleys than the K - 1 rest days needed
+a = [rng.randint(1, B) for _ in range(N)]
+for _ in range(40):
+    st = rng.randrange(N - 200)
+    for j in range(st, st + rng.randint(1, 200)): a[j] = -rng.randint(1, B)
+cases.append((100, 500, a))
+cases.append(big(100, 800, B // 2, B))                   # all positive: where the 99 rest days go decides
+cases.append(big(10, 9999, -B, B))
+# long positive stretches cut by single very negative days: the best runs are much longer than L
+a = []
+while len(a) < N:
+    a += [rng.randint(1, B) for _ in range(rng.randint(3000, 6000))] + [-B]
+cases.append((35, 2500, a[:N]))
+# positive blocks of length L + 1 .. 3L separated by one negative day: a rest day costs only that day
+a = []
+while len(a) < N:
+    a += [rng.randint(B // 2, B) for _ in range(rng.randint(1000, 3000))] + [-rng.randint(1, 1000)]
+cases.append((100, 300, a[:N]))
+cases.append(big(99, 1000, -5, 5))
+cases.append((100, 990, [-B] * N))                       # all equal negative: shortest runs everywhere
+cases.append((50, 1000, [B] * N))
+cases.append(big(1, 60000, -B, B))
+cases.append(big(30, 3000, 1, B))
+assert len(cases) <= 40
+for i, (k, L, a) in enumerate(cases, 1):
+    n = len(a)
+    assert 1 <= n <= 100000 and 1 <= k <= 100 and 1 <= L <= n and k * (L + 1) <= n + 1
+    assert all(-10**9 <= x <= 10**9 for x in a)
+    open(f"tests/{i:02d}.in", "w").write(f"{n} {k} {L}\n" + " ".join(map(str, a)) + "\n")
+print(len(cases), "tests")

@@ -1,6 +1,6 @@
 # C2_MOCK: POSN Camp 2 Practice Judge
 
-A terminal judge that students run on their own machines to practice for the POSN Computer Olympiad (Camp 2: 11 sets x 5 problems, no subtasks).
+A terminal judge that students run on their own machines to practice for the POSN Computer Olympiad (Camp 2: 15 sets x 5 problems, no subtasks).
 Sibling repo `C1_MOCK` is the Camp 1 judge (same structure); fix shared bugs in both.
 Today it judges batch problems (`judge.py`). We are adding interactive and communication problems,
 and it updates itself from this GitHub repo so bugs can be fixed without re-sending zip files.
@@ -44,7 +44,7 @@ C2_MOCK/
   samples/                      # known-verdict programs used as regression tests
     batch/towers_ok.cpp, towers_smallhi.cpp, towers_slow.cpp, towers_crash.cpp, towers_syntax.cpp
     interactive/guess_ok.cpp, guess_noflush.cpp, guess_linear.cpp, guess_crash.cpp
-    expected.json               # {"batch/towers_ok.cpp": {"problem": "7-2", "verdict": "AC", "score": 100}, ...}
+    expected.json               # {"batch/towers_ok.cpp": {"problem": "11-2", "verdict": "AC", "score": 100}, ...}
                                 # verdict: AC/WA/TLE/RE/MLE/CE (first failing test); "score" optional (runs all tests)
   tools/
     build_manifest.py           # writes manifest.json (VERSION + SHA-256 of every file in Judge/); --check for CI
@@ -85,6 +85,8 @@ and `C2_Mock_Test/Mock_K/1.cpp ... 5.cpp` = student files. The repo layout is **
   ri_lifetime_max_phys_footprint)`; never compare it with `ri_resident_size`, which counts shared pages too (that
   check threw away nearly every reading and made a 200 MB program AC now and then on CI).
   Verdicts in order: MLE, TLE (killed), WA (output over 64 MB), RE (exit code != 0), TLE (slow), AC/WA.
+- Score: every C2_MOCK problem has `"scoring": "all"` in `problems.json` (100 only when every test passes, else 0,
+  like the real exam); the result still shows `passed/total tests`. Without the field: share of tests passed.
 - The last 8 KB of the program's stderr are kept; after an RE the last 5 lines are shown (exception text, assert).
 - Samples for the regression suite: `*_mle.cpp`, `*_throw.cpp`, `*_warn.cpp` next to the AC/WA/TLE/RE/CE ones.
 
@@ -159,7 +161,7 @@ python3 tools/build_manifest.py          # after changing anything under core/, 
 python3 tools/build_manifest.py --check  # CI: fails if manifest.json is stale
 python3 tools/update_problem_manifest.py Mock_K/N   # after adding NN.in/NN.out to a problem (--check --all in CI)
 python3 tools/build_dist.py              # build dist/C2_Mock_Test/ + dist/C2_Mock_Test.zip (--out DIR, --no-zip)
-python3 core/judge.py samples/batch/towers_ok.cpp 7-2      # judge one file from the repo (creates big tests, see above)
+python3 core/judge.py samples/batch/towers_ok.cpp 11-2     # judge one file from the repo (creates big tests, see above)
 python3 core/interactive_judge.py guess samples/interactive/guess_ok.cpp
 ```
 

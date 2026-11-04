@@ -1,137 +1,115 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-# A test is kept as two lists (prices, ratings) so that the big tests are built quickly.
 import os, random
 
-random.seed(740218)
-MAXN, MAXV = 150000, 10 ** 9
+random.seed(1403)
+MAXRC, MAXK, MAXA = 500, 20, 10 ** 9
 tests = []
 rnd = random.random
 
 
-def add(h):
-    ps, rs = h
-    n = len(ps)
-    assert 1 <= n <= MAXN and len(rs) == n
-    assert 1 <= min(ps) and max(ps) <= MAXV and 1 <= min(rs) and max(rs) <= MAXV
-    flat = [0] * (2 * n)
-    flat[0::2] = ps
-    flat[1::2] = rs
-    tests.append(f"{n}\n" + "%d %d\n" * n % tuple(flat))
+def ri(a, b):
+    """random integer in [a, b] (only random.random(), so every Python version gives the same tests)"""
+    return a + int(rnd() * (b - a + 1))
 
 
-def pairs(lst):
-    return [p for p, r in lst], [r for p, r in lst]
+def add(K, g):
+    R, C = len(g), len(g[0])
+    assert 1 <= R <= MAXRC and 1 <= C <= MAXRC and 1 <= K <= MAXK
+    for row in g:
+        assert len(row) == C and -MAXA <= min(row) and max(row) <= MAXA
+    tests.append(f"{R} {C} {K}\n" + "".join(" ".join(map(str, row)) + "\n" for row in g))
 
 
-def band(n, width, slope, wp, wr):
-    """points along a falling line: x in [0, width), price x + noise, rating (width - x) * slope + noise"""
-    xs = [int(rnd() * width) for _ in range(n)]
-    ps = [x + 1 + int(rnd() * (wp + 1)) for x in xs]
-    rs = [(width - x) * slope + 1 + int(rnd() * (wr + 1)) for x in xs]
-    return ps, rs
+def uniform(R, C, lo, hi):
+    return [[ri(lo, hi) for _ in range(C)] for _ in range(R)]
 
 
-def layers(n, count, size, step):
-    """`count` copies of one random antichain (price and rating both increasing), each copy moved by
-    (+step, -step): a hotel of a copy is beaten by the same hotel of the copies before"""
-    bp, br, p, r = [], [], 1, 1
-    for _ in range(size):
-        p += random.randint(0, 3)
-        r += random.randint(0, 3)
-        bp.append(p)
-        br.append(r)
-    top = count * step
-    ks = [int(rnd() * count) * step for _ in range(n)]
-    js = [int(rnd() * size) for _ in range(n)]
-    return [bp[j] + k for j, k in zip(js, ks)], [br[j] + top - k for j, k in zip(js, ks)]
+def staircase(R, C, steps, good, bad, noise=0):
+    """bad everywhere except a monotone staircase (from (1, 1) to (R, C)) with about `steps` turns, worth `good`"""
+    g = [[ri(bad[0], bad[1]) for _ in range(C)] for _ in range(R)]
+    r = c = 0
+    moves = ["R"] * (C - 1) + ["D"] * (R - 1)
+    # group the moves into `steps` + 1 alternating runs
+    runs = max(1, min(steps + 1, len(moves)))
+    seq, nr, nd = [], C - 1, R - 1
+    for i in range(runs):
+        left = runs - i
+        if i % 2 == 0:
+            k = nr if left <= 2 else ri(0, max(0, 2 * nr // left))
+            seq += ["R"] * k
+            nr -= k
+        else:
+            k = nd if left <= 2 else ri(0, max(0, 2 * nd // left))
+            seq += ["D"] * k
+            nd -= k
+    seq += ["R"] * nr + ["D"] * nd
+    g[0][0] = ri(good[0], good[1])
+    for m in seq:
+        if m == "R":
+            c += 1
+        else:
+            r += 1
+        g[r][c] = ri(good[0], good[1])
+        if noise and 0 <= r + 1 < R:
+            g[r + 1][c] = ri(good[0], good[1]) // noise
+    return g
 
 
-def blocks(n, cnt, side, grid):
-    """`cnt` squares on a falling diagonal, random points inside each, coordinates divided by `grid`"""
-    ks = [int(rnd() * cnt) for _ in range(n)]
-    ps = [(k * side + int(rnd() * side)) // grid + 1 for k in ks]
-    rs = [((cnt - k) * side + int(rnd() * side)) // grid + 1 for k in ks]
-    return ps, rs
+def transpose(g):
+    return [list(col) for col in zip(*g)]
 
 
-def dup(h, share):
-    """replace a share of the hotels by copies of other hotels"""
-    ps, rs = h[0][:], h[1][:]
-    n = len(ps)
-    for _ in range(int(n * share)):
-        i, j = int(rnd() * n), int(rnd() * n)
-        ps[i], rs[i] = ps[j], rs[j]
-    return ps, rs
+def bands(R, C, width, hi, lo):
+    """diagonal bands: good cells where (r + c) // width is even, so a straight line crosses many bad bands"""
+    return [[ri(hi // 2, hi) if ((r + c) // width) % 2 == 0 else ri(lo, lo // 2) for c in range(C)] for r in range(R)]
 
 
-def spread(h):
-    """map prices and ratings to random large values in the same order (the rounds do not change)"""
-    out = []
-    for col in h:
-        vals = sorted(set(col))
-        m = dict(zip(vals, sorted(random.sample(range(1, MAXV + 1), len(vals)))))
-        out.append([m[v] for v in col])
-    return tuple(out)
-
-
-_perm = []
-
-
-def mixed(h):
-    """h in a random order; every big test has MAXN hotels, so one shuffled order is reused (fast)"""
-    n = len(h[0])
-    if n < MAXN:
-        idx = list(range(n))
-        random.shuffle(idx)
-    else:
-        if not _perm:
-            _perm.extend(range(MAXN))
-            random.shuffle(_perm)
-        idx = _perm
-    return [h[0][i] for i in idx], [h[1][i] for i in idx]
+def checker(R, C, a, b):
+    return [[(a if (r + c) % 2 == 0 else b) + ri(-3, 3) for c in range(C)] for r in range(R)]
 
 
 # samples
-add(pairs([(300, 4), (200, 5), (300, 4), (100, 3), (200, 2), (400, 5), (500, 1)]))
-add(pairs([(5, 1), (5, 2), (5, 3), (5, 3)]))
-add(pairs([(7, 7)]))
-add(pairs([(3, 3), (5, 1), (1, 5), (4, 2), (2, 4)]))
-add(pairs([(4, 6), (2, 2), (6, 5), (3, 6), (2, 7), (5, 3), (4, 6), (1, 1)]))
+add(2, [[2, -3, 4, 1], [1, 5, -2, 3], [-4, 2, 6, 1]])
+add(1, [[1, 8, -9, 0], [-2, 3, 7, -1], [5, -6, 4, 2], [0, 1, -3, 6]])
+add(3, [[4, -1, -2, 7, 3]])
+add(1, [[-5]])
+add(3, [[3, -2, 0, 1, 5], [1, 4, -3, 2, -1], [-6, 2, 8, -4, 0], [2, 0, 1, 3, 2], [-1, 5, -2, 6, 4]])
 # hidden: small (brute checks these)
-add(pairs([(1, 1), (1, 1)]))
-add(pairs([(10 ** 9, 1), (1, 10 ** 9), (10 ** 9, 10 ** 9), (1, 1)]))
-add(mixed(dup(band(40, 10, 1, 2, 2), 0.2)))
-add(mixed(dup(blocks(300, 30, 4, 2), 0.1)))
-add(([random.randint(1, 4) for _ in range(500)], [random.randint(1, 4) for _ in range(500)]))
-add(mixed(dup(layers(2000, 200, 50, 3), 0.05)))
-add(mixed(band(3000, 1500, 2, 3, 3)))
-add(mixed(dup(band(8000, 4000, 1, 5, 5), 0.1)))
-add(spread(mixed(dup(blocks(10000, 2000, 3, 1), 0.05))))
-# hidden: big (N = 150000)
-N = MAXN
-add(mixed(dup(band(N, 60000, 1, 3, 3), 0.05)))
-add(mixed(dup(band(N, 40000, 2, 8, 2), 0.1)))
-add(mixed(dup(band(N, 100000, 1, 1, 1), 0.02)))
-add(mixed(dup(band(N, 25000, 1, 10, 40), 0.05)))
-add(mixed(band(N, 30000, 3, 0, 5)))                         # many equal prices
-add(mixed(band(N, 30000, 1, 6, 0)))                         # many equal ratings
-add(mixed(dup(layers(N, 60000, 20, 6), 0.03)))
-add(mixed(dup(layers(N, 70000, 60, 2), 0.05)))
-add(mixed(layers(N, 50000, 40, 8)))
-add(mixed(dup(blocks(N, 25000, 6, 2), 0.05)))
-add(mixed(dup(blocks(N, 50000, 3, 1), 0.1)))
-add(mixed(blocks(N, 40000, 8, 3)))
-add(spread(mixed(dup(band(N, 70000, 1, 2, 2), 0.05))))
-add(spread(mixed(dup(layers(N, 80000, 10, 2), 0.05))))
-x = range(1, N + 1)
-add(mixed(([i for i in x], [N + 1 - i for i in x])))                         # one chain: rounds 1..N
-add(mixed(([(i + 1) // 2 for i in x], [(N + 2 - i) // 2 for i in x])))      # a chain through equal values
-add(mixed(dup(([i // 3 + 1 for i in x], [(N - i) // 3 + 1 for i in x]), 0.3)))
-add(([int(rnd() * MAXV) + 1 for _ in x], [int(rnd() * MAXV) + 1 for _ in x]))
-add(([5] * N, [5] * N))
+add(1, [[7], [-2], [3]])
+add(20, [[MAXA] * 3] * 2)
+add(1, uniform(2, 2, -MAXA, MAXA))
+for R, C, K, lo, hi in [(9, 8, 2, -10, 10), (20, 25, 5, -10 ** 6, 10 ** 6),
+                        (40, 40, 20, -50, 80), (50, 60, 4, -MAXA, MAXA)]:
+    add(K, uniform(R, C, lo, hi))
+add(6, staircase(45, 50, 9, (10 ** 8, MAXA), (-MAXA, -10 ** 8)))
+add(3, bands(60, 60, 5, 10 ** 6, -10 ** 6))
+# hidden: big
+M = MAXRC
+BIG = [
+    (14300, lambda: (20, uniform(M, M, -MAXA, MAXA))),
+    (14301, lambda: (1, uniform(M, M, -MAXA, MAXA // 2))),
+    (14302, lambda: (12, transpose(staircase(M, M, 12, (-3 * 10 ** 8, -10 ** 8), (-MAXA, -6 * 10 ** 8))))),
+    (14303, lambda: (20, [[MAXA] * M for _ in range(M)])),
+    (14304, lambda: (20, [[-MAXA] * M for _ in range(M)])),
+    (14305, lambda: (10, staircase(M, M, 30, (10 ** 8, MAXA), (-MAXA, -10 ** 8)))),
+    (14306, lambda: (20, staircase(M, M, 20, (5 * 10 ** 8, MAXA), (-MAXA, 0), noise=3))),
+    (14307, lambda: (18, staircase(M, M, 18, (MAXA, MAXA), (-10, 10)))),
+    (14308, lambda: (13, bands(M, M, 7, MAXA, -MAXA))),
+    (14309, lambda: (12, bands(M, M, 40, MAXA, -MAXA))),
+    (14310, lambda: (20, checker(M, M, MAXA - 3, -MAXA + 3))),
+    (14311, lambda: (16, checker(M, M, -10 ** 8, 10 ** 7))),
+    (14312, lambda: (20, uniform(1, M, -MAXA, 0))),
+    (14314, lambda: (15, uniform(M, 2, -MAXA, MAXA))),
+    (14318, lambda: (2, uniform(M, M, -10 ** 4, 10 ** 4))),
+    (14315, lambda: (11, uniform(M, M, -2 * 10 ** 8, 10 ** 7))),
+    (14316, lambda: (14, staircase(M, M, 60, (-10 ** 7, 0), (-10 ** 8, -10 ** 7)))),
+    (14317, lambda: (19, uniform(M, M, -10, 10))),
+    (14319, lambda: (4, transpose(staircase(M, M, 4, (-10 ** 7, 0), (-5 * 10 ** 7, -10 ** 7))))),
+]
+for seed, make in BIG:
+    random.seed(seed)
+    add(*make())
 
-for t in tests:
-    assert t.endswith("\n") and "  " not in t and " \n" not in t
 os.makedirs("tests", exist_ok=True)
 for i, t in enumerate(tests, 1):
     with open(f"tests/{i:02d}.in", "w") as f:

@@ -1,97 +1,96 @@
-# Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-import os, random
-
-random.seed(910101)
-MAXN, MAXA, MAXC = 100000, 10 ** 9, 10 ** 4
-tests = []
-
-
-def add(a, c):
-    n = len(a)
-    assert 1 <= n <= MAXN and len(c) == n
-    assert all(-MAXA <= x <= MAXA for x in a) and all(1 <= x <= MAXC for x in c)
-    tests.append(f"{n}\n" + " ".join(map(str, a)) + "\n" + " ".join(map(str, c)) + "\n")
-
-
-def ri(lo, hi):
-    """uniform integer in [lo, hi] (faster than randint, still deterministic)"""
-    return lo + int(random.random() * (hi - lo + 1))
-
-
-def clamp(x):
-    return max(-MAXA, min(MAXA, x))
-
-
-def cs(n, lo, hi):
-    return [ri(lo, hi) for _ in range(n)]
-
-
-def skew(n):
-    """flexibilities of very different sizes: many large, a few tiny"""
-    return [ri(1, 3) if random.random() < 0.05 else ri(100, MAXC) for _ in range(n)]
-
-
-def noisy_line(n, start, step, noise):
-    """a_i = start + i * step + noise (a rising or falling line)"""
-    return [clamp(start + i * step + ri(-noise, noise)) for i in range(n)]
-
-
-# samples
-add([6, 2, 9, 4, 3], [1, 3, 2, 1, 2])
-add([0, 0, 0, 0], [3, 1, 1, 3])
-add([-5, 1, 2, 8], [4, 1, 1, 7])
-add([1000000000], [1])
-add([-7, 12, -30, 5, 5, 41, 0], [2, 5, 1, 1, 3, 10, 4])
-# hidden: small (brute checks these)
-add([3, 3], [1, 1])
-add([-1000000000, 1000000000], [1, 1])
-add([1000000000, -1000000000], [1, 1])
-add([ri(-10, 10) for _ in range(8)], cs(8, 1, 3))
-add([ri(-100, 100) for _ in range(50)], cs(50, 1, 10))
-add([ri(-MAXA, MAXA) for _ in range(300)], cs(300, 1, MAXC))
-add(noisy_line(1500, 5000, -3, 40), cs(1500, 1, 20))
-add([7] * 2000, skew(2000))
-add(noisy_line(2000, -MAXA, 900000, 3000000), cs(2000, 1, 50))
-add([ri(-MAXA, MAXA) for _ in range(3000)], skew(3000))
-# hidden: big (N = 100000)
-N = MAXN
-add([ri(-MAXA, MAXA) for _ in range(N)], cs(N, 1, MAXC))
-add([ri(-MAXA, MAXA) for _ in range(N)], cs(N, 1, 20))
-add([ri(-MAXA, MAXA) for _ in range(N)], skew(N))
-add(noisy_line(N, MAXA - 10 ** 6, -19000, 10 ** 6), cs(N, 1, MAXC))       # falling line
-add(noisy_line(N, MAXA - 10 ** 6, -19000, 10 ** 6), skew(N))
-add(noisy_line(N, -MAXA, 19000, 3 * 10 ** 8), cs(N, 1, 100))              # rising line with big noise
-add(noisy_line(N, -MAXA, 20000, 10 ** 7), cs(N, 1, MAXC))
-add(noisy_line(N, 0, 0, 10 ** 6), cs(N, 1, 1000))                          # a crowd around 0
-a = [ri(-MAXA, MAXA) for _ in range(N)]
-a[0], a[-1] = MAXA, -MAXA
-c = cs(N, 5000, MAXC)
-c[0] = c[-1] = 1
-add(a, c)                                                                   # the answer exceeds 10^9
-a = sorted(ri(-MAXA, MAXA) for _ in range(N))
-for _ in range(30):                                                         # a sorted street with a few jumps
-    i = ri(0, N - 1)
-    a[i] = clamp(a[i] + ri(-10 ** 8, 10 ** 8))
-add(a, cs(N, 1, MAXC))
-a = sorted(ri(-MAXA, MAXA) for _ in range(N))
-i = ri(N // 3, 2 * N // 3)
-a[i], a[i + 1] = a[i + 1] + 5 * 10 ** 7, a[i] - 5 * 10 ** 7                  # one big local swap
-add([clamp(x) for x in a], skew(N))
-add([ri(-MAXA, MAXA) for _ in range(N)], [1] * N)                           # all flexibilities 1
-add([ri(-MAXA, MAXA) for _ in range(N)], [MAXC] * N)                        # all flexibilities 10^4
-add([5] * N, cs(N, 1, 3))                                                   # everybody at the same place
-a = []
-for blk in range(100):                                                      # rising blocks, each falling inside
-    base = -MAXA + blk * 2 * 10 ** 7
-    a += [base + 10 ** 7 - 5000 * j + ri(-2000, 2000) for j in range(N // 100)]
-add(a, cs(N, 1, 50))
-a = [MAXA - 20000 * i for i in range(N)]                                    # strictly falling, very flexible middle
-add(a, [1 if i in (0, N - 1) or i % 997 == 0 else ri(5000, MAXC) for i in range(N)])
-add(list(range(-N // 2, N - N // 2)), cs(N, 1, MAXC))                        # already in order: 0
-
-for t in tests:
-    assert t.endswith("\n") and "  " not in t and " \n" not in t
+import random, os
+from operator import lt, itemgetter
+g0, g1 = itemgetter(0), itemgetter(1)
+random.seed(2611)
 os.makedirs("tests", exist_ok=True)
-for i, t in enumerate(tests, 1):
-    with open(f"tests/{i:02d}.in", "w") as f:
-        f.write(t)
+cases = []
+cases.append([(1, 5), (3, 8), (4, 6)])
+cases.append([(0, 4), (6, 10), (2, 8)])   # 2026-11 port: ordinary sample (old one is the last test)
+cases.append([(1, 2), (2, 3), (5, 9)])
+cases.append([(0, 1000000000)])
+cases.append([(2, 7), (1, 9), (3, 4), (3, 4)])
+for _ in range(6):
+    n = random.randint(1, 8); I = []
+    for _ in range(n):
+        l = random.randint(0, 30); I.append((l, l + random.randint(1, 15)))
+    cases.append(I)
+N, B = 50000, 10**9
+def rnd(n, span, lmax):
+    I = []
+    for _ in range(n):
+        l = random.randint(0, span - 1); I.append((l, min(span, l + random.randint(1, lmax))))
+    return I
+cases.append(rnd(3000, 5000, 100))
+cases.append(rnd(N, B, B))
+cases.append(rnd(N, B, 10**4))
+cases.append(rnd(N, 1000, 1000))                       # heavy overlap on small coordinates
+cases.append([(0, B)] * N)                             # everything at depth N
+cases.append([(i, B - i) for i in range(N)])           # nested
+cases.append([(i * 5000, i * 5000 + 5000) for i in range(N)])   # touching, never overlapping
+cases.append([tuple(x * 10**8 for x in sorted(random.sample(range(11), 2))) for _ in range(N)])   # many equal endpoints
+cases.append(rnd(N, 10**6, 10))
+cases.append([(i, i + 1) for i in range(N // 2)] + [(i, i + 2) for i in range(N // 2)])
+for span, lmax in ((10**9, 10**9), (10**5, 50), (10**9, 10**6), (5000, 5000)):
+    cases.append(rnd(random.randint(30000, 50000), span, lmax))
+cases.append(rnd(100000, B, B))
+cases.append(rnd(100000, 10**6, 100))
+for idx in range(11, len(cases)):
+    mx = max(r for _, r in cases[idx])
+    if mx <= 10**6 and idx % 2 == 0:
+        f = 10**9 // mx
+        cases[idx] = [(l * f, r * f) for l, r in cases[idx]]
+# ---- legacy strengthening (2026-10): the big tests were mostly N = 5 * 10^4, where O(N^2) programs still run in
+# about a second. The same families are rebuilt at N = 10^5, and new tests where most people are present most of
+# the time (filling every compressed piece of every interval costs ~10^10 steps there).
+# Families with few distinct times (where N hardly matters) keep their N = 5 * 10^4 tests.
+# The cases above are still generated and shuffled so the unchanged tests keep their bytes; `override` replaces
+# some of them, `extra` adds tests at the end. All new data comes from R, not from `random`.
+R = random.Random(26112)
+rr = R.random
+M = 100000
+def ri(a, b): return a + int(rr() * (b - a + 1))
+def rnd2(n, span, lmax, f=1):
+    I = []
+    for _ in range(n):
+        l = int(rr() * span); I.append((l * f, min(span, l + 1 + int(rr() * lmax)) * f))
+    return I
+def shuf(I):
+    R.shuffle(I)
+    return I
+def sorted_points(n, lo, hi):
+    """n distinct sorted times in [lo, hi)"""
+    return sorted(R.sample(range(lo, hi), n))
+override = {
+    13: rnd2(M, B, B),
+    14: rnd2(M, B, 10**4),
+    17: shuf([(i, B - i) for i in range(M)]),            # nested
+    18: shuf([(i * 10000, i * 10000 + 10000) for i in range(M)]),   # touching, never overlapping
+    20: rnd2(M, 10**6, 10),
+    21: shuf([(i, i + 1) for i in range(M // 2)] + [(i, i + 2) for i in range(M // 2)]),
+    22: rnd2(M, 10**9, 10**9),
+    23: rnd2(M, 10**5, 50, 10**4),
+    24: rnd2(M, 10**9, 10**6),
+    25: rnd2(M, 5000, 5000, 2 * 10**5),
+}
+extra = []
+L, Rt = sorted_points(M, 0, B // 2), sorted_points(M, B // 2 + 1, B + 1)
+extra.append(shuf(list(zip(L, Rt[::-1]))))                       # random nested, all endpoints distinct
+L, Rt = sorted_points(M, 0, 10**8), sorted_points(M, 9 * 10**8, B + 1)
+R.shuffle(Rt); extra.append(list(zip(L, Rt)))                    # all long, crossing
+L = sorted_points(M, 0, B // 2)
+extra.append(shuf([(l, l + B // 2) for l in L]))                 # sliding: every interval half the day
+extra.append(shuf([(l, B) for l in sorted_points(M, 0, B)]))     # all stay until the end
+extra.append([(ri(0, B // 3), ri(2 * B // 3, B)) for _ in range(M)])
+extra.append(shuf([(ri(0, 10**6), B - ri(0, 10**6)) for _ in range(M // 2)] + rnd2(M // 2, B, B)))
+extra.append([(lambda l: (l, l + ri(B // 4, B - l)))(ri(0, 3 * B // 4 - 1)) for _ in range(M)])
+extra.append([(0, 10), (0, 10)])                # old sample 2 (identical intervals), now hidden
+for i, I in enumerate(cases + extra, 1):
+    if i <= len(cases):
+        random.shuffle(I) if i > 5 else None
+    if i in override:
+        I = override[i]
+    Ls, Rs = list(map(g0, I)), list(map(g1, I))
+    assert 1 <= len(I) <= 100000 and min(Ls) >= 0 and max(Rs) <= B and all(map(lt, Ls, Rs))
+    open(f"tests/{i:02d}.in", "w").write(f"{len(I)}\n" + "".join(f"{l} {r}\n" for l, r in I))
+assert len(cases) + len(extra) <= 40
+print(len(cases) + len(extra), "tests")

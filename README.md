@@ -1,7 +1,7 @@
 # C2_MOCK — POSN Camp 2 Practice Judge (teacher's guide)
 
 This repo is the source of the judge that students run on their own computers for the Camp 2 mock exams
-(11 sets × 5 problems, no subtasks). Students never clone it: they download `C2_Mock_Test.zip` once from
+(15 sets × 5 problems, no subtasks). Students never clone it: they download `C2_Mock_Test.zip` once from
 [Releases](https://github.com/Petkub/C2_MOCK/releases/latest), and from then on their judge **updates itself from
 this repo** every time you push to `main`.
 
@@ -87,17 +87,17 @@ Add one line to `core/CHANGELOG.txt` for each version; students can read it.
    `samples/expected.json`, so the bug cannot come back.
 3. Run the tests, release. If it cannot be tested on Linux (a Windows-only problem), rely on CI's Windows job.
 
-### 4c. Add a new mock set (e.g. set 12)
+### 4c. Add a new mock set (e.g. set 16)
 Sets are written in the private `C2_MOCK_SRC` (sources of every set, ordered from easy to hard); its
 `python3 build.py all` does steps 1-4 here. By hand:
-1. Test data: `problems/batch/Mock_12/1/ ... Mock_12/5/` with `NN.in`/`NN.out` (and `gen.py` if big inputs are
+1. Test data: `problems/batch/Mock_16/1/ ... Mock_16/5/` with `NN.in`/`NN.out` (and `gen.py` if big inputs are
    generated), then `python3 tools/update_problem_manifest.py --all`.
-2. `problems/batch/problems.json`: one entry per new problem (`"en"`, `"title"`, `"tier"`, `"dir": "Mock_12/1"`,
+2. `problems/batch/problems.json`: one entry per new problem (`"en"`, `"title"`, `"tier"`, `"dir": "Mock_16/1"`,
    `"samples"`), with ids 5 (set - 1) + 1 ... + 5.
-3. `problems/batch/sets.json`: append `{"set": 12, ..., "problems": [ids in order]}`.
-4. `student/Mock_12/Mock_12.pdf` (the statement).
-5. Release. Existing students get the test data, `Mock_12/Mock_12.pdf`, `Makefile`, `judge.bat`, and the
-   updater **creates** `Mock_12/1.cpp ... 5.cpp` (templates are only ever created, never overwritten).
+3. `problems/batch/sets.json`: append `{"set": 16, ..., "problems": [ids in order]}`.
+4. `student/Mock_16/Mock_16.pdf` (the statement).
+5. Release. Existing students get the test data, `Mock_16/Mock_16.pdf`, `Makefile`, `judge.bat`, and the
+   updater **creates** `Mock_16/1.cpp ... 5.cpp` (templates are only ever created, never overwritten).
 
 ### 4d. Change something students see outside Judge/ (README, Makefile, judge.bat, template, Progress.md)
 Edit it under `student/` and release. These are *managed* files: the updater replaces them on every student's

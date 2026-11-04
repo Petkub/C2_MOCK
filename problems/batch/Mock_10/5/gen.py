@@ -1,8 +1,8 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
 import os, random
 
-random.seed(1050521)
-MAXL, MAXN = 10 ** 9, 20000
+random.seed(1504)
+MAXN, MAXL = 100000, 10 ** 9
 tests = []
 rnd = random.random
 
@@ -12,156 +12,121 @@ def ri(a, b):
     return a + int(rnd() * (b - a + 1))
 
 
-def add(L, pts, K):
-    n = len(pts)
-    assert 1 <= L <= MAXL and 1 <= n <= MAXN and 0 <= K <= n
-    xs, ys = zip(*pts)
-    assert min(xs) >= 0 and max(xs) <= L and min(ys) >= 0 and max(ys) <= L
-    assert len(set(pts)) == n
-    pts = list(pts)
-    random.shuffle(pts)
-    lines = [f"{L} {n} {K}"] + [f"{x} {y}" for x, y in pts]
-    tests.append("\n".join(lines) + "\n")
+def add(L, sts):
+    n = len(sts)
+    assert 1 <= n <= MAXN and 2 <= L <= MAXL
+    for p, c in sts:
+        assert 0 <= p <= L - 1 and 1 <= c <= n
+    tests.append(f"{n} {L}\n" + " ".join(str(p) for p, _ in sts) + "\n" + " ".join(str(c) for _, c in sts) + "\n")
 
 
-def dedup(pts):
-    return sorted(set(pts))
+def shuffled(sts):
+    sts = list(sts)
+    random.shuffle(sts)
+    return sts
 
 
-def lattice(cx, cy, dx, dy, ox, oy, L, flip=False):
-    """cx * cy trees at (ox + i dx, oy + j dy); flip swaps x and y"""
-    pts = [(ox + i * dx, oy + j * dy) for i in range(cx) for j in range(cy)]
-    assert all(0 <= x <= L and 0 <= y <= L for x, y in pts)
-    if flip:
-        pts = [(y, x) for x, y in pts]
-    return pts
-
-
-def uniform(n, L):
-    s = set()
-    while len(s) < n:
-        s.add((ri(0, L), ri(0, L)))
-    return sorted(s)
-
-
-def clusters(n, L, k, spread):
-    cs = [(ri(0, L), ri(0, L)) for _ in range(k)]
-    s = set()
-    while len(s) < n:
-        cx, cy = cs[int(rnd() * k)]
-        x = int(random.gauss(cx, spread))
-        y = int(random.gauss(cy, spread))
-        if 0 <= x <= L and 0 <= y <= L:
-            s.add((x, y))
-    return sorted(s)
-
-
-def full_lattice(L, holes=(), keep=lambda x, y: True):
-    hs = set(holes)
-    return [(x, y) for x in range(L + 1) for y in range(L + 1) if keep(x, y) and (x, y) not in hs]
-
-
-def block(x1, x2, y1, y2):
-    return [(x, y) for x in range(x1, x2 + 1) for y in range(y1, y2 + 1)]
-
-
-def ring(n, L, g, h, fo, cx=0.5, cy=0.5, kind="uni", inside=0, edge=0.0, K=0):
-    """an empty square hole of side g L centred near (cx L, cy L), a square ring of thickness h L around it holding
-    most trees, a fraction fo of the trees spread over the rest of the field (a share `edge` of them on the
-    four sides of the field), `inside` trees in the hole.
-    kind: "uni" uniform in the ring, "lat" a jittered lattice, "clu" small clusters"""
-    side, th = int(g * L), int(h * L)
-    x0, y0 = int(cx * L) - side // 2, int(cy * L) - side // 2
-    hx0, hx1, hy0, hy1 = x0, x0 + side, y0, y0 + side
-    ox0, ox1, oy0, oy1 = max(0, hx0 - th), min(L, hx1 + th), max(0, hy0 - th), min(L, hy1 + th)
-
-    def in_hole(x, y):
-        return hx0 <= x <= hx1 and hy0 <= y <= hy1
-
-    def in_outer(x, y):
-        return ox0 <= x <= ox1 and oy0 <= y <= oy1
-
-    s = set()
-    n_out = int(n * fo)
-    while len(s) < n_out:
-        x, y = ri(0, L), ri(0, L)
-        if rnd() < edge:
-            x, y = [(x, 0), (x, L), (0, y), (L, y)][int(rnd() * 4)]
-        if not in_outer(x, y):
-            s.add((x, y))
-    while len(s) < n_out + inside:
-        s.add((ri(hx0, hx1), ri(hy0, hy1)))
-    need = n - len(s)
-    if kind == "lat":
-        area = (ox1 - ox0) * (oy1 - oy0) - side * side
-        d = max(2, int((area / need) ** 0.5 * 0.97))
-        r = d // 3
-        cand = set()
-        for i in range((ox1 - ox0) // d + 1):
-            for j in range((oy1 - oy0) // d + 1):
-                x, y = ox0 + i * d + ri(-r, r), oy0 + j * d + ri(-r, r)
-                if in_outer(x, y) and not in_hole(x, y):
-                    cand.add((x, y))
-        cand = sorted(cand - s)
-        s.update(random.sample(cand, min(need, len(cand))))
-    elif kind == "clu":
-        cs = []
-        while len(cs) < 300:
-            x, y = ri(ox0, ox1), ri(oy0, oy1)
-            if not in_hole(x, y):
-                cs.append((x, y))
-    while len(s) < n:
-        if kind == "clu":
-            px, py = cs[int(rnd() * len(cs))]
-            x, y = int(random.gauss(px, th / 15)), int(random.gauss(py, th / 15))
-        else:
-            x, y = ri(ox0, ox1), ri(oy0, oy1)
-        if in_outer(x, y) and not in_hole(x, y):
-            s.add((x, y))
-    add(L, sorted(s), K)
+def runs(L, n, k, rmin, rmax, shift=None, pos=None, giant=0):
+    """n stations at random (or given) positions; going clockwise, the companies come in runs of
+    rmin..rmax stations, neighbouring runs of different companies (k >= 2 companies); the runs are
+    rotated by `shift` so that one run crosses point 0; giant > 0 adds one run of `giant` stations"""
+    ps = sorted(pos if pos is not None else [ri(0, L - 1) for _ in range(n)])
+    cs, cur = [], ri(1, k)
+    while len(cs) < n:
+        cs += [cur] * ri(rmin, rmax)
+        nxt = ri(1, k - 1)
+        cur = nxt if nxt < cur else nxt + 1
+    cs = cs[:n - giant]
+    if giant:                       # make one run longer by `giant` stations
+        j = ri(0, len(cs) - 1)
+        cs = cs[:j] + [cs[j]] * giant + cs[j:]
+    if shift is None:
+        shift = ri(0, n - 1)
+    cs = cs[shift:] + cs[:shift]
+    return shuffled(zip(ps, cs))
 
 
 # samples
-add(8, [(2, 2), (5, 3), (3, 6), (6, 6), (1, 4), (7, 1)], 1)
-add(4, [(2, 2)], 0)
-add(1, [(0, 0), (1, 1)], 1)
-add(10 ** 9, [(0, 0), (3, 5)], 2)
-add(12, [(3, 1), (9, 2), (6, 4), (1, 7), (10, 7), (5, 9)], 0)
-# hidden: small (brute checks these)
-add(1, [(0, 0)], 0)
-add(190, full_lattice(190, keep=lambda x, y: x % 2 == 0), 1)
-add(130, full_lattice(130, holes=block(70, 74, 40, 44)), 0)
-add(20, uniform(30, 20), 2)
-add(400, uniform(2000, 400), 5)
-add(10 ** 9, uniform(40, 10 ** 9), 3)
-add(10 ** 9, clusters(60, 10 ** 9, 3, 10 ** 7) + [(0, 0), (0, 10 ** 9), (10 ** 9, 0), (10 ** 9, 10 ** 9)], 0)
-add(396, lattice(44, 44, 9, 9, 4, 5, 396), 0)
-add(300, lattice(20, 25, 13, 11, 40, 2, 300) + lattice(5, 5, 3, 3, 1, 280, 300), 4)
-add(1000, uniform(MAXN, 1000), 6)
-# hidden: big
-ring(MAXN, MAXL, 0.2, 0.15, 0.02, K=0)
-ring(MAXN, MAXL, 0.2, 0.12, 0.03, K=10)
-ring(MAXN, MAXL, 0.25, 0.15, 0.01, K=30)
-ring(MAXN, MAXL, 0.15, 0.15, 0.02, K=0)
-ring(MAXN, MAXL, 0.2, 0.2, 0.02, K=2)
-ring(MAXN, 10 ** 8, 0.2, 0.15, 0.02, kind="lat", K=0)
-ring(MAXN, MAXL, 0.22, 0.14, 0.02, kind="lat", K=1)
-ring(MAXN, MAXL, 0.2, 0.15, 0.02, kind="clu", K=50)
-ring(MAXN, MAXL, 0.2, 0.15, 0.02, cx=0.45, cy=0.56, K=3)
-ring(MAXN, MAXL, 0.2, 0.15, 0.02, inside=6, K=4)
-ring(MAXN, MAXL, 0.18, 0.16, 0.02, kind="lat", inside=3, K=3)
-ring(MAXN, MAXL, 0.2, 0.15, 0.02, K=300)
-ring(MAXN, MAXL, 0.3, 0.12, 0.01, K=5)
-ring(MAXN, MAXL, 0.12, 0.15, 0.02, kind="clu", K=1)
-ring(MAXN, MAXL, 0.2, 0.15, 0.04, edge=0.5, K=2)
-ring(MAXN, MAXL, 0.16, 0.18, 0.03, cx=0.53, cy=0.47, kind="lat", K=7)
-ring(MAXN, MAXL, 0.17, 0.13, 0.025, cy=0.52, kind="clu", K=20)
-ring(MAXN, MAXL, 0.21, 0.17, 0.02, kind="lat", edge=0.3, K=0)
-ring(MAXN, MAXL, 0.23, 0.13, 0.015, cx=0.48, inside=12, K=11)
-add(MAXL, uniform(MAXN, MAXL), 0)
+add(20, [(1, 1), (3, 1), (6, 2), (10, 3), (12, 3), (15, 1), (18, 2)])
+add(12, [(0, 1), (6, 2), (0, 1), (9, 2)])
+add(10, [(2, 3), (7, 3), (9, 3)])
+add(30, [(4, 2), (25, 1), (11, 3), (17, 2), (29, 2), (8, 1), (20, 3), (14, 1)])
+add(100, [(37, 4), (90, 1), (5, 1), (62, 4), (71, 2), (13, 1), (44, 1), (98, 4), (25, 2), (56, 2)])
 
-for t in tests:
-    assert t.endswith("\n") and "  " not in t and " \n" not in t
+# hidden: small and medium (brute checks these)
+add(7, [(3, 1)])
+add(5, [(4, 1), (4, 2)])
+add(MAXL, [(0, 1), (MAXL - 1, 2), (MAXL // 2, 1)])
+for n, L, k, rmax in [(8, 9, 2, 3), (12, 30, 3, 4), (60, 50, 2, 10), (300, 1000, 4, 30), (2000, MAXL, 3, 300)]:
+    add(L, runs(L, n, k, 1, rmax))
+add(MAXL, [(ri(0, 10 ** 6), 1) for _ in range(1999)] + [(MAXL // 2, 2)])
+
+# hidden: big (each with its own seed)
+N = MAXN
+H = MAXL // 2
+
+
+def star():
+    """one station of company 2, the rest of company 1 spread round the ring"""
+    return shuffled([(ri(0, MAXL - 1), 1) for _ in range(N - 1)] + [(ri(0, MAXL - 1), 2)])
+
+
+def halves():
+    """company 1 on one half of the ring, company 2 on the other half, the halves cut at random points"""
+    a = ri(0, MAXL - 1)
+    return shuffled([((a + ri(0, H - 1)) % MAXL, 1) for _ in range(N // 2)] +
+                    [((a + H + ri(0, H - 1)) % MAXL, 2) for _ in range(N - N // 2)])
+
+
+def around_zero(k, rmin, rmax, giant):
+    """all stations within 10^6 of point 0 on both sides, so going across point 0 is short"""
+    pos = [ri(0, 10 ** 6) if rnd() < 0.5 else MAXL - 1 - ri(0, 10 ** 6) for _ in range(N)]
+    return runs(MAXL, N, k, rmin, rmax, pos=pos, giant=giant)
+
+
+def three_far():
+    """company 1 near point 0 (both sides), one station of company 2 and one of company 3 far away"""
+    sts = [((MAXL - ri(1, 5 * 10 ** 6)) % MAXL if rnd() < 0.5 else ri(0, 5 * 10 ** 6), 1) for _ in range(N - 2)]
+    return shuffled(sts + [(H + ri(-1000, 1000), 2), (H // 2 + ri(-1000, 1000), 3)])
+
+
+def clusters(m, k):
+    """m clusters round the ring, all stations of a cluster of one company"""
+    centres = sorted(ri(0, MAXL - 1) for _ in range(m))
+    comp = [ri(1, k) for _ in range(m)]
+    comp[-1] = comp[0] % k + 1 if comp[-1] == comp[0] and k > 1 else comp[-1]
+    out = []
+    for _ in range(N):
+        j = ri(0, m - 1)
+        out.append(((centres[j] + ri(-3000, 3000)) % MAXL, comp[j]))
+    return shuffled(out)
+
+
+BIG = [
+    (150401, lambda: (MAXL, [(ri(0, MAXL - 1), ri(1, N)) for _ in range(N)])),
+    (150402, lambda: (MAXL, [(ri(0, MAXL - 1), ri(1, 2)) for _ in range(N)])),
+    (150403, lambda: (MAXL, star())),
+    (150404, lambda: (MAXL, halves())),
+    (150405, lambda: (MAXL, runs(MAXL, N, 3, 1, 3000, giant=N // 3))),
+    (150406, lambda: (MAXL, runs(MAXL, N, 2, 2000, 20000))),
+    (150407, lambda: (MAXL, runs(MAXL, N, 2, 40, 80, giant=N // 2))),
+    (150408, lambda: (MAXL, runs(MAXL, N, 5, 1, 200, giant=N // 4))),
+    (150409, lambda: (MAXL, around_zero(2, 100, 3000, N // 3))),
+    (150410, lambda: (MAXL, around_zero(4, 1, 60, N // 2))),
+    (150411, lambda: (MAXL, three_far())),
+    (150412, lambda: (MAXL, clusters(50, 3))),
+    (150413, lambda: (MAXL, clusters(500, 2))),
+    (150414, lambda: (1000, runs(1000, N, 2, 1, 500, giant=N // 3))),
+    (150415, lambda: (2, [(ri(0, 1), ri(1, 3)) for _ in range(N)])),
+    (150416, lambda: (MAXL, [(ri(0, MAXL - 1), 7) for _ in range(N)])),
+    (150417, lambda: (MAXL, runs(MAXL, N, N, 30, 300, giant=N // 3))),
+    (150418, lambda: (MAXL, shuffled([(i * (MAXL // N), 1 + i % 2) for i in range(N)]))),
+    (150419, lambda: (MAXL, runs(MAXL, N, 2, N // 3, N // 2, shift=N // 6))),
+]
+for seed, make in BIG:
+    random.seed(seed)
+    add(*make())
+
 os.makedirs("tests", exist_ok=True)
 for i, t in enumerate(tests, 1):
     with open(f"tests/{i:02d}.in", "w") as f:

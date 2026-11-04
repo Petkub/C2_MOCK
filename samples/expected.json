@@ -1,35 +1,36 @@
 {
  "batch/towers_ok.cpp": {
-  "problem": "7-2",
+  "problem": "11-2",
   "verdict": "AC",
   "score": 100
  },
  "batch/towers_smallhi.cpp": {
-  "problem": "7-2",
-  "verdict": "WA"
+  "problem": "11-2",
+  "verdict": "WA",
+  "score": 0
  },
  "batch/towers_slow.cpp": {
-  "problem": "7-2",
+  "problem": "11-2",
   "verdict": "TLE"
  },
  "batch/towers_crash.cpp": {
-  "problem": "7-2",
+  "problem": "11-2",
   "verdict": "RE"
  },
  "batch/towers_syntax.cpp": {
-  "problem": "7-2",
+  "problem": "11-2",
   "verdict": "CE"
  },
  "batch/towers_mle.cpp": {
-  "problem": "7-2",
+  "problem": "11-2",
   "verdict": "MLE"
  },
  "batch/towers_throw.cpp": {
-  "problem": "7-2",
+  "problem": "11-2",
   "verdict": "RE"
  },
  "batch/towers_warn.cpp": {
-  "problem": "7-2",
+  "problem": "11-2",
   "verdict": "AC",
   "score": 100
  }

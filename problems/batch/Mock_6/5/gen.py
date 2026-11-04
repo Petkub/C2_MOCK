@@ -1,8 +1,8 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
 import os, random
 
-random.seed(905)
-MAXN, MAXW = 100000, 10 ** 6
+random.seed(350501)
+MAXN, MAXK, MAXS, MAXP, MAXT, MAXW = 100000, 100000, 100000, 10000, 10 ** 9, 10 ** 9
 tests = []
 rnd = random.random
 
@@ -12,249 +12,120 @@ def ri(a, b):
     return a + int(rnd() * (b - a + 1))
 
 
-def shuf(a):
-    """a shuffled copy of the list a (Fisher-Yates with rnd(): faster than random.shuffle)"""
-    b = list(a)
-    for i in range(len(b) - 1, 0, -1):
-        j = int(rnd() * (i + 1))
-        b[i], b[j] = b[j], b[i]
-    return b
-
-
-def add(n, c, plant, edges, tree_ok=False):
-    """edges = (us, vs, ws); tree_ok: emit() already proved the roads form a tree
-    (par[i] < i, relabelled by a permutation)"""
-    us, vs, ws = edges
-    assert 1 <= n <= MAXN and len(us) == len(vs) == len(ws) == n - 1
-    assert sorted(c) == list(range(1, n + 1))
-    assert len(plant) == n and set(plant) <= {"0", "1"} and "1" in plant
-    if n > 1:
-        assert 1 <= min(us) and max(us) <= n and 1 <= min(vs) and max(vs) <= n
-        assert all(map(int.__ne__, us, vs)) and 1 <= min(ws) and max(ws) <= MAXW
-    if not tree_ok:             # n - 1 roads that connect all towns: a tree
-        check_tree(n, us, vs)
-    lines = [str(n), " ".join(map(str, c)), plant] + list(map("{} {} {}".format, us, vs, ws))
+def add(speeds, jobs):
+    n, k = len(jobs), len(speeds)
+    assert 1 <= n <= MAXN and 1 <= k <= MAXK
+    assert all(1 <= s <= MAXS for s in speeds)
+    for a, p, w, c in jobs:
+        assert 0 <= a <= MAXT and 1 <= p <= MAXP and 1 <= w <= MAXW
+        assert c == -1 or a <= c <= MAXT
+    lines = [f"{n} {k}", " ".join(map(str, speeds))] + [f"{a} {p} {w} {c}" for a, p, w, c in jobs]
     tests.append("\n".join(lines) + "\n")
 
 
-def add_list(n, c, plant, roads):
-    """roads given as (u, v, w) triples (samples)"""
-    add(n, c, plant, tuple(map(list, zip(*roads))) if roads else ([], [], []))
+def make(n, k, smax, pmax, tmax, wmax, cfrac, cdelay, smin=1, pmin=1):
+    """random jobs: arrivals in [0, tmax], a share cfrac of them asks to cancel at most cdelay after arriving
+    (a third of those at the very moment they arrive)"""
+    speeds = [ri(smin, smax) for _ in range(k)]
+    jobs = []
+    for _ in range(n):
+        a = ri(0, tmax)
+        c = -1
+        if rnd() < cfrac:
+            c = a if rnd() < 1 / 3 else min(MAXT, a + ri(0, cdelay))
+        jobs.append((a, ri(pmin, pmax), ri(1, wmax), c))
+    return speeds, jobs
 
 
-def check_tree(n, us, vs):
-    adj = [[] for _ in range(n + 1)]
-    for u, v in zip(us, vs):
-        adj[u].append(v)
-        adj[v].append(u)
-    seen = [False] * (n + 1)
-    seen[1] = True
-    stack = [1]
-    cnt = 1
-    while stack:
-        for u in adj[stack.pop()]:
-            if not seen[u]:
-                seen[u] = True
-                cnt += 1
-                stack.append(u)
-    assert cnt == n
+def busy_low(n, k, hold, smax, pmax, tmax, wmax, cfrac, cdelay):
+    """the first `hold` jobs arrive at 0 with the most pages and keep the low-numbered printers busy
+    for the whole test; the rest are short jobs served by the high-numbered printers"""
+    speeds = [MAXS] * hold + [ri(1, smax) for _ in range(k - hold)]
+    jobs = [(0, MAXP, 1, -1) for _ in range(hold)]
+    for _ in range(n - hold):
+        a = ri(1, tmax)
+        c = min(MAXT, a + ri(0, cdelay)) if rnd() < cfrac else -1
+        jobs.append((a, ri(1, pmax), ri(1, wmax), c))
+    return speeds, jobs
 
 
-# ---------------------------------------------------------------- tree shapes on 0..n-1 (par[i] < i)
-def shape(kind, n):
-    par = [-1] * n
-    if kind == "random":
-        for i in range(1, n):
-            par[i] = int(rnd() * i)
-    elif kind == "deep":
-        for i in range(1, n):
-            par[i] = ri(max(0, i - 4), i - 1)
-    elif kind == "path":
-        for i in range(1, n):
-            par[i] = i - 1
-    elif kind == "caterpillar":
-        spine = max(1, n // 2)
-        for i in range(1, n):
-            par[i] = i - 1 if i < spine else int(rnd() * spine)
-    elif kind == "spurs":           # spine 0..h-1, vertex h + j hangs below spine vertex j
-        h = (n + 1) // 2
-        for i in range(1, n):
-            par[i] = i - 1 if i < h else i - h
-    elif kind == "star":
-        for i in range(1, n):
-            par[i] = 0
-    elif kind == "broom":
-        h = n // 2
-        for i in range(1, n):
-            par[i] = i - 1 if i <= h else h
-    elif kind == "binary":
-        for i in range(1, n):
-            par[i] = (i - 1) // 2
-    elif kind == "long-arms":       # a few long paths out of vertex 0
-        arms = 5
-        for i in range(1, n):
-            par[i] = i - arms if i > arms else 0
-    else:
-        raise ValueError(kind)
-    return par
+def two_phase(n1, n2, k, t1, burst, wmax, cfrac):
+    """a quiet phase (n1 short jobs over [0, t1]: printers are often idle and free up in every order),
+    then a burst of n2 long jobs arriving in [t1 + 1, t1 + burst] that queue far beyond 2^31"""
+    speeds = [ri(1, MAXS) for _ in range(k)]
+    jobs = []
+    for _ in range(n1):
+        a = ri(0, t1)
+        c = min(MAXT, a + ri(0, 3 * MAXS)) if rnd() < cfrac else -1
+        jobs.append((a, ri(1, 3), ri(1, wmax), c))
+    for _ in range(n2):
+        a = ri(t1 + 1, t1 + burst)
+        c = min(MAXT, a + ri(0, 10 ** 9)) if rnd() < cfrac else -1
+        jobs.append((a, ri(1, MAXP), ri(1, wmax), c))
+    random.shuffle(jobs)
+    return speeds, jobs
 
 
-def weights(kind, n, par, plants):
-    w = [0] * n
-    for i in range(1, n):
-        if kind == "rand":
-            w[i] = ri(1, MAXW)
-        elif kind == "max":
-            w[i] = MAXW
-        elif kind == "small":
-            w[i] = ri(1, 10)
-        elif kind == "spur":        # roads into a plant leaf are short, the rest long
-            w[i] = ri(1, 3) if i in plants else ri(30000, 99999)
-        else:
-            raise ValueError(kind)
-    return w
-
-
-def has_child(n, par):
-    ch = [False] * n
-    for i in range(1, n):
-        ch[par[i]] = True
-    return ch
-
-
-def choose_plants(kind, n, par, cnt):
-    ch = has_child(n, par)
-    leaves = [v for v in range(n) if not ch[v]]
-    if kind == "random":
-        return set(random.sample(range(n), cnt))
-    if kind == "leaves":
-        return set(random.sample(leaves, min(cnt, len(leaves))))
-    raise ValueError(kind)
-
-
-def choose_order(kind, n, par, plants, start=None):
-    """order of joining towns (0-based vertices); start = c_1 if given"""
-    ch = has_child(n, par)
-    if start is None:
-        start = int(rnd() * n)
-    if kind == "random":
-        return [start] + shuf([v for v in range(n) if v != start])
-    if kind == "leaves":            # non-plant leaves first, then the plants, then everything else
-        lv = shuf([v for v in range(n) if not ch[v] and v != start and v not in plants])
-        pl = shuf(sorted(v for v in plants if v != start))
-        seen = set(lv) | set(pl) | {start}
-        rest = shuf([v for v in range(n) if v not in seen])
-        return [start] + lv + pl + rest
-    if kind == "bfs":               # every new town is next to the network
-        adj = [[] for _ in range(n)]
-        for i in range(1, n):
-            adj[i].append(par[i])
-            adj[par[i]].append(i)
-        seen = [False] * n
-        seen[start] = True
-        frontier = [start]
-        out = []
-        while frontier:
-            j = int(rnd() * len(frontier))
-            frontier[j], frontier[-1] = frontier[-1], frontier[j]
-            v = frontier.pop()
-            out.append(v)
-            for u in adj[v]:
-                if not seen[u]:
-                    seen[u] = True
-                    frontier.append(u)
-        return out
-    if kind == "zigzag":            # path 0..n-1: start in the middle, then the two ends inwards
-        lo, hi = 0, n - 1
-        out = [start]
-        while lo <= hi:
-            for v in (lo, hi):
-                if v != start and v not in out[-2:]:
-                    out.append(v)
-            lo += 1
-            hi -= 1
-        assert sorted(out) == list(range(n))
-        return out
-    raise ValueError(kind)
-
-
-def emit(n, par, w, plants, order, keep_one=None):
-    """random labels; keep_one: vertex that gets label 1 (else a vertex that is not c_1)"""
-    lab = shuf(list(range(1, n + 1)))
-    if n > 1:
-        one = keep_one
-        if one is None:             # town 1 is never c_1 here (c_1 = 1 is tested on its own)
-            one = order[0]
-            while one == order[0]:
-                one = int(rnd() * n)
-        j = lab.index(1)
-        lab[j], lab[one] = lab[one], lab[j]
-    assert sorted(lab) == list(range(1, n + 1))
-    assert n == 1 or (min(par[1:]) >= 0 and all(map(int.__lt__, par[1:], range(1, n))))
-    c = [lab[v] for v in order]
-    plant = ["0"] * n
-    for v in plants:
-        plant[lab[v] - 1] = "1"
-    # roads in the order of the label of their lower end (labels are random), random direction
-    idx = sorted(range(1, n), key=lab.__getitem__)
-    lo = list(map(lab.__getitem__, idx))
-    hi = [lab[par[i]] for i in idx]
-    flip = format(random.getrandbits(n - 1), "0%db" % (n - 1)) if n > 1 else ""
-    us = [b if f == "1" else a for a, b, f in zip(lo, hi, flip)]
-    vs = [a if f == "1" else b for a, b, f in zip(lo, hi, flip)]
-    ws = [w[i] for i in idx]
-    add(n, c, "".join(plant), (us, vs, ws), tree_ok=True)
-
-
-def build(n, kind, wkind="rand", pkind="random", pcnt=3, okind="random", start=None, c1_plant=False,
-          one=None):
-    par = shape(kind, n)
-    if pkind == "spurs":            # plants = the hanging leaves of some spine vertices
-        h = (n + 1) // 2
-        plants = set(random.sample(range(h, n), min(pcnt, n - h))) if n > h else {0}
-    else:
-        plants = choose_plants(pkind, n, par, pcnt)
-    if start is None:
-        cand = [v for v in range(n) if v not in plants] or [0]
-        start = cand[int(rnd() * len(cand))]
-    if c1_plant:
-        plants.add(start)
-    w = weights(wkind, n, par, plants)
-    order = choose_order(okind, n, par, plants, start)
-    emit(n, par, w, plants, order, one)
+def held(h, made):
+    """h extra printers numbered first, each taking at second 0 one extra job that lasts 10^9 seconds (the extra
+    jobs have the smallest ids and the highest priority used), so the later jobs go to printers numbered above h"""
+    speeds, jobs = made
+    top = max(w for _, _, w, _ in jobs)
+    return [MAXS] * h + speeds, [(0, MAXP, top, -1)] * h + jobs
 
 
 # samples
-add_list(7, [3, 6, 1, 5, 2, 7, 4], "0000101",
-    [(1, 2, 4), (2, 3, 2), (2, 4, 3), (4, 5, 1), (4, 6, 5), (1, 7, 6)])
-add_list(5, [3, 2, 4, 1, 5], "10001", [(1, 2, 3), (2, 3, 4), (3, 4, 1), (4, 5, 2)])
-add_list(1, [1], "1", [])
-add_list(4, [2, 4, 1, 3], "0100", [(1, 2, 7), (2, 3, 9), (2, 4, 1)])
-add_list(5, [2, 5, 3, 1, 4], "10000", [(1, 3, 5), (3, 2, 2), (3, 4, 4), (4, 5, 1)])
-# hidden: small (brute checks these)
-add_list(2, [2, 1], "01", [(1, 2, MAXW)])
-build(12, "random", "small", "random", 2, "leaves")
-build(40, "spurs", "spur", "spurs", 3, "leaves")
-build(300, "random", "rand", "random", 1, "random")
-build(2000, "caterpillar", "spur", "leaves", 4, "leaves")
-build(3000, "path", "small", "random", 2, "zigzag", start=1500)
-build(9000, "deep", "rand", "random", 5, "random", c1_plant=True)
-# hidden: big
-build(MAXN, "path", "rand", "random", 2, "zigzag", start=MAXN // 2)
-build(MAXN, "path", "max", "random", 1, "random")
-build(MAXN, "path", "spur", "random", 30, "leaves", start=7)
-build(MAXN, "spurs", "spur", "spurs", 5, "leaves")
-build(MAXN, "random", "rand", "random", 3, "leaves")
-build(MAXN, "random", "spur", "leaves", 20, "leaves")
-build(MAXN, "deep", "spur", "leaves", 50, "leaves")
-build(MAXN, "caterpillar", "rand", "leaves", 3, "leaves")
-build(MAXN, "broom", "spur", "leaves", 10, "leaves", start=0)
-build(MAXN, "star", "rand", "random", 1, "random")
-build(MAXN, "binary", "spur", "leaves", 8, "leaves")
-build(MAXN, "long-arms", "rand", "random", 2, "leaves")
-build(MAXN, "random", "rand", "random", MAXN // 10, "bfs")
-build(MAXN, "deep", "max", "random", 1, "random", c1_plant=True)
-build(MAXN, "path", "max", "random", 1, "random", start=0, one=MAXN - 1)
+add([1, 2], [(0, 3, 1, -1), (0, 2, 5, -1), (1, 1, 2, 3), (1, 2, 3, -1), (2, 1, 3, -1)])
+add([3, 1, 2], [(0, 2, 2, 1), (0, 1, 2, -1), (1, 4, 7, -1), (1, 1, 1, -1)])
+add([2], [(5, 1, 1, -1), (0, 2, 4, -1), (3, 1, 9, -1)])
+add([5, 1, 1, 3], [(2, 3, 1, -1), (2, 2, 6, -1), (0, 1, 1, -1)])
+add([2, 1], [(0, 2, 3, -1), (1, 3, 5, -1), (1, 1, 3, 2), (2, 2, 1, -1)])
+
+# hidden: small (brute checks these); small time ranges so that many events share a moment
+add([7], [(MAXT, MAXP, MAXW, MAXT)])
+add([1, 1, 1], [(4, 1, 1, -1)])
+for n, k, smax, pmax, tmax, wmax, cfrac, cdelay in [
+        (10, 2, 3, 3, 6, 3, 0.3, 3), (40, 3, 2, 4, 15, 4, 0.3, 5), (120, 5, 3, 3, 40, 3, 0.25, 6),
+        (200, 1, 2, 3, 100, 5, 0.3, 50), (250, 20, 4, 5, 30, 2, 0.4, 3), (300, 8, 1, 6, 60, 10, 0.2, 20)]:
+    add(*make(n, k, smax, pmax, tmax, wmax, cfrac, cdelay))
+
+# hidden: big (each with its own seed, so changing one test does not change the others)
+N, K = MAXN, MAXK
+BIG = [
+    # one printer, everything waits: a long queue and finish times far beyond 2^31
+    (350601, lambda: make(N, 1, MAXS, MAXP, 1000, MAXW, 0.3, 10 ** 6, smin=MAXS // 2, pmin=MAXP // 2)),
+    # many printers and still more work than they can do: a long queue, long varied jobs, few priority values
+    (350602, lambda: make(N, 20000, MAXS, MAXP, 1000, 5, 0.3, 10 ** 9, smin=50000, pmin=5000)),
+    (350603, lambda: make(N, 12000, MAXS, MAXP, 100, 50, 0.25, 10 ** 9, smin=10000, pmin=3000)),
+    (350604, lambda: make(N, 25000, MAXS, MAXP, 10 ** 5, 3, 0.35, 10 ** 9, smin=60000, pmin=5000)),
+    (350605, lambda: make(N, 30000, MAXS, MAXP, 0, 3, 0.3, 10 ** 9, smin=60000, pmin=6000)),
+    (350606, lambda: make(N, 25000, MAXS, MAXP, 10 ** 5, 1, 0.3, 10 ** 9, smin=40000, pmin=4000)),
+    (350607, lambda: make(N, 1000, MAXS, MAXP, 3000, 1000, 0.3, 10 ** 9, smin=2000, pmin=2000)),
+    (350621, lambda: make(N, 10000, MAXS, MAXP, 10 ** 4, 7, 0.3, 10 ** 9, smin=8000, pmin=8000)),
+    (350608, lambda: make(N, 5000, MAXS, MAXP, 10 ** 6, 10, 0.9, 10 ** 9, smin=50000, pmin=5000)),
+    (350609, lambda: make(N, 35000, MAXS, MAXP, 50, MAXW, 0.3, 10 ** 9, smin=80000, pmin=8000)),
+    # short jobs arriving in a burst: many printers finish, jobs arrive and requests come at the same moments
+    # (held(h, ...): printers 1..h stay busy for the whole test)
+    (350610, lambda: held(50000, make(N - 50000, 10000, 2, 2, 10, 3, 0.3, 3))),
+    # a quiet phase, then a burst that queues
+    (350624, lambda: two_phase(20000, 80000, 400, 10 ** 8, 1000, 5, 0.3)),
+    # short jobs, a few arriving every second, very many printers
+    (350613, lambda: make(N, K, 3, 3, 10 ** 5, 3, 0.3, 3)),
+    (350611, lambda: held(50000, make(N - 50000, 40000, 2, 4, 50000, 2, 0.4, 2))),
+    # the low-numbered printers are busy all the time
+    (350614, lambda: busy_low(N, K, 60000, 5, 5, 200000, 10, 0.2, 20)),
+    (350615, lambda: busy_low(N, K, 90000, 3, 4, 50000, 3, 0.3, 10)),
+    # light load: printers often wait, several of them free at the same moment
+    (350622, lambda: held(50000, make(N - 50000, 200, 3, 3, 30000, 3, 0.3, 5))),
+    (350623, lambda: held(50000, make(N - 50000, 1000, 5, 5, 20000, 2, 0.3, 10))),
+    (350616, lambda: make(N, 30000, MAXS, MAXP, MAXT, 100, 0.3, 1000)),
+    # a small shop with a huge queue
+    (350618, lambda: make(N, 50, MAXS, MAXP, 10 ** 6, 10 ** 6, 0.3, 10 ** 9, smin=1000, pmin=1000)),
+    (350625, lambda: two_phase(50000, 50000, 2000, 5 * 10 ** 8, 50, 3, 0.3)),
+]
+for seed, mk in BIG:
+    random.seed(seed)
+    add(*mk())
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

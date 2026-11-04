@@ -26,7 +26,8 @@ Options
 
 Requirements: Python 3.7+ and g++ in PATH (Linux / macOS / Windows).
 Output comparison: line by line, ignoring trailing spaces and trailing empty lines.
-Score: share of tests passed (with subtasks: each subtask's points x share of its tests passed).
+Score: share of tests passed (with subtasks: each subtask's points x share of its tests passed);
+problems marked "scoring": "all" give 100 only when every test passes, else 0 (like the real exam).
 Progress: every judged solution is recorded in Judge/progress.json (best score per problem);
 --progress shows the dashboard in the terminal (--progress K: set K only).
 """
@@ -408,6 +409,7 @@ SAMPLE_COUNT = [6]  # number of statement samples of the problem being judged (t
 
 
 SUBTASKS = [None]  # [{"points": 40, "tests": ["01", ...]}, ...] or None (score = share of tests passed)
+ALL_OR_NOTHING = [False]  # problems.json "scoring": "all": 100 only when every test passes, else 0
 TEST_NAMES = [[]]  # names of all tests of the problem being judged (also those --stop did not run)
 HASH_ONLY = [set()]  # names of its tests whose expected output is checked by sha256 only (out_file false)
 
@@ -420,6 +422,7 @@ def set_sample_count(meta, num):
     m = meta.get(num, {}) if num is not None else {}
     SAMPLE_COUNT[0] = int(m.get("samples", 6))
     SUBTASKS[0] = m.get("subtasks")
+    ALL_OR_NOTHING[0] = m.get("scoring") == "all"
     ml = m.get("ml", MEMORY_LIMIT_MB)
     MEM_LIMIT[0] = ML_OPTION[0] or (ml if isinstance(ml, int) and ml > 0 else MEMORY_LIMIT_MB)
 
@@ -440,10 +443,12 @@ def subtasks_usable():
 
 def compute_score(results, total):
     """Score out of 100, rounded down. Problems with subtasks: each subtask gives points x (share of its tests
-    passed); tests that were not run (--stop) count as failed. Returns (score, [(points, got, passed, tests)])."""
+    passed); "scoring": "all" problems: 100 or 0; tests that were not run (--stop) count as failed. Returns (score, [(points, got, passed, tests)])."""
     if not total:
         return 0, None
     ok = set(r[0] for r in results if r[1] == "AC")
+    if ALL_OR_NOTHING[0]:
+        return (100 if len(ok) == total else 0), None
     if not subtasks_usable():
         return 100 * len(ok) // total, None
     parts, num, den = [], 0, 1

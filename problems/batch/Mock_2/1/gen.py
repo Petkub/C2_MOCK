@@ -1,37 +1,36 @@
 import random, os
-random.seed(2606)
+random.seed(2616)
 os.makedirs("tests", exist_ok=True)
 cases = []
-cases.append((3, 2, [1, 2, 3, 4, 5]))
-cases.append((5, 1, [-5, 5, 10, -3, 3]))
-cases.append((4, 3, [2, 2, 2, 2, 2, 2]))
-cases.append((7, 1, [7]))
-cases.append((6, 2, [4, -1, 3, 5, -2, 2, 1]))
+cases.append((7, 10, [2, 5, 3, 8, 6]))
+cases.append((8, 10, [4, 6, 4, 3, 7]))
+cases.append((1, 3, [7, 9]))
+cases.append((4, 4, [2]))
+cases.append((3, 12, [1, 2, 3, 4, 5, 6]))
 for _ in range(6):
-    n = random.randint(1, 15)
-    cases.append((random.randint(1, 10), random.randint(1, n), [random.randint(-20, 20) for _ in range(n)]))
-N, B = 100000, 10**9
-def rnd(n, K, L, lo, hi): return (K, L, [random.randint(lo, hi) for _ in range(n)])
-cases.append(rnd(3000, 7, 10, -B, B))
-cases.append(rnd(N, 7, 1, -B, B))
-cases.append(rnd(N, 1, 1, -B, B))                       # every subarray: answer ~2*10^10
-cases.append(rnd(N, 1000, 50, -B, B))
-cases.append(rnd(N, 10**9, 1, -1, 1))                   # sums are small: divisible only when 0
-cases.append(rnd(N, 999999937, 1000, -B, B))
-cases.append(rnd(N, 2, N - 1, -B, B))
-cases.append((3, 1, [-1] * N))                          # all negative
-cases.append((3, 100, [random.choice([-B, B, 0]) for _ in range(N)]))
-cases.append(rnd(N, 12345, 77777, -5, 5))
-for K, L in ((13, 1), (2, 5000), (100003, 3), (6, 20000), (1, 30000)):
-    cases.append(rnd(random.randint(30000, 50000), K, L, -B, B))
-cases.append(rnd(100000, 2, 1, -B, B))
-cases.append(rnd(100000, 3, 10, -B, B))
-cases.append(rnd(80000, 1, 7, -5, 5))
-cases.append(rnd(100000, 2, 3, -9, 9))
-cases.append(rnd(100000, 4, 100, 0, 0))
-cases.append((1000000000, 1, [1000000000, -1000000000, 1000000000]))   # old sample 5, now a hidden test
-for i, (K, L, a) in enumerate(cases, 1):
-    n = len(a)
-    assert 1 <= n <= 100000 and 1 <= K <= 10**9 and 1 <= L <= n and all(abs(x) <= 10**9 for x in a)
-    open(f"tests/{i:02d}.in", "w").write(f"{n} {K} {L}\n" + " ".join(map(str, a)) + "\n")
+    n = random.randint(1, 12); L = random.randint(2, 25)
+    cases.append((L, L + random.randint(0, 12), [random.randint(1, 15) for _ in range(n)]))
+B = 10**9
+def rnd(n, L, R, hi): return (L, R, [random.randint(1, hi) for _ in range(n)])
+cases.append(rnd(3000, 10**8, 9 * 10**8, B))
+cases.append(rnd(100000, 2, 2 * B, B))                       # every pair: ~5*10^9
+cases.append(rnd(100000, B, B + 10**6, B))
+cases.append(rnd(100000, 3 * B // 2, 2 * B, B))              # sums above 2^31
+cases.append((2, 2 * B, [B] * 100000))                        # all equal, sum = 2*10^9
+cases.append(rnd(100000, 1, 1, B))                            # nothing fits
+for L, R, hi in ((500, 1500, 1000), (10**6, 10**6, 10**6), (B, 2 * B, B), (12345678, 87654321, 10**8), (1, 2 * B, 10)):
+    cases.append(rnd(random.randint(30000, 50000), L, R, hi))
+cases.append(rnd(50000, 1000, 1000, 999))                     # many duplicates, exact-sum window
+cases.append((2 * B - 1, 2 * B - 1, [B - 1, B, B, 1, 1]))
+for R in (13 * 10**8, 16 * 10**8, 11 * 10**8):          # answers above 2^31 without taking every pair
+    cases.append(rnd(100000, random.randint(0, 10**8), R, B))
+for L, R in ((2 * 10**8, 15 * 10**8), (0, 12 * 10**8), (3 * 10**8, 2 * B), (5 * 10**8, 17 * 10**8)):
+    cases.append(rnd(100000, L, R, B))
+for L, R in ((10**9, 10**9 + 5), (5, 300), (1999999990, 2 * B)):   # large N, small answers
+    cases.append(rnd(100000, L, R, B))
+cases.append((10, 10, [5, 5, 5, 5]))                          # the old sample 2 (all prices equal), now hidden
+for i, (L, R, p) in enumerate(cases, 1):
+    n = len(p)
+    assert 1 <= n <= 100000 and 0 <= L <= R <= 2 * B and all(1 <= x <= B for x in p)
+    open(f"tests/{i:02d}.in", "w").write(f"{n} {L} {R}\n" + " ".join(map(str, p)) + "\n")
 print(len(cases), "tests")

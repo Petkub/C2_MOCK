@@ -1,174 +1,134 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-# A member is written as its input line "k s_1 ... s_k"; big tests draw these lines from precomputed tables (fast).
-import os, random, bisect
-from itertools import combinations, permutations
+# A test is kept as two lists (prices, ratings) so that the big tests are built quickly.
+import os, random
 
-random.seed(640421)
-MAXN, MAXS = 50000, 10 ** 9
+random.seed(740218)
+MAXN, MAXV = 150000, 10 ** 9
 tests = []
 rnd = random.random
 
 
-def line(s):
-    assert 1 <= len(s) <= 4 and len(set(s)) == len(s) and 1 <= min(s) and max(s) <= MAXS
-    return f"{len(s)} " + " ".join(map(str, s))
+def add(h):
+    ps, rs = h
+    n = len(ps)
+    assert 1 <= n <= MAXN and len(rs) == n
+    assert 1 <= min(ps) and max(ps) <= MAXV and 1 <= min(rs) and max(rs) <= MAXV
+    flat = [0] * (2 * n)
+    flat[0::2] = ps
+    flat[1::2] = rs
+    tests.append(f"{n}\n" + "%d %d\n" * n % tuple(flat))
 
 
-def add(members):
-    """members: lists of skills or ready lines"""
-    n = len(members)
-    assert 1 <= n <= MAXN
-    lines = [str(n)] + [m if isinstance(m, str) else line(m) for m in members]
-    tests.append("\n".join(lines) + "\n")
+def pairs(lst):
+    return [p for p, r in lst], [r for p, r in lst]
 
 
-def ids(k, lo=1, hi=MAXS):
-    """k distinct random skill ids in [lo, hi]"""
-    return random.sample(range(lo, hi + 1), k)
+def band(n, width, slope, wp, wr):
+    """points along a falling line: x in [0, width), price x + noise, rating (width - x) * slope + noise"""
+    xs = [int(rnd() * width) for _ in range(n)]
+    ps = [x + 1 + int(rnd() * (wp + 1)) for x in xs]
+    rs = [(width - x) * slope + 1 + int(rnd() * (wr + 1)) for x in xs]
+    return ps, rs
 
 
-_tab = {}
+def layers(n, count, size, step):
+    """`count` copies of one random antichain (price and rating both increasing), each copy moved by
+    (+step, -step): a hotel of a copy is beaten by the same hotel of the copies before"""
+    bp, br, p, r = [], [], 1, 1
+    for _ in range(size):
+        p += random.randint(0, 3)
+        r += random.randint(0, 3)
+        bp.append(p)
+        br.append(r)
+    top = count * step
+    ks = [int(rnd() * count) * step for _ in range(n)]
+    js = [int(rnd() * size) for _ in range(n)]
+    return [bp[j] + k for j, k in zip(js, ks)], [br[j] + top - k for j, k in zip(js, ks)]
 
 
-def table(pool, ks):
-    """the lines of every ordered choice of k distinct skills of pool, for every k in ks (repeats give weights:
-    each size is equally likely per repeat, whatever its number of choices)"""
-    key = (tuple(pool), tuple(ks))
-    if key not in _tab:
-        per = {k: [line(p) for p in permutations(pool, k)] for k in set(ks)}
-        _tab[key] = [per[k] for k in ks]
-    return _tab[key]
+def blocks(n, cnt, side, grid):
+    """`cnt` squares on a falling diagonal, random points inside each, coordinates divided by `grid`"""
+    ks = [int(rnd() * cnt) for _ in range(n)]
+    ps = [(k * side + int(rnd() * side)) // grid + 1 for k in ks]
+    rs = [((cnt - k) * side + int(rnd() * side)) // grid + 1 for k in ks]
+    return ps, rs
 
 
-def pooled(n, pool, ks):
-    """n members, each takes k = a random entry of ks skills of pool"""
-    t = table(pool, ks)
+def dup(h, share):
+    """replace a share of the hotels by copies of other hotels"""
+    ps, rs = h[0][:], h[1][:]
+    n = len(ps)
+    for _ in range(int(n * share)):
+        i, j = int(rnd() * n), int(rnd() * n)
+        ps[i], rs[i] = ps[j], rs[j]
+    return ps, rs
+
+
+def spread(h):
+    """map prices and ratings to random large values in the same order (the rounds do not change)"""
     out = []
-    for _ in range(n):
-        lst = t[int(rnd() * len(t))]
-        out.append(lst[int(rnd() * len(lst))])
-    return out
+    for col in h:
+        vals = sorted(set(col))
+        m = dict(zip(vals, sorted(random.sample(range(1, MAXV + 1), len(vals)))))
+        out.append([m[v] for v in col])
+    return tuple(out)
 
 
-def mixed(s):
-    """s shuffled in place (a small list) and returned"""
-    for i in range(len(s) - 1, 0, -1):
-        j = int(rnd() * (i + 1))
-        s[i], s[j] = s[j], s[i]
-    return s
+_perm = []
 
 
-def clusters(n, groups, gsize, ks, popular=(), pp=0.0, lo=1, hi=MAXS):
-    """members in groups; each group has its own pool of gsize skills; a member takes k (from ks) positions of
-    the pool, and (with probability pp each) the popular skills too (a member keeps at most 4 skills)"""
-    pools = [ids(gsize, lo, hi) for _ in range(groups)]
-    pos = [list(permutations(range(gsize), k)) for k in ks]
-    out = []
-    for _ in range(n):
-        g = pools[int(rnd() * groups)]
-        lst = pos[int(rnd() * len(pos))]
-        s = [g[i] for i in lst[int(rnd() * len(lst))]]
-        for x in popular:
-            if rnd() < pp and x not in s:
-                if len(s) == 4:
-                    s[int(rnd() * 4)] = x
-                else:
-                    s.append(x)
-        out.append(mixed(s))
-    return out
-
-
-def zipf(n, nskills, ks, lo=1, hi=MAXS):
-    """skill r (r = 1..nskills) is drawn with weight 1 / r"""
-    sk = ids(nskills, lo, hi)
-    cum, t = [], 0.0
-    for r in range(1, nskills + 1):
-        t += 1.0 / r
-        cum.append(t)
-    out = []
-    for _ in range(n):
-        k = ks[int(rnd() * len(ks))]
-        s = []
-        while len(s) < k:
-            x = sk[min(nskills - 1, bisect.bisect_left(cum, rnd() * t))]
-            if x not in s:
-                s.append(x)
-        out.append(s)
-    return out
-
-
-def all_subsets(pool, copies):
-    """every subset of pool with 1..4 skills, `copies` times each, shuffled"""
-    out = []
-    for k in range(1, 5):
-        for c in combinations(pool, k):
-            out += [list(c) for _ in range(copies)]
-    random.shuffle(out)
-    return [mixed(s) for s in out]
-
-
-def popular_too(members, xs, pp):
-    """every member (a list of skills) also gets each skill of xs with probability pp (a member with 4 skills
-    gives up a random other one): a few skills that almost everybody has"""
-    for s in members:
-        for x in xs:
-            if rnd() < pp and x not in s:
-                if len(s) == 4:
-                    s[int(rnd() * 4)] = x
-                else:
-                    s.append(x)
-        mixed(s)
-    return members
-
-
-def shuffled(a):
-    a = list(a)
-    random.shuffle(a)
-    return a
+def mixed(h):
+    """h in a random order; every big test has MAXN hotels, so one shuffled order is reused (fast)"""
+    n = len(h[0])
+    if n < MAXN:
+        idx = list(range(n))
+        random.shuffle(idx)
+    else:
+        if not _perm:
+            _perm.extend(range(MAXN))
+            random.shuffle(_perm)
+        idx = _perm
+    return [h[0][i] for i in idx], [h[1][i] for i in idx]
 
 
 # samples
-add([[3, 7, 100], [20, 3, 7], [5, 3], [100, 20, 8, 9]])
-add([[5, 1000000000], [1000000000, 5], [5]])
-add([[42, 7, 1, 9]])
-add([[1, 2, 3, 4], [4, 3, 2, 1], [2, 3, 4], [1, 5], [6, 2, 4, 8], [9]])
-add([[10, 20], [20, 30], [30, 10], [10, 20, 30], [40, 10, 20, 50], [50, 40], [60]])
+add(pairs([(300, 4), (200, 5), (300, 4), (100, 3), (200, 2), (400, 5), (500, 1)]))
+add(pairs([(5, 1), (5, 2), (5, 3), (5, 3)]))
+add(pairs([(7, 7)]))
+add(pairs([(3, 3), (5, 1), (1, 5), (4, 2), (2, 4)]))
+add(pairs([(4, 6), (2, 2), (6, 5), (3, 6), (2, 7), (5, 3), (4, 6), (1, 1)]))
 # hidden: small (brute checks these)
-add([[MAXS, 1, 500000000, 2]])
-add([[1, 2, 3, 4], [4, 1, 3, 2]])
-add(pooled(10, [1, 2, 3, 4, 5], [1, 2, 3, 4]))
-add(pooled(200, ids(6, 1, 100), [1, 2, 3, 4, 4]))
-add(clusters(3000, 40, 6, [2, 3, 4, 4], [77], 0.5, 1, 10 ** 4))
-add(clusters(4000, 300, 5, [3, 4], ids(2), 0.3))
-add(pooled(5000, ids(8), [1, 2, 3, 4]))
-add(zipf(4000, 60, [2, 3, 4, 4], 1, 1000))
-add(all_subsets(ids(6, 1, 50), 5))
-add(shuffled(clusters(2500, 30, 7, [4], [], 0, 1, 999) + pooled(2500, ids(300, 1, 999), [1, 2])))
-# hidden: big (N = 50000); most have a popular skill or a popular pair of skills (walking the members of
-# every skill, or of every pair of skills, then touches about N^2 entries)
-add([line(mixed([123456789, 987654321, 1, 1000000000]))] * MAXN)                # everybody the same
-add(pooled(MAXN, ids(6, 1, 99), [4]))                                             # every pair shares >= 2
-add(popular_too([ids(2, 1, 10 ** 5) for _ in range(MAXN)], [100, 200], 0.5))
-add(popular_too([ids(3, 1, 20000) for _ in range(MAXN)], [5, 6], 0.6))
-add(popular_too(clusters(MAXN, 1000, 6, [2, 3, 4, 4], [5000], 1.0, 1, 99999), [5001, 5002], 0.93))
-add(popular_too(clusters(MAXN, 100, 7, [4], [31337], 0.98, 1, 99999), [31338], 0.7))
-add(clusters(MAXN, 2500, 5, [3, 4], ids(2, 1, 9999), 0.85, 1, 99999))
-add([[1] + ids(3, 2, 10 ** 5) for _ in range(MAXN)])                              # skill 1 is everybody's
-add(clusters(MAXN, 20, 8, [2, 3, 4], [777, 888, 999], 0.92, 1, 9999))
-add(zipf(MAXN, 1000, [2, 3, 4, 4], 1, 99999))
-add(zipf(MAXN, 20000, [3, 4], 1, 99999))
-add(all_subsets(ids(7, 1, 999), MAXN // 98)[:MAXN] + pooled(MAXN - 98 * (MAXN // 98), ids(7, 1, 999), [4]))
-base = popular_too([ids(2) for _ in range(MAXN * 7 // 10)], [999999937], 0.98)
-base = [line(s) for s in popular_too(base, [999999929, 999999893], 0.93)]
-add(shuffled(base + [base[int(rnd() * len(base))] for _ in range(MAXN - len(base))]))   # big ids, copies
-add(shuffled(pooled(MAXN // 2, ids(100, 1, 9999), [1]) + pooled(MAXN // 2, ids(6, 1, 9999), [3, 4])))
-add(popular_too(shuffled(clusters(MAXN // 2, 50, 6, [4], [], 0, 10 ** 8, MAXS)
-                         + zipf(MAXN // 2, 300, [2, 3, 4])), ids(3, 10 ** 8, MAXS), 0.93))
-add(popular_too([ids(1, 1, 10 ** 6) for _ in range(MAXN)], [7777], 0.98))         # mostly {7777, x}
-# almost every member's skill set is different, but a popular skill remains (grouping equal sets does not help)
-add(popular_too([ids(3, 1, 10 ** 5) for _ in range(MAXN)], [4242], 0.95))
-add(popular_too([ids(2, 1, 3000) for _ in range(MAXN)], [11, 12], 0.9))
-add(popular_too([ids(2) for _ in range(MAXN)], [7], 0.97))
+add(pairs([(1, 1), (1, 1)]))
+add(pairs([(10 ** 9, 1), (1, 10 ** 9), (10 ** 9, 10 ** 9), (1, 1)]))
+add(mixed(dup(band(40, 10, 1, 2, 2), 0.2)))
+add(mixed(dup(blocks(300, 30, 4, 2), 0.1)))
+add(([random.randint(1, 4) for _ in range(500)], [random.randint(1, 4) for _ in range(500)]))
+add(mixed(dup(layers(2000, 200, 50, 3), 0.05)))
+add(mixed(band(3000, 1500, 2, 3, 3)))
+add(mixed(dup(band(8000, 4000, 1, 5, 5), 0.1)))
+add(spread(mixed(dup(blocks(10000, 2000, 3, 1), 0.05))))
+# hidden: big (N = 150000)
+N = MAXN
+add(mixed(dup(band(N, 60000, 1, 3, 3), 0.05)))
+add(mixed(dup(band(N, 40000, 2, 8, 2), 0.1)))
+add(mixed(dup(band(N, 100000, 1, 1, 1), 0.02)))
+add(mixed(dup(band(N, 25000, 1, 10, 40), 0.05)))
+add(mixed(band(N, 30000, 3, 0, 5)))                         # many equal prices
+add(mixed(band(N, 30000, 1, 6, 0)))                         # many equal ratings
+add(mixed(dup(layers(N, 60000, 20, 6), 0.03)))
+add(mixed(dup(layers(N, 70000, 60, 2), 0.05)))
+add(mixed(layers(N, 50000, 40, 8)))
+add(mixed(dup(blocks(N, 25000, 6, 2), 0.05)))
+add(mixed(dup(blocks(N, 50000, 3, 1), 0.1)))
+add(mixed(blocks(N, 40000, 8, 3)))
+add(spread(mixed(dup(band(N, 70000, 1, 2, 2), 0.05))))
+add(spread(mixed(dup(layers(N, 80000, 10, 2), 0.05))))
+x = range(1, N + 1)
+add(mixed(([i for i in x], [N + 1 - i for i in x])))                         # one chain: rounds 1..N
+add(mixed(([(i + 1) // 2 for i in x], [(N + 2 - i) // 2 for i in x])))      # a chain through equal values
+add(mixed(dup(([i // 3 + 1 for i in x], [(N - i) // 3 + 1 for i in x]), 0.3)))
+add(([int(rnd() * MAXV) + 1 for _ in x], [int(rnd() * MAXV) + 1 for _ in x]))
+add(([5] * N, [5] * N))
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

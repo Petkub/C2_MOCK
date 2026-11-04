@@ -37,8 +37,8 @@ NAME = "C2_Mock_Test"
 FAILED = []
 os.environ["JUDGE_NO_UPDATE"] = "1"       # the judge never contacts GitHub during the tests
 judge = None        # the package's judge.py, imported by main()
-# the towers_*.cpp samples solve Signal Towers: set 7, problem 2 (id 32); TOWERS_SET/TOWERS_CPP is its student file
-TOWERS, TOWERS_ID, TOWERS_SET, TOWERS_CPP = "7-2", "32", "Mock_7", "2.cpp"
+# the towers_*.cpp samples solve Signal Towers: set 11, problem 2 (id 52); TOWERS_SET/TOWERS_CPP is its student file
+TOWERS, TOWERS_ID, TOWERS_SET, TOWERS_CPP = "11-2", "52", "Mock_11", "2.cpp"
 
 
 def check(ok, name, detail=""):
@@ -95,6 +95,20 @@ def test_crlf_generator():
         check(ok and got == data, "gen.py writing CRLF (Windows) is accepted and stored with LF", repr(got))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
+
+
+def test_scoring():
+    """C2_MOCK problems score 100 or 0 ("scoring": "all", like the real exam); without the field a problem scores
+    the share of tests passed. The result line still shows how many tests passed."""
+    meta = judge.load_meta()
+    _, num = judge.find_problem(TOWERS, meta)
+    results = [("01", "AC"), ("02", "AC"), ("03", "WA"), ("04", "AC")]
+    judge.set_sample_count(meta, num)
+    check(meta[num].get("scoring") == "all" and judge.compute_score(results, 4)[0] == 0
+          and judge.compute_score(results[:2], 2)[0] == 100, "C2_MOCK problems score 100 or 0 (scoring: all)")
+    judge.set_sample_count({"x": {"samples": 5}}, "x")
+    check(judge.compute_score(results, 4)[0] == 75, "a problem without the field scores the share of tests passed")
+    judge.set_sample_count(meta, num)
 
 
 def test_stale_tests():
@@ -524,6 +538,7 @@ def main():
             test_crlf_generator()
             test_samples()
             test_stale_tests()
+            test_scoring()
             test_exited_peak()
             test_missed_last_reading()
             test_cli(root)

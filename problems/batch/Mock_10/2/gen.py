@@ -1,201 +1,241 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-import os, random
+import bisect, gc, itertools, os, random
 
-random.seed(1002417)
-MAXR = MAXC = 1000
-MAXK = 5
+gc.disable()     # only acyclic data: the cyclic garbage collector just slows gen.py down
+
+MAXN, MAXQ, MAXV = 100000, 100000, 10 ** 7
 tests = []
 rnd = random.random
 
 
 def ri(a, b):
-    """random integer in [a, b] (faster than randint, still deterministic)"""
     return a + int(rnd() * (b - a + 1))
 
 
-def add_rows(rows, k):
-    r, c = len(rows), len(rows[0])
-    assert 1 <= r <= MAXR and 1 <= c <= MAXC and 0 <= k <= MAXK
-    assert all(len(x) == c and set(x) <= set(".#ST") for x in rows)
-    text = "".join(rows)
-    assert text.count("S") == 1 and text.count("T") == 1
-    tests.append(f"{r} {c} {k}\n" + "\n".join(rows) + "\n")
+def add(a, qs):
+    assert 1 <= len(a) <= MAXN and 1 <= len(qs) <= MAXQ
+    assert 1 <= min(a) and max(a) <= MAXV and 1 <= min(qs) and max(qs) <= MAXV
+    tests.append(f"{len(a)}\n{' '.join(map(str, a))}\n{len(qs)}\n" + "\n".join(map(str, qs)) + "\n")
 
 
-class Rink:
-    def __init__(self, r, c):
-        self.r, self.c = r, c
-        self.g = [bytearray(b"." * c) for _ in range(r)]
-
-    def wall(self, i, j):
-        self.g[i][j] = 35          # '#'
-
-    def ice(self, i, j):
-        self.g[i][j] = 46          # '.'
-
-    def is_ice(self, i, j):
-        return 0 <= i < self.r and 0 <= j < self.c and self.g[i][j] == 46
-
-    def sprinkle(self, p, i0=0, i1=None, j0=0, j1=None):
-        """about p of the cells in rows i0..i1-1, columns j0..j1-1 become walls"""
-        i1 = self.r if i1 is None else i1
-        j1 = self.c if j1 is None else j1
-        cnt = int(p * (i1 - i0) * (j1 - j0))
-        for _ in range(cnt):
-            self.wall(ri(i0, i1 - 1), ri(j0, j1 - 1))
-
-    def random_ice(self, i0=0, i1=None, j0=0, j1=None):
-        i1 = self.r if i1 is None else i1
-        j1 = self.c if j1 is None else j1
-        while True:
-            i, j = ri(i0, i1 - 1), ri(j0, j1 - 1)
-            if self.g[i][j] == 46:
-                return i, j
-
-    def free_mid(self, i0=0, i1=None, j0=0, j1=None):
-        """an ice cell whose four neighbours are ice too (no natural stop there)"""
-        for _ in range(100000):
-            i, j = self.random_ice(i0, i1, j0, j1)
-            if all(self.is_ice(i + a, j + b) for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1))):
-                return i, j
-        return self.random_ice(i0, i1, j0, j1)
-
-    def emit(self, s, t, k, seal=False):
-        assert s != t
-        if seal:
-            for a, b in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                if 0 <= t[0] + a < self.r and 0 <= t[1] + b < self.c and (t[0] + a, t[1] + b) != s:
-                    self.wall(t[0] + a, t[1] + b)
-        self.g[s[0]][s[1]] = 83    # 'S'
-        self.g[t[0]][t[1]] = 84    # 'T'
-        add_rows([x.decode() for x in self.g], k)
+# primality table up to MAXV
+sieve = bytearray([1]) * (MAXV + 1)
+sieve[0] = sieve[1] = 0
+for i in range(2, int(MAXV ** 0.5) + 1):
+    if sieve[i]:
+        sieve[i * i::i] = bytes(len(range(i * i, MAXV + 1, i)))
+SMALL = [p for p in range(2, 3200) if sieve[p]]
 
 
-def bands(g, i0, i1, h, extra, top_stub):
-    """rows i0..i1-1 become a serpentine: bands of h >= 2 ice rows, each followed by a wall row with one
-    gap the skater can stop above without a brake (at an end, or in the middle with a single wall next to
-    it in the bottom ice row) and, with probability extra, a second gap in the middle (only a brake
-    stops above it); top_stub = number of single walls in the top row of every band.
-    Returns the rows of the last band."""
-    top = i0
-    last = (i0, min(i1, i0 + h))
-    while top < i1:
-        bot = min(i1, top + h) - 1
-        last = (top, bot + 1)
-        for _ in range(top_stub):
-            j = ri(1, g.c - 2)
-            if bot > top and (g.is_ice(top - 1, j) is False or top == i0):
-                g.wall(top, j)
-        w = bot + 1
-        if w >= i1:
+PRIMES = list(itertools.compress(range(MAXV + 1), sieve))
+
+
+def primes_in(lo, hi):
+    """a function returning a random prime in [lo, hi]"""
+    i, j = bisect.bisect_left(PRIMES, lo), bisect.bisect_right(PRIMES, hi)
+    return lambda: PRIMES[i + int(rnd() * (j - i))]
+
+
+BIGP, MIDP, HIP = primes_in(10 ** 6, MAXV), primes_in(1000, 3162), primes_in(2700, 3162)
+LOWP, ANYP, TOPP = primes_in(2, 200000), primes_in(2, MAXV), primes_in(9 * 10 ** 6, MAXV)
+
+
+class Built:
+    """an array built from known factorisations; remembers, for every prime power p^e,
+    the first index whose value is divisible by it"""
+
+    def __init__(self):
+        self.a = []
+        self.first = {}      # p << 5 | e (e <= 23 < 32, so sorting these keys sorts by (p, e)) -> first index (1-based)
+        self.maxe = {}       # p -> largest exponent so far
+
+
+# each val_* returns a value v <= MAXV and its factorisation as pairs (p, e)
+def val_bigprime():
+    p = BIGP()
+    return p, ((p, 1),)
+
+
+def val_semi():
+    p, q = MIDP(), MIDP()
+    return (p, ((p, 1),)) if p == q else (p * q, ((p, 1), (q, 1)))
+
+
+def val_semihi():
+    p, q = HIP(), HIP()
+    return (p, ((p, 1),)) if p == q else (p * q, ((p, 1), (q, 1)))
+
+
+def val_power():
+    p = SMALL[int(rnd() * 40)]
+    e = 1
+    while p ** (e + 1) <= MAXV and rnd() < 0.8:
+        e += 1
+    return p ** e, ((p, e),)
+
+
+def val_smooth():
+    fac, v = {}, 1
+    for _ in range(ri(1, 8)):
+        p = SMALL[int(rnd() * 25)]
+        if v * p > MAXV:
             break
-        for j in range(g.c):
-            g.wall(w, j)
-        if rnd() < 0.35:
-            g.ice(w, 0 if rnd() < 0.5 else g.c - 1)
+        v *= p
+        fac[p] = fac.get(p, 0) + 1
+    return v, fac.items()
+
+
+def val_mixed():
+    p = LOWP()
+    fac, v = {p: 1}, p
+    while True:
+        q = SMALL[int(rnd() * 60)]
+        if v * q > MAXV or rnd() < 0.3:
+            break
+        v *= q
+        fac[q] = fac.get(q, 0) + 1
+    return v, fac.items()
+
+
+KINDS = {"big": val_bigprime, "semi": val_semi, "semihi": val_semihi, "pow": val_power, "smooth": val_smooth, "mixed": val_mixed}
+
+
+def build_array(n, weights, raw=0.0):
+    b = Built()
+    pick = [KINDS[k] for k in sorted(weights) for _ in range(weights[k])]
+    m, first, maxe = len(pick), b.first, b.maxe
+    append, get = b.a.append, maxe.get
+    for k in range(1, n + 1):            # (written for speed: gen.py must be quick)
+        if rnd() < raw:                  # a value whose factorisation is not tracked
+            append(1 + int(rnd() * MAXV))
+            continue
+        v, fac = pick[int(rnd() * m)]()
+        for p, e in fac:
+            old = get(p, 0)
+            if e > old:
+                if e == 1:
+                    first[p << 5 | 1] = k
+                else:
+                    for j in range(old + 1, e + 1):
+                        first[p << 5 | j] = k
+                maxe[p] = e
+        assert v <= MAXV
+        append(v)
+    return b
+
+
+def queries(b, q, late, none, n, hard):
+    """late: a product of 1-3 prime powers that first appear in the second half;
+    none: a power one higher than ever reached (maybe times a reached power), or an unused large prime;
+    hard: a prime > 9e6 not in the array, or a product of two primes near sqrt(MAXV)"""
+    first, maxe = b.first, b.maxe
+    keys = sorted(first)
+    late_list = sorted(pe for pe, k in first.items() if k > n // 2)
+    ps = sorted(p for p, e in maxe.items() if p ** (e + 1) <= MAXV)
+    nk, nl, nps = len(keys), len(late_list), len(ps)
+    t1, t2, t3 = late + none, late + none + hard, late + none + hard + 0.05
+    qs = []
+    append = qs.append
+    for _ in range(q):
+        r = rnd()
+        if r < late:
+            if not late_list:
+                append(1 + int(rnd() * MAXV))
+                continue
+            x = 1
+            for _ in range(1 + int(rnd() * 3)):
+                pe = late_list[int(rnd() * nl)]
+                p, e = pe >> 5, pe & 31
+                if x * p ** e <= MAXV:
+                    x *= p ** e
+            append(x)
+        elif r < t1:
+            if ps and rnd() < 0.6:
+                p = ps[int(rnd() * nps)]
+                x = p ** (maxe[p] + 1)
+                if rnd() < 0.5:
+                    for _ in range(5):
+                        pe = keys[int(rnd() * nk)]
+                        p2, e = pe >> 5, pe & 31
+                        if p2 != p and x * p2 ** e <= MAXV:
+                            x *= p2 ** e
+                            break
+                append(x)
+                continue
+            while True:
+                p = ANYP()
+                if p not in maxe:
+                    append(p if rnd() < 0.5 or p * 2 > MAXV else p * ri(1, MAXV // p))
+                    break
+        elif r < t2:
+            if rnd() < 0.5:
+                while True:
+                    p = TOPP()
+                    if p not in maxe:
+                        append(p)
+                        break
+            else:
+                append(HIP() * HIP())
+        elif r < t3:
+            append(1)
         else:
-            j = ri(2, g.c - 3)
-            g.ice(w, j)
-            x = j + (1 if rnd() < 0.5 else -1)
-            g.wall(bot, x)
-            for y in (x - 1, x, x + 1):
-                if top < bot:
-                    g.ice(top, y)   # the band stays open above (and diagonally above) the single wall
-        if rnd() < extra:
-            g.ice(w, ri(1, g.c - 2))
-        top = w + 1
-    return last
+            append(1 + int(rnd() * MAXV) if rnd() < 0.5 else ri(1, 1000))
+    return qs
 
 
-def band_cell(g, rows, end_ok=False):
-    i0, i1 = rows
-    cells = [(i, j) for i in range(i0, i1) for j in range(g.c) if g.g[i][j] == 46 and (end_ok or 0 < j < g.c - 1)]
-    return random.choice(cells)
+def case(n, q, weights, late=0.4, none=0.45, raw=0.0, hard=0.0):
+    b = build_array(n, weights, raw)
+    add(b.a, queries(b, q, late, none, n, hard))
 
 
-# ---------------------------------------------------------------- samples
-add_rows([".S....", "....#.", "...#..", "#..T..", "#....."], 1)
-add_rows(["S..T.."], 0)
-add_rows(["S..T.."], 2)
-add_rows(["..#....", "S...#..", "...#...", ".....#.", "#T.....", "....#.."], 2)
-add_rows(["........", ".#..#...", "....S#..", "##......", "......#.", ".T..#..."], 1)
-
-# ---------------------------------------------------------------- small hidden (brute checks these)
-add_rows(["ST"], 0)
-for (r, c, p, k) in ((8, 8, 0.2, 0), (10, 12, 0.1, 2), (30, 40, 0.08, 3)):
-    g = Rink(r, c)
-    g.sprinkle(p)
-    s = g.random_ice()
-    t = g.free_mid() if rnd() < 0.7 else g.random_ice()
-    if t == s:
-        t = g.random_ice()
-    g.emit(s, t, k)
-g = Rink(31, 40)
-last = bands(g, 0, 31, 2, 0.5, 1)
-g.emit(band_cell(g, (0, 2)), band_cell(g, last), 2)
-g = Rink(60, 50)
-g.sprinkle(0.04)
-g.emit(g.random_ice(), g.random_ice(), 4, seal=True)
-g = Rink(200, 200)
-g.sprinkle(0.03)
-g.emit(g.random_ice(), g.free_mid(), 3)
-g = Rink(300, 300)
-last = bands(g, 0, 300, 3, 0.3, 2)
-g.emit(band_cell(g, (0, 3)), band_cell(g, last), 4)
-g = Rink(1, 1000)
-for j in (3, 500, 501, 997):
-    g.wall(0, j)
-g.emit((0, 4), (0, 300), 0)
-
-# ---------------------------------------------------------------- big hidden
-R, C = MAXR, MAXC
-# sealed goal in a large hall: everything else has to be explored
-for p, k in ((0.01, 5),):
-    g = Rink(R, C)
-    g.sprinkle(p)
-    g.emit(g.random_ice(), g.free_mid(), k, seal=True)
-
-# open hall on top (wall density p), long serpentine below it, the goal in its last band
-for hall, h, extra, stub, k, p in ((400, 2, 0.1, 1, 5, 0.006), (300, 3, 0.3, 2, 4, 0.006), (500, 2, 0.05, 0, 5, 0.006),
-                                   (200, 2, 0.2, 1, 5, 0.006), (900, 3, 0.5, 1, 2, 0.003), (700, 2, 0.15, 1, 5, 0.006),
-                                   (800, 2, 0.1, 1, 5, 0.006), (900, 2, 0.2, 1, 4, 0.006), (850, 3, 0.3, 1, 3, 0.006),
-                                   (960, 2, 0.3, 1, 5, 0.004), (940, 2, 0.1, 1, 5, 0.005)):
-    g = Rink(R, C)
-    g.sprinkle(p, 0, hall)
-    for j in range(C):
-        g.wall(hall, j)
-    for _ in range(3):
-        g.ice(hall, ri(0, C - 1))
-    last = bands(g, hall + 1, R, h, extra, stub)
-    g.emit(g.random_ice(0, hall), band_cell(g, last), k)
-
-# serpentine over the whole rink (rows or, transposed, columns)
-for h, extra, stub, k, tr in ((2, 0.1, 1, 5, False), (3, 0.2, 2, 4, True), (2, 0.0, 0, 4, False),
-                              (2, 0.4, 3, 5, True), (2, 0.1, 1, 0, False), (4, 0.3, 1, 5, False),
-                              (2, 0.2, 2, 3, True)):
-    g = Rink(R, C)
-    last = bands(g, 0, R, h, extra, stub)
-    s, t = band_cell(g, (0, h)), band_cell(g, last)
-    if k == 0:      # no brakes: the goal is a place where the skater can stop
-        t = (last[1] - 1, C - 1 if g.is_ice(last[1] - 1, C - 1) else 0)
-    if tr:
-        rows = [x.decode() for x in g.g]
-        g.g = [bytearray("".join(rows[i][j] for i in range(R)).encode()) for j in range(C)]
-        s, t = (s[1], s[0]), (t[1], t[0])
-    g.emit(s, t, k)
-
-# random rinks of different densities, the goal away from every wall
-for p, k in ((0.008, 3),):
-    g = Rink(R, C)
-    g.sprinkle(p)
-    g.emit(g.random_ice(0, 100, 0, 100), g.free_mid(900, 1000, 900, 1000), k)
-
-# pillars on a lattice
-g = Rink(R, C)
-for i in range(3, R, 7):
-    for j in range(ri(0, 10), C, 11):
-        g.wall(i, j)
-g.emit(g.random_ice(0, 50), g.free_mid(950, 1000), 5)
+random.seed(150101)
+# samples
+add([4, 6, 9, 10, 7], [12, 36, 8, 1, 35, 18])
+add([10, 15, 7], [6, 7, 4])
+add([1], [1, 2])
+add([12, 18, 5, 49, 15], [180, 7, 49, 60])
+add([7, 1, 14, 3], [2, 21, 1, 9])
+# hidden: small (brute checks these)
+ALL = {"big": 1, "semi": 1, "pow": 2, "smooth": 3, "mixed": 2}
+for seed, n, q in [(1, 10, 30), (2, 60, 200), (3, 300, 1000), (4, 2000, 3000), (5, 3000, 3000)]:
+    random.seed(150200 + seed)
+    case(n, q, ALL, raw=0.2)
+random.seed(150301)
+add([1] * 50, [1, 2, 3, 9999991, 1, 10000000])
+random.seed(150302)
+add([2 ** 23] * 3 + [3 ** 14, 5 ** 10, 7 ** 8], [2 ** 23, 2 ** 22 * 2, 3 ** 14, 3 ** 13, 5 ** 10, 7 ** 8, 7 ** 8 * 1, 6, 10 ** 7])
+random.seed(150303)
+case(2500, 4000, {"pow": 4, "smooth": 2}, late=0.6, none=0.35)
+# hidden: big, each with its own seed
+BIG = [
+    (150401, dict(weights=ALL, raw=0.3)),
+    (150402, dict(weights={"big": 1}, late=0.5, none=0.45)),
+    (150403, dict(weights={"semi": 1}, late=0.5, none=0.45)),
+    (150404, dict(weights={"pow": 2, "smooth": 1}, late=0.55, none=0.4)),
+    (150405, dict(weights={"smooth": 1}, late=0.5, none=0.45)),
+    (150406, dict(weights={"mixed": 1}, late=0.45, none=0.45)),
+    (150407, dict(weights={"big": 1, "semi": 1}, raw=0.5)),
+    (150408, dict(weights=ALL, late=0.7, none=0.25)),
+    (150409, dict(weights=ALL, late=0.2, none=0.75)),
+    (150410, dict(weights={"pow": 1, "big": 1}, late=0.5, none=0.45)),
+    (150411, dict(weights={"semi": 2, "smooth": 1}, raw=0.2)),
+    (150412, dict(weights={"mixed": 2, "pow": 1}, late=0.5, none=0.45)),
+    (150413, dict(weights=ALL, raw=1.0, late=0.0, none=0.6)),
+    (150414, dict(weights={"big": 3, "pow": 1, "semi": 1}, late=0.45, none=0.5)),
+    (150415, dict(weights={"smooth": 1, "mixed": 1}, raw=0.1, late=0.6, none=0.35)),
+    (150416, dict(weights={"semi": 1, "big": 1}, late=0.35, none=0.6)),
+    # values and queries whose factorisation needs the most trial divisions
+    (150418, dict(weights={"semihi": 1}, late=0.2, none=0.1, hard=0.7)),
+    (150419, dict(weights={"semihi": 1, "big": 1}, late=0.2, none=0.2, hard=0.6)),
+    (150420, dict(weights={"big": 1}, late=0.1, none=0.1, hard=0.8)),
+]
+for seed, kw in BIG:
+    random.seed(seed)
+    case(MAXN, MAXQ, **kw)
+# the whole array equal to one big prime, all queries asking for that prime or more
+random.seed(150417)
+p = 9999991
+add([p] * MAXN, [p if rnd() < 0.3 else 2 for _ in range(MAXQ)])
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

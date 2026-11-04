@@ -1,5 +1,8 @@
 POSN Practice Judge - changes
 
+5.0  Four new sets (15 in all) and five new problems in the old sets, so every topic of the Camp 2 syllabus
+     (POSN 2569) is practised: number theory, strings and text formats, backtracking, divide and conquer,
+     Euler paths and more. All sets renumbered again from easy to hard.
 4.0  Sets renumbered from easy to hard (set 1 is the easiest), and the problems inside each set too. No hints in
      the statements: some samples and sample explanations changed (the old samples are now hidden tests).
      Cover time plans end with "check your work".

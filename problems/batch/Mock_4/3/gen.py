@@ -1,252 +1,131 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
 import os, random
-from collections import deque
 
-random.seed(830711)
-MAXN, MAXM, MAXQ, MAXK = 2000, 8000, 100000, 10 ** 9
+random.seed(1302002)
+MAXN, MAXK, MAXL = 1000000, 50, 250
 tests = []
 
 
-def ri(lo, hi):
-    """uniform integer in [lo, hi] (faster than randint, still deterministic)"""
-    return lo + int(random.random() * (hi - lo + 1))
+def add(text, words):
+    assert 1 <= len(text) <= MAXN and set(text) <= set("abcdefghijklmnopqrstuvwxyz ")
+    assert text[0] != " " and text[-1] != " "
+    assert 1 <= len(words) <= MAXK and sum(map(len, words)) <= MAXL
+    for w in words:
+        assert len(w) >= 1 and set(w) <= set("abcdefghijklmnopqrstuvwxyz?")
+    tests.append("\n".join([text, str(len(words))] + words) + "\n")
 
 
-def add(n, edges, queries):
-    assert 1 <= n <= MAXN and 0 <= len(edges) <= MAXM and 1 <= len(queries) <= MAXQ
-    for u, v in edges:
-        assert 1 <= u <= n and 1 <= v <= n and u != v
-    for s, t, k in queries:
-        assert 1 <= s <= n and 1 <= t <= n and 0 <= k <= MAXK
-    out = [f"{n} {len(edges)} {len(queries)}\n"]
-    out.append("".join(f"{u} {v}\n" for u, v in edges))
-    out.append("".join("%d %d %d\n" % q for q in queries))
-    tests.append("".join(out))
+def fix_ends(t):
+    t = list(t)
+    if t[0] == " ":
+        t[0] = "a"
+    if t[-1] == " ":
+        t[-1] = "a"
+    return "".join(t)
 
 
-def relabel(n, edges):
-    """random town numbers and road order, random direction of each road"""
-    p = list(range(1, n + 1))
-    random.shuffle(p)
-    e = [(p[u - 1], p[v - 1]) if random.random() < 0.5 else (p[v - 1], p[u - 1]) for u, v in edges]
-    random.shuffle(e)
-    return e
+def rtext(n, alpha, space=0.0):
+    return fix_ends("".join(" " if random.random() < space else random.choice(alpha) for _ in range(n)))
 
 
-def pdist(n, edges, s):
-    """d[2v + p]: shortest walk from s to v with parity p (-1 if none)"""
-    g = [[] for _ in range(n + 1)]
-    for u, v in edges:
-        g[u].append(v)
-        g[v].append(u)
-    d = [-1] * (2 * n + 2)
-    d[2 * s] = 0
-    q = deque([2 * s])
-    while q:
-        x = q.popleft()
-        u, p, nd = x >> 1, x & 1, d[x] + 1
-        for w in g[u]:
-            y = 2 * w + 1 - p
-            if d[y] < 0:
-                d[y] = nd
-                q.append(y)
-    return d
+def words_text(n, vocab):
+    """words from a vocabulary separated by single spaces, exactly n characters"""
+    out = []
+    size = 0
+    while size < n:
+        w = random.choice(vocab)
+        out.append(w)
+        size += len(w) + 1
+    return fix_ends(" ".join(out)[:n])
 
 
-def queries(n, edges, count, near_src=6, span=None):
-    """random queries: about 30% with k up to 10^9, a few with s = t or tiny k, the others with k up to span;
-    then about a quarter of them replaced by queries exactly at / 2 below the shortest walk of each parity
-    from a few sources"""
-    if span is None:
-        span = 2 * n
-    rnd = random.random
-    qs = []
-    for _ in range(count):
-        s, t, r = 1 + int(rnd() * n), 1 + int(rnd() * n), rnd()
-        if r < 0.3:
-            k = int(rnd() * (MAXK + 1))
-        elif r < 0.33:
-            k = 2 * int(rnd() * 11) + 1 if s == t else int(rnd() * 4)
-        else:
-            k = int(rnd() * (span + 1))
-        qs.append((s, t, k))
-    srcs = random.sample(range(1, n + 1), min(n, near_src))
-    per = max(1, count // (4 * len(srcs)))
-    for s in srcs:
-        d = pdist(n, edges, s)
-        for _ in range(per):
-            t, p = 1 + int(rnd() * n), int(rnd() * 2)
-            if d[2 * t + p] >= 0:
-                k = d[2 * t + p] - 2 * int(rnd() * 2)       # at the shortest walk or 2 below it
-                if k < 0:
-                    k = d[2 * t + p]
-            else:
-                k = 2 * int(rnd() * (span // 2 + 1)) + p
-            qs[int(rnd() * count)] = (s, t, k)
-    has_road = [False] * (n + 1)
-    for u, v in edges:
-        has_road[u] = has_road[v] = True
-    lonely = [v for v in range(1, n + 1) if not has_road[v]]
-    for _ in range(min(50, 5 * len(lonely))):        # towns without roads: s = t with an even k > 0
-        v = lonely[int(rnd() * len(lonely))]
-        qs[int(rnd() * count)] = (v, v, 2 + 2 * int(rnd() * (MAXK // 2)))
-    return qs
+def from_text(t, cnt, lo, hi, wild=0.0):
+    """keywords cut out of the text (so they occur), some letters turned into '?'"""
+    ws = []
+    for _ in range(cnt):
+        L = random.randint(lo, hi)
+        s = random.randint(0, len(t) - L)
+        w = "".join("?" if (c == " " or random.random() < wild) else c for c in t[s:s + L])
+        ws.append(w)
+    return ws
 
 
-def connected_random(n, m):
-    """random spanning tree plus random extra roads"""
-    e = [(v, ri(1, v - 1)) for v in range(2, n + 1)]
-    while len(e) < m:
-        u, v = ri(1, n), ri(1, n)
-        if u != v:
-            e.append((u, v))
-    return e
+def rword(L, alpha):
+    return "".join(random.choice(alpha) for _ in range(L))
 
 
-def bipartite_random(n, m):
-    """towns 1..a on one side, a+1..n on the other: every road joins the two sides (connected)"""
-    a = n // 2
-    side = [list(range(1, a + 1)), list(range(a + 1, n + 1))]
-    added = [[1], [a + 1]]
-    e = [(1, a + 1)]
-    rest = [(0, v) for v in side[0][1:]] + [(1, v) for v in side[1][1:]]
-    random.shuffle(rest)
-    for sd, v in rest:
-        other = added[1 - sd]
-        e.append((v, other[ri(0, len(other) - 1)]))
-        added[sd].append(v)
-    while len(e) < m:
-        e.append((ri(1, a), ri(a + 1, n)))
-    return e
+def cap(ws):
+    """keep the keywords while the total length stays within MAXL"""
+    out, tot = [], 0
+    for w in ws:
+        if len(out) < MAXK and tot + len(w) <= MAXL:
+            out.append(w)
+            tot += len(w)
+    return out
 
 
-def long_path(n, m, odd_end):
-    """a path 1 - 2 - ... - n (multi-edges added along it); with odd_end a triangle closes at the far end"""
-    e = [(v, v + 1) for v in range(1, n)]
-    if odd_end:
-        e.append((n - 2, n))
-    while len(e) < m:
-        v = ri(1, n - 1)
-        e.append((v, v + 1))
-    return e
+def pat(alpha, L, q):
+    """a random keyword of length L with q question marks"""
+    w = [random.choice(alpha) for _ in range(L)]
+    for p in random.sample(range(L), q):
+        w[p] = "?"
+    return "".join(w)
 
 
-def grid(r, c, extra_odd=0):
-    """r x c grid (bipartite); extra_odd diagonal roads (each closes a triangle) near one corner"""
-    idx = lambda i, j: i * c + j + 1
-    e = []
-    for i in range(r):
-        for j in range(c):
-            if j + 1 < c:
-                e.append((idx(i, j), idx(i, j + 1)))
-            if i + 1 < r:
-                e.append((idx(i, j), idx(i + 1, j)))
-    for _ in range(extra_odd):
-        i, j = ri(r - 4, r - 2), ri(c - 4, c - 2)
-        e.append((idx(i, j), idx(i + 1, j + 1)))
-    return e
-
-
-def components(sizes, kinds, m_total):
-    """several components; kind 'b' bipartite (even cycle + chords across), 'o' with an odd cycle,
-    'p' a path, 'i' an isolated town"""
-    e, base = [], 0
-    budget = m_total
-    for sz, kind in zip(sizes, kinds):
-        vs = list(range(base + 1, base + sz + 1))
-        if kind == "i":
-            assert sz == 1
-        elif kind == "p":
-            e += [(vs[i], vs[i + 1]) for i in range(sz - 1)]
-        elif kind == "b":
-            ev = [(vs[i], vs[(i + 1) % sz]) for i in range(sz)] if sz % 2 == 0 and sz >= 4 else \
-                 [(vs[i], vs[i + 1]) for i in range(sz - 1)]
-            for _ in range(sz):
-                i, j = ri(0, sz - 1), ri(0, sz - 1)
-                if (i - j) % 2 == 1:
-                    ev.append((vs[i], vs[j]))
-            e += ev
-        else:
-            e += [(vs[i], vs[i + 1]) for i in range(sz - 1)]
-            i = ri(0, sz - 3)
-            e.append((vs[i], vs[i + 2]))            # one triangle somewhere
-            for _ in range(sz // 4):
-                i, j = ri(0, sz - 1), ri(0, sz - 1)
-                if i != j and (i - j) % 2 == 1:
-                    e.append((vs[i], vs[j]))
-        base += sz
-    while len(e) < budget:                          # repeat existing roads (multi-edges)
-        e.append(e[ri(0, len(e) - 1)])
-    assert base <= MAXN
-    return base, e[:max(budget, 0)] if len(e) > budget else e
-
+VOCAB = ["the", "cat", "sat", "on", "a", "mat", "and", "dog", "ran", "to", "school", "rain", "is", "not", "in",
+         "spain", "banana", "band", "ana", "can", "cannot", "see", "sea", "is", "it", "at", "tea", "eat"]
 
 # samples
-add(6, [(1, 2), (2, 3), (3, 1), (3, 4), (4, 5)], [(1, 5, 4), (4, 4, 5), (6, 6, 2), (6, 6, 0)])
-add(4, [(1, 2), (2, 1), (3, 4)], [(1, 2, 2), (1, 1, 2), (1, 3, 5), (3, 3, 0)])
-add(1, [], [(1, 1, 0), (1, 1, 1), (1, 1, 1000000000)])
-add(4, [(1, 2), (2, 3), (3, 4), (4, 1)], [(1, 3, 3), (1, 3, 1000000000)])
-add(4, [(1, 2), (2, 3), (3, 4), (4, 2)], [(1, 1, 3), (1, 1, 5)])
+add("banana bandana", ["ana", "b?n"])
+add("to be or not to be", ["o?b", "not", "zz"])
+add("hello world", ["abc"])
+add("mississippi", ["ss", "i?p", "si"])
+add("the cat sat on the mat", ["at", "c?t", "?he"])
 # hidden: small (brute checks these)
-add(2, [(1, 2)], [(1, 2, k) for k in range(6)] + [(1, 1, k) for k in range(6)] + [(2, 2, 999999999)])
-add(3, [(1, 2), (2, 3), (3, 1)], [(s, t, k) for s in range(1, 4) for t in range(1, 4) for k in range(4)])
-n = 30
-e = long_path(n, 35, True)
-add(n, relabel(n, e), queries(n, e, 300, 5))
-n = 40
-e = connected_random(n, 60)
-add(n, relabel(n, e), queries(n, e, 300, 5))
-n = 40
-e = bipartite_random(n, 70)
-add(n, relabel(n, e), queries(n, e, 300, 5))
-n, e = components([10, 1, 12, 1, 9, 8], "bioipo", 45)
-add(n, relabel(n, e), queries(n, e, 300, 6))
-n = 50
-e = grid(5, 10, 1)
-add(n, relabel(n, e), queries(n, e, 300, 5))
-n = 31
-e = [(i, i % n + 1) for i in range(1, n + 1)]                    # one odd cycle of 31 towns
-add(n, relabel(n, e), queries(n, e, 300, 5))
+add("a", ["a"])
+add("a", ["b", "?", "aa"])
+add("ab cd ef", ["??", "b?c"])
+t = rtext(2000, "abcd", 0.05); add(t, cap(from_text(t, 10, 3, 12, 0.2) + [rword(4, "abcd") for _ in range(10)]))
+t = words_text(3000, VOCAB); add(t, cap(from_text(t, 20, 2, 10, 0.1) + ["cat", "is", "s?a", "zz", "an?"]))
+t = "ab" * 1000 + "c"; add(t, ["ab", "ba", "c"])
+add("abcdef xabcdef", ["abc", "def", "bcde", "f?x"])
+t = rtext(2500, "ab", 0.02); add(t, cap(from_text(t, 30, 3, 12, 0.15)))
+t = rtext(3000, "abc"); add(t, cap([pat("abc", random.randint(2, 6), random.randint(0, 2)) for _ in range(30)]))
+t = rtext(1500, "ab"); add(t, cap(["a" * 30 + "b"] + from_text(t, 15, 5, 40, 0.5)))
 # hidden: big
-N, M, Q = MAXN, MAXM, MAXQ
-for odd, lone in ((True, 4), (False, 0), (True, 0)):
-    e = long_path(N - lone, M, odd)
-    e = relabel(N, e)                                           # towns without roads get random numbers
-    add(N, e, queries(N, e, Q))
-e = relabel(N, connected_random(N - 3, M))
-add(N, e, queries(N, e, Q, span=40))
-e = connected_random(N, N + 5)
-add(N, relabel(N, e), queries(N, e, Q, span=200))
-e = bipartite_random(N, M)
-add(N, relabel(N, e), queries(N, e, Q, span=40))
-e = relabel(N, bipartite_random(N - 2, N + 200))
-add(N, e, queries(N, e, Q, span=300))
-e = grid(40, 50)
-add(N, relabel(N, e), queries(N, e, Q, span=200))
-e = relabel(N, grid(40, 49, 1))                                 # 40 towns without roads
-add(N, e, queries(N, e, Q, span=200))
-e = grid(20, 100, 2)
-add(N, relabel(N, e), queries(N, e, Q, span=300))
-e = [(i, i % 1999 + 1) for i in range(1, 2000)] + [(1999, 2000)]  # odd cycle of 1999 towns + a tail
-e += [e[ri(0, 1999)] for _ in range(M - len(e))]
-add(N, relabel(N, e), queries(N, e, Q, span=4000))
-e = [(i, i % 2000 + 1) for i in range(1, 2001)]                   # even cycle of 2000 towns
-e += [e[ri(0, 1999)] for _ in range(M - len(e))]
-add(N, relabel(N, e), queries(N, e, Q, span=4000))
-n, e = components([600, 1, 500, 1, 400, 300, 198], "bioipob", M)
-add(n, relabel(n, e), queries(n, e, Q, span=1200))
-n, e = components([1000, 999, 1], "obi", M)
-add(n, relabel(n, e), queries(n, e, Q, span=2000))
-n, e = components([700, 700, 600], "pob", M)
-add(n, relabel(n, e), queries(n, e, Q, span=1500))
-n, e = components([1] * 1000 + [1000], "i" * 1000 + "o", M)       # many isolated towns
-add(n, relabel(n, e), queries(n, e, Q, span=2000))
-e = long_path(N, 1999 + 50, False) + [(1, 3)]                    # triangle at one end only
-add(N, relabel(N, e), queries(N, e, Q))
+N = MAXN
+L26 = "abcdefghijklmnopqrstuvwxyz"
 
-for t in tests:
-    assert t.endswith("\n") and "  " not in t and " \n" not in t
-assert len(tests) <= 35
+
+
+def sprinkle(t, ch, rate):
+    return fix_ends("".join(ch if random.random() < rate else c for c in t))
+
+
+add("a" * N, cap(["a" * (m - 1) + "b" for m in range(5, 25)]))                                  # nothing found
+add("a" * N, ["a" * 120 + "?", "a" * 120 + "?b"])                                              # everything
+add(fix_ends(("ab " * N)[:N]), ["ab"])                                                       # many runs
+add(fix_ends(("ab " * N)[:N]), ["ab", "b?a"])                                                # one run
+add(("abcd" * N)[:N], ["ab", "cd"])                                                          # touching runs
+add(fix_ends(("abc " * N)[:N]), ["ab", "c", "bc"])                                            # touching, many runs
+t = rtext(N, L26, 0.15); add(t, cap([pat(L26, 3, 1) for _ in range(50)]))
+t = rtext(N, L26, 0.0); add(t, cap([pat(L26, 2, 0) for _ in range(50)]))
+t = rtext(N, "ab", 0.0); add(t, cap([pat("ab", random.randint(7, 9), random.randint(0, 1)) for _ in range(30)]))
+t = rtext(N, "ab", 0.08); add(t, cap([pat("ab", random.randint(3, 10), 1) for _ in range(35)]))
+t = rtext(N, "abcd", 0.1); add(t, cap([pat("abcd", random.randint(4, 6), random.randint(0, 2)) for _ in range(50)]))
+t = words_text(N, VOCAB); add(t, ["school", "spain", "cannot", "banana", "tea", "s?a"])
+t = words_text(N, VOCAB); add(t, ["a?c", "e?t", "n?s", "t?c", "n?n"])                          # across spaces
+t = words_text(N, ["x", "y", "z", "xy", "yz", "zx", "xyz"]); add(t, cap(from_text(t, 30, 6, 9, 0.1)))
+t = sprinkle("a" * N, "b", 0.003)
+add(t, cap(["a" * m for m in (30, 60, 90)] + ["a" * 40 + "?" + "a" * 20]))                     # long matches, gaps
+t = sprinkle(("aab" * N)[:N], "c", 0.01)
+add(t, cap(["aab" * 15 + "aac"] * 4 + ["aac", "caa"]))                                        # long partial matches
+t = sprinkle(rtext(N, "a", 0.0), "b", 0.05); add(t, cap(["a" * 30 + "?" * 10] * 5 + ["b?b", "ab"]))
+t = rtext(N, L26, 0.05); add(t, cap(from_text(t, 40, 3, 3, 0.0) + [pat(L26, 2, 1) for _ in range(6)]))
+t = rtext(N, "ab", 0.0); add(t, cap(from_text(t, 30, 3, 12, 0.0)))                           # many lengths overlap
+t = words_text(N, ["ab", "ba", "abc", "cab", "bca", "cc", "a", "b", "c", "abcab"])                # many runs, mixed lengths
+add(t, cap(["ab", "c?b", "?ca", "abca", "b?b", "cab?", "a?c?b"]))
+
 os.makedirs("tests", exist_ok=True)
 for i, t in enumerate(tests, 1):
     with open(f"tests/{i:02d}.in", "w") as f:

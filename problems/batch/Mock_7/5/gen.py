@@ -1,93 +1,186 @@
-import random, os
-random.seed(2604)
+# Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
+import os, random
+
+random.seed(850505)
+MAXN, MAXR, MAXK, MAXV, MAXLEN = 50000, 50000, 250000, 10 ** 9, 3000000
+tests = []
+
+
+def add(price, recipes):
+    """price[1..n] (price[0] unused); recipes: list of (target, fee, [ingredients])"""
+    n, r = len(price) - 1, len(recipes)
+    assert 1 <= n <= MAXN and 1 <= r <= MAXR
+    assert all(1 <= p <= MAXV for p in price[1:])
+    assert sum(len(x[2]) for x in recipes) <= MAXK
+    lines = [f"{n} {r}", " ".join(map(str, price[1:]))]
+    for t, f, ing in recipes:
+        assert 1 <= t <= n and 0 <= f <= MAXV and len(ing) >= 1
+        assert len(set(ing)) == len(ing) and all(1 <= x <= n for x in ing)
+        lines.append(f"{t} {f} {len(ing)} " + " ".join(map(str, ing)))
+    text = "\n".join(lines) + "\n"
+    assert len(text) <= MAXLEN, len(text)
+    tests.append(text)
+
+
+def ri(lo, hi):
+    """uniform integer in [lo, hi] (faster than randint, still deterministic)"""
+    return lo + int(random.random() * (hi - lo + 1))
+
+
+def pick(pool, k):
+    """k distinct elements of pool (k small: retry on repeats)"""
+    out = set()
+    res = []
+    while len(res) < k:
+        x = pool[ri(0, len(pool) - 1)]
+        if x not in out:
+            out.add(x)
+            res.append(x)
+    return res
+
+
+class Shop:
+    def __init__(self, n):
+        self.n = n
+        self.price = [0] + [MAXV] * n
+        self.rec = []
+        self.ids = list(range(1, n + 1))
+        random.shuffle(self.ids)
+        self.next = 0
+
+    def take(self, k):
+        """k fresh item numbers (random)"""
+        s = self.ids[self.next:self.next + k]
+        assert len(s) == k
+        self.next += k
+        return s
+
+    def chain(self, L, order, base):
+        """items u_1..u_L, u_(j+1) is made from u_j for 1 coin, price of u_j = base + 2j: crafting along the
+        chain always wins, the cost of u_j is base + j + 1. Item numbers fall along the chain. Returns the items
+        in chain order."""
+        u = sorted(self.take(L), reverse=True)
+        for j in range(L):
+            self.price[u[j]] = base + 2 * (j + 1)
+        rs = [(u[j + 1], 1, [u[j]]) for j in range(L - 1)]
+        if order == "rev":
+            rs.reverse()
+        else:
+            random.shuffle(rs)
+        self.rec += rs
+        return u
+
+    def mesh(self, items, R, kmin, kmax, pool, fee_hi, self_p=0.03, budget=MAXK):
+        """R recipes for targets among items (several per item), ingredients from pool (+ maybe the target);
+        stops early when the ingredient lists would exceed `budget` entries"""
+        for _ in range(R):
+            t = items[ri(0, len(items) - 1)]
+            k = ri(kmin, kmax)
+            if k > budget:
+                break
+            budget -= k
+            ing = pick(pool, k)
+            if t not in ing and random.random() < self_p:
+                ing[ri(0, len(ing) - 1)] = t
+            self.rec.append((t, ri(0, fee_hi), ing))
+
+
+def shuffled(xs):
+    xs = xs[:]
+    random.shuffle(xs)
+    return xs
+
+
+def big_all(L, nbig, kbig, order, R_mesh, kmesh, fee_hi):
+    """a long chain, `nbig` recipes that use the first kbig chain items (cheapest first), a random cyclic mesh"""
+    sh = Shop(MAXN)
+    base = ri(10 ** 7, 10 ** 8)
+    u = sh.chain(L, order, base)
+    rest = sh.take(MAXN - L)
+    leaves, craft = rest[:len(rest) // 3], rest[len(rest) // 3:]
+    for x in leaves:
+        sh.price[x] = ri(1, 10 ** 6)
+    for x in craft:
+        sh.price[x] = ri(10 ** 8, MAXV)
+    for _ in range(nbig):
+        t = craft[ri(0, len(craft) - 1)]
+        sh.price[t] = MAXV
+        sh.rec.append((t, ri(0, 10 ** 6), u[:kbig]))
+    budget = MAXK - (L - 1) - nbig * kbig
+    R = min(MAXR - len(sh.rec), R_mesh)
+    sh.mesh(craft, R, 1, kmesh, craft + leaves + u[-200:], fee_hi, budget=budget)
+    recs = sh.rec
+    if order == "rand":
+        recs = shuffled(recs)
+    return sh.price, recs
+
+
+def mesh_only(n, R, kmin, kmax, leaf_frac, leaf_hi, craft_lo, fee_hi, self_p=0.03):
+    sh = Shop(n)
+    ids = sh.take(n)
+    nl = max(1, int(n * leaf_frac))
+    leaves, craft = ids[:nl], ids[nl:]
+    for x in leaves:
+        sh.price[x] = ri(1, leaf_hi)
+    for x in craft:
+        sh.price[x] = ri(craft_lo, MAXV)
+    sh.mesh(craft, R, kmin, kmax, ids, fee_hi, self_p)
+    return sh.price, sh.rec
+
+
+# samples
+add([0, 5, 3, 20, 15], [(3, 2, [1, 2]), (4, 1, [3]), (3, 10, [4])])
+add([0, 100, 4, 7], [(1, 0, [2, 3]), (2, 1, [1]), (3, 5, [3, 2])])
+add([0, 1000000000, 1000000000, 1000000000, 1], [(1, 0, [2, 3, 4]), (2, 0, [4]), (3, 999999999, [4])])
+add([0, 8], [(1, 0, [1])])
+add([0, 50, 6, 6, 40, 30, 2],
+    [(1, 5, [4, 5]), (4, 1, [2, 3, 6]), (5, 3, [4]), (2, 0, [6, 3]), (1, 20, [2, 3, 6]), (6, 4, [1])])
+# hidden: small (brute checks these)
+add([0, 7], [(1, 3, [1])])
+add([0, 10, 1], [(1, 0, [2]), (2, 0, [1])])
+add([0] + [1000000000] * 6, [(1, 1000000000, [2, 3, 4, 5, 6]), (2, 0, [3]), (6, 0, [1])])
+add(*mesh_only(10, 15, 1, 3, 0.3, 50, 30, 10))
+add(*mesh_only(60, 120, 1, 4, 0.2, 1000, 500, 100, 0.1))
+add(*mesh_only(300, 900, 1, 5, 0.1, 10 ** 6, 10 ** 8, 10 ** 4))
+add(*mesh_only(3000, 6000, 1, 3, 0.05, 10 ** 9, 10 ** 9, 0, 0.05))       # prices near 10^9, free recipes
+sh = Shop(3000)                                                   # a chain, a big recipe, a mesh
+u = sh.chain(1500, "rand", 1000)
+rest = sh.take(1500)
+for x in rest:
+    sh.price[x] = ri(10 ** 6, MAXV)
+sh.mesh(rest, 3000, 1, 4, rest + u, 1000)
+sh.rec.append((rest[0], 0, u[:1500]))
+add(sh.price, shuffled(sh.rec))
+# hidden: big
+N = MAXN
+add(*big_all(46000, 4, 46000, "rev", 3000, 6, 10 ** 6))
+add(*big_all(46000, 4, 46000, "rand", 3000, 6, 10 ** 6))
+add(*big_all(45000, 4, 45000, "rev", 4000, 6, 10 ** 4))
+add(*big_all(45000, 4, 45000, "rand", 4000, 6, 10 ** 9))
+add(*big_all(40000, 5, 40000, "rev", 7000, 3, 10 ** 6))
+add(*big_all(40000, 5, 40000, "rand", 7000, 3, 100))
+add(*big_all(48000, 4, 48000, "rand", 2000, 6, 1000))
+add(*big_all(35000, 6, 35000, "rand", 10000, 4, 10 ** 6))
+add(*big_all(30000, 7, 30000, "rev", 15000, 3, 10 ** 6))
+add(*big_all(44000, 4, 44000, "rand", 5000, 4, 0))
+add(*big_all(47000, 4, 47000, "rev", 2500, 6, 10 ** 7))
+add(*big_all(49000, 4, 49000, "rev", 0, 1, 0))                     # only the chain and the big recipes
+add(*big_all(49000, 4, 49000, "rand", 0, 1, 0))
+add(*mesh_only(N, MAXR, 2, 6, 0.3, MAXV, 9 * 10 ** 8, 10 ** 9))     # sums above 2^31
+add(*mesh_only(N, MAXR, 1, 3, 0.1, MAXV, 1, 0, 0.2))              # free recipes, many use their own target
+sh = Shop(N)                                                      # a chain plus big recipes in random order
+u = sh.chain(40000, "rev", 10 ** 6)
+rest = sh.take(N - 40000)
+for x in rest:
+    sh.price[x] = MAXV
+for t in rest[:4]:
+    sh.rec.append((t, 0, shuffled(u)))
+sh.mesh(rest, 9000, 1, 4, rest + u[-100:], 10 ** 6, budget=MAXK - 5 * 40000)
+add(sh.price, shuffled(sh.rec))
+
+for t in tests:
+    assert t.endswith("\n") and "  " not in t and " \n" not in t
 os.makedirs("tests", exist_ok=True)
-cases = []
-# ---- samples ----
-cases.append((4, 20, [(1, 2, 0, 5, 3), (2, 4, 2, 6, 4), (1, 3, 1, 4, 2), (3, 4, 0, 10, 7), (3, 2, 0, 1, 1)]))
-cases.append((3, 10, [(1, 2, 0, 3, 4), (2, 3, 1, 5, 4)]))
-cases.append((2, 2, [(1, 2, 0, 7, 3)]))
-cases.append((4, 30, [(1, 2, 5, 10, 2), (2, 3, 0, 4, 3), (3, 1, 0, 5, 1), (2, 4, 9, 20, 1), (3, 4, 0, 100, 1)]))
-cases.append((5, 25, [(1, 2, 1, 4, 3), (2, 5, 2, 6, 5), (1, 3, 0, 5, 2), (3, 4, 4, 7, 6), (4, 5, 1, 3, 2), (2, 4, 0, 9, 1)]))
-# ---- small random ----
-def rnd_edges(n, m, pr, wr):
-    E = []
-    for _ in range(m):
-        u, v = random.sample(range(1, n + 1), 2)
-        p = random.randint(*pr); o = random.randint(0, p - 1); w = random.randint(*wr)
-        E.append((u, v, o, p, w))
-    return E
-def with_path(n, E, hops, pr, wr):
-    mids = random.sample(range(2, n), min(hops, n - 2))
-    seq = [1] + mids + [n]
-    for a, b in zip(seq, seq[1:]):
-        p = random.randint(*pr); E.append((a, b, random.randint(0, p - 1), p, random.randint(*wr)))
-    random.shuffle(E)
-    return E
-for _ in range(6):
-    n = random.randint(2, 6)
-    cases.append((n, random.randint(5, 40), rnd_edges(n, random.randint(1, 10), (1, 10), (1, 8))))
-# ---- large ----
-N, M, B = 100000, 100000, 10**9
-cases.append((N, B, with_path(N, rnd_edges(N, M - 30, (1, 10**7), (1, 10**4)), 29, (1, 10**7), (1, 10**4))))
-cases.append((N, B, with_path(N, rnd_edges(N, M - 30, (1, 50), (1, 10**4)), 29, (1, 50), (1, 10**4))))
-cases.append((N, 10**6, with_path(N, rnd_edges(N, M - 30, (1, 1000), (1, 100)), 29, (1, 1000), (1, 100))))
-cases.append((N, B, with_path(N, rnd_edges(N, 40000, (10**8, 10**9), (10**7, 10**8)), 2, (10**8, 3 * 10**8), (10**7, 10**8))))   # big numbers
-# long chain 1 -> 2 -> ... -> N with noise edges
-E = [(i, i + 1, random.randint(0, 9), 10, random.randint(1, 1000)) for i in range(1, N)]
-E += rnd_edges(N, M - len(E), (1, 10**6), (10**5, 10**6))
-cases.append((N, B, E))
-# chain where every hop has a single departure time (p huge): exact boundary checks
-E = [(1, 2, 7, 13, 100)]
-t = 7 + 13 * 380 + 100          # arrive at station 2 at this time if you catch the 381st train
-for i in range(2, 1000):
-    t += random.randint(0, 5)   # next (only) departure
-    w = random.randint(1, 1000)
-    E.append((i, i + 1, t, B, w)); t += w
-cases.append((1000, t, E))
-cases.append((1000, t - 1, E))
-# layered DAG: many choices, depart time tradeoffs
-L, W = 100, 500
-def node(l, j): return l * W + j + 1
-E = []
-for l in range(L - 1):
-    for j in range(W):
-        for _ in range(2):
-            p = random.randint(1, 100); E.append((node(l, j), node(l + 1, random.randrange(W)), random.randint(0, p - 1), p, random.randint(1, 50)))
-n = L * W
-E += [(node(L - 1, j), n, 0, 1, 1) for j in range(W - 1)]
-E += [(1, node(0, j), random.randint(0, 9), 10, 1) for j in range(1, W)]
-cases.append((n, 10**6, E[:100000]))
-# N unreachable (all trains point away from N)
-E = rnd_edges(20000 - 1, 50000 - 5, (1, 100), (1, 100)) + [(20000, random.randint(1, 19999), 0, 1, 1) for _ in range(5)]
-cases.append((20000, B, E))
-# T = 0: nothing can arrive in time
-cases.append((N, 0, rnd_edges(N, 30000, (1, 10), (1, 10))))
-# star through hub with wide period choices
-E = []
-for i in range(2, N):
-    p = random.randint(1, 10**6); E.append((1, i, random.randint(0, p - 1), p, random.randint(1, 10**6)))
-    p = random.randint(1, 10**6); E.append((i, N, random.randint(0, p - 1), p, random.randint(1, 10**6)))
-cases.append((N, B, E[:M]))
-# 32-bit overflow trap: departure + travel time exceeds 2^31
-E = rnd_edges(N, 50000, (5 * 10**8, 10**9), (5 * 10**8, 10**9))
-E += [(1, N, 5 * 10**8, 10**9, 10**9), (1, 2, 0, 1, 1), (2, 3, 0, 1, 1), (3, N, 0, 1, 1)]
-random.shuffle(E)
-cases.append((N, 10**9, E))
-# more 32-bit traps for the forward approach: late departures with long trips everywhere
-for hops in (3, 12):
-    n2 = 20000
-    E = rnd_edges(n2, 30000, (6 * 10**8, 10**9), (6 * 10**8, 10**9))
-    E += [(1, n2, 7 * 10**8, 10**9, 9 * 10**8)]
-    E = with_path(n2, E, hops, (1, 1000), (1, 10**4))
-    cases.append((n2, 10**9, E))
-# medium random graphs
-for _ in range(3):
-    n = random.randint(2000, 5000)
-    cases.append((n, random.randint(10**5, 10**9), with_path(n, rnd_edges(n, 20000, (1, 10**5), (1, 10**4)), 15, (1, 10**5), (1, 10**4))))
-# the old sample 5 (values near 10^9), moved here when the sample was replaced (2026-11-02)
-cases.append((3, 10**9, [(1, 2, 999999998, 999999999, 1), (2, 3, 0, 10**9, 10**9), (1, 3, 1, 2, 10**9 - 1)]))
-for i, (n, T, E) in enumerate(cases, 1):
-    assert 2 <= n <= 100000 and 1 <= len(E) <= 100000 and 0 <= T <= 10**9
-    assert all(1 <= u <= n and 1 <= v <= n and u != v and 0 <= o < p <= 10**9 and 1 <= w <= 10**9 for u, v, o, p, w in E)
-    open(f"tests/{i:02d}.in", "w").write(f"{n} {len(E)} {T}\n" + "".join(f"{u} {v} {o} {p} {w}\n" for u, v, o, p, w in E))
-print(len(cases), "tests")
+for i, t in enumerate(tests, 1):
+    with open(f"tests/{i:02d}.in", "w") as f:
+        f.write(t)
