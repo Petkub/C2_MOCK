@@ -320,7 +320,7 @@
   "scoring": "all"
  },
  "41": {
-  "title": "จัดแถว robot บนราง",
+  "title": "จัดแถวหุ่นยนต์บนราง",
   "en": "Robots Into Order",
   "tier": 0,
   "dir": "Mock_9/1",
