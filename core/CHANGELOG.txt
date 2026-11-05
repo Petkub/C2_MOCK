@@ -3,9 +3,10 @@ POSN Practice Judge - changes
 6.0.2  Judge stack/memory, stronger tests, clearer time limits, sample and editorial fixes.
        Stack 256 MB on every system, also macOS (recursion 10^6 deep runs); memory limit 256 MB as before.
        Sets 1 and 2: problems 4 and 5 swapped (ordered by difficulty), so Mock_1/4.cpp is now Print Shop
-       and Mock_2/4.cpp is Last Train. Smaller limits in 4/1 (M) and 8/1 (N), larger in 7/3 (N, Q);
-       stronger tests in 2/4, 3/5, 5/3, 6/4, 7/3, 7/5, 7/6, 8/1; clearer wording in 2/3, 6/4, 6/5, 6/6;
-       some samples replaced by ordinary ones (8/1, 8/5).
+       and Mock_2/4.cpp is Last Train. Every natural method now passes or fails clearly (no solution sits
+       near 1 s): smaller limits in 4/1 (M), 6/5 (N, K), 7/3 (N, Q) and 8/1 (N); stronger tests in 2/4, 3/5,
+       4/2, 5/3, 6/4, 6/5, 7/3, 7/5, 7/6, 8/1; clearer wording in 2/3, 6/4, 6/5, 6/6; some samples replaced
+       by ordinary ones (8/1, 8/5). Big tests of 2/4 and 7/3 are built faster.
 6.0.1  Typography: all text in Sarabun (a looped Thai font), more space between lines and below
        headings (Thai marks never touch), semibold section headings, sample labels inside the sample boxes;
        every statement still fits on one A4 page.

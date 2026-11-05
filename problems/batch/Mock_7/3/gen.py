@@ -3,7 +3,7 @@ import bisect, gc, itertools, os, random
 
 gc.disable()     # only acyclic data: the cyclic garbage collector just slows gen.py down
 
-MAXN, MAXQ, MAXV = 200000, 200000, 10 ** 7
+MAXN, MAXQ, MAXV = 20000, 20000, 10 ** 7
 tests = []
 rnd = random.random
 
@@ -39,6 +39,15 @@ def primes_in(lo, hi):
 
 BIGP, MIDP, HIP = primes_in(10 ** 6, MAXV), primes_in(1000, 3162), primes_in(3000, 3162)
 LOWP, ANYP, TOPP = primes_in(2, 200000), primes_in(2, MAXV), primes_in(9 * 10 ** 6, MAXV)
+# queries that never divide (an unused prime) or are hard to factor (a prime > 9e6) take their primes from small
+# fixed pools: a per-query scan that remembers the answer of every prime power it has seen then stays fast, so no
+# correct method sits near the time limit (trial division costs the same per query either way)
+_pool_rng = random.Random(150099).random         # own seed: built before the per-test seeds are set
+_any_sub, _top_sub = PRIMES, PRIMES[bisect.bisect_left(PRIMES, 9 * 10 ** 6):]
+_any_pool = sorted({_any_sub[int(_pool_rng() * len(_any_sub))] for _ in range(600)})
+_top_pool = sorted({_top_sub[int(_pool_rng() * len(_top_sub))] for _ in range(400)})
+ANYQ = lambda: _any_pool[int(rnd() * len(_any_pool))]
+TOPQ = lambda: _top_pool[int(rnd() * len(_top_pool))]
 
 
 class Built:
@@ -103,10 +112,27 @@ def val_mixed():
     return v, fac.items()
 
 
-KINDS = {"top": val_top, "big": val_bigprime, "semi": val_semi, "semihi": val_semihi, "pow": val_power, "smooth": val_smooth, "mixed": val_mixed}
+TINY = SMALL[:8]      # 2 .. 19 (23 is left out: it never appears where these are used)
 
 
-def build_array(n, weights, raw=0.0):
+def val_tiny():
+    """a product of powers of primes <= 19 (several of them)"""
+    fac, v = {}, 1
+    for p in TINY:
+        if rnd() < 0.6:
+            e = 1 + int(rnd() * 3)
+            if v * p ** e <= MAXV:
+                v *= p ** e
+                fac[p] = e
+    return v, fac.items()
+
+
+KINDS = {"top": val_top, "big": val_bigprime, "semi": val_semi, "semihi": val_semihi, "pow": val_power,
+         "smooth": val_smooth, "mixed": val_mixed, "tiny": val_tiny}
+
+
+def build_array(n, weights, raw=0.0, tail=0):
+    """tail > 0: the last `tail` values are "tiny" ones, so primes <= 19 first appear at the very end"""
     b = Built()
     pick = [KINDS[k] for k in sorted(weights) for _ in range(weights[k])]
     m, first, maxe = len(pick), b.first, b.maxe
@@ -115,7 +141,7 @@ def build_array(n, weights, raw=0.0):
         if rnd() < raw:                  # a value whose factorisation is not tracked
             append(1 + int(rnd() * MAXV))
             continue
-        v, fac = pick[int(rnd() * m)]()
+        v, fac = val_tiny() if k > n - tail else pick[int(rnd() * m)]()
         for p, e in fac:
             old = get(p, 0)
             if e > old:
@@ -169,14 +195,14 @@ def queries(b, q, late, none, n, hard):
                 append(x)
                 continue
             while True:
-                p = ANYP()
+                p = ANYQ()
                 if p not in maxe:
                     append(p if rnd() < 0.5 or p * 2 > MAXV else p * ri(1, MAXV // p))
                     break
         elif r < t2:
             if rnd() < 0.5:
                 while True:
-                    p = TOPP()
+                    p = TOPQ()
                     if p not in maxe:
                         append(p)
                         break
@@ -186,6 +212,30 @@ def queries(b, q, late, none, n, hard):
             append(1)
         else:
             append(1 + int(rnd() * MAXV) if rnd() < 0.5 else ri(1, 1000))
+    return qs
+
+
+def tiny_queries(b, q):
+    """products of powers of as many primes <= 19 as fit (up to 8 prime powers), each power reached by
+    the tail; half of them also times 23, which never appears (their largest prime, so -1)"""
+    maxe, qs = b.maxe, []
+    for _ in range(q):
+        x, ps = 1, []
+        for p in TINY:
+            e = maxe.get(p, 0)
+            if e == 0 or rnd() < 0.1:
+                continue
+            e = 1 if rnd() < 0.6 else 1 + int(rnd() * e)
+            if x * p ** e > MAXV:
+                e = 1
+            if x * p ** e <= MAXV:
+                x *= p ** e
+                ps.append(p ** e)
+        if rnd() < 0.5:
+            while x * 23 > MAXV:
+                x //= ps.pop()
+            x *= 23
+        qs.append(x)
     return qs
 
 
@@ -231,6 +281,12 @@ BIG = [
 for seed, kw in BIG:
     random.seed(seed)
     case(MAXN, MAXQ, **kw)
+# primes <= 19 only in the last values, queries made of many of their powers: every prime power of x
+# first divides some a_k near the end, or never (23)
+for seed, w in [(150431, {"big": 1}), (150432, {"top": 1, "semihi": 1}), (150433, {"big": 2, "semihi": 1})]:
+    random.seed(seed)
+    b = build_array(MAXN, w, tail=40)
+    add(b.a, tiny_queries(b, MAXQ))
 # the whole array equal to one big prime, all queries asking for that prime or more
 random.seed(150417)
 p = 9999991

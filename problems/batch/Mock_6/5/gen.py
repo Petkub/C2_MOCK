@@ -2,7 +2,7 @@
 import os, random
 
 random.seed(1102)
-MAXN, MAXK, MAXW, MAXF, MAXE = 200000, 100, 10 ** 6, 10 ** 6, 10 ** 9
+MAXN, MAXK, MAXW, MAXF, MAXE = 50000, 50, 10 ** 6, 10 ** 6, 10 ** 9
 tests = []
 rnd = random.random
 
@@ -95,34 +95,35 @@ for n, k in ((1, 1), (7, 5), (30, 8), (60, 12)):
     w = [ri(1, 20) for _ in range(n)]
     add(w, [(ri(1, n), ri(1, 10), ri(0, 60)) for _ in range(k)] if n > 1 else [(1, 7, 3)])
 add(weights(300, "rand"), trucks_from(caps(300, 20, 0.6, 2.0), "rand", "rand"))
-add(weights(2000, "blocks"), trucks_from(caps(2000, 100, 0.5, 2.5), "alt", "mix"))
-add(weights(2000, "small"), trucks_from(caps(2000, 60, 0.8, 1.6), "small", "max"))
-add(weights(1500, "max"), trucks_from(caps(1500, 100, 1.0, 1.6), "max", "max"))
+add(weights(2000, "blocks"), trucks_from(caps(2000, MAXK, 0.5, 2.5), "alt", "mix"))
+add(weights(2000, "small"), trucks_from(caps(2000, MAXK, 0.8, 1.6), "small", "max"))
+add(weights(1500, "max"), trucks_from(caps(1500, MAXK, 1.0, 1.6), "max", "max"))
 # hidden: big
 N = MAXN
-rand_case(N, 100, 0.5, 2.5)
-rand_case(N, 100, 0.8, 1.6, "blocks", "alt", "mix")
-rand_case(N, 100, 1.0, 1.3, "rand", "close", "rand")
-rand_case(N, 100, 0.2, 4.0, "inc", "dec", "small")
-rand_case(N, 100, 0.5, 3.0, "dec", "inc", "zero")
-rand_case(N, 100, 1.0, 2.0, "max", "max", "max")
-rand_case(N, 100, 0.9, 1.5, "small", "small", "max")
+rand_case(N, MAXK, 0.5, 2.5)
+rand_case(N, MAXK, 0.8, 1.6, "blocks", "alt", "mix")
+rand_case(N, MAXK, 1.0, 1.3, "rand", "close", "rand")
+rand_case(N, MAXK, 0.2, 4.0, "inc", "dec", "small")
+rand_case(N, MAXK, 0.5, 3.0, "dec", "inc", "zero")
+rand_case(N, MAXK, 1.0, 2.0, "max", "max", "max")
+rand_case(N, MAXK, 0.9, 1.5, "small", "small", "max")
 rand_case(N, 50, 0.5, 2.5, "blocks", "rand", "mix")
-add(weights(N, "rand"), trucks_from([N] * 100, "rand", "rand"))          # every truck could take everything
-add(weights(N, "blocks"), trucks_from([ri(1, N) for _ in range(100)], "alt", "zero"))
+add(weights(N, "rand"), trucks_from([N] * MAXK, "rand", "rand"))          # every truck could take everything
+add(weights(N, "blocks"), trucks_from([ri(1, N) for _ in range(MAXK)], "alt", "zero"))
 add(weights(N, "max"), trucks_from([N // 2 + 1, N // 2 + 1], "rand", "rand"))
 add(weights(N, "rand"), trucks_from([N], "rand", "max"))
-cs = [N // 100] * 100                                                       # exactly enough room
+cs = [N // MAXK] * MAXK                                                     # exactly enough room
 add(weights(N, "rand"), trucks_from(cs, "rand", "rand"))
-cs = [N // 100] * 100
-cs[ri(0, 99)] -= 1                                                          # one crate too many
+cs = [N // MAXK] * MAXK
+cs[ri(0, MAXK - 1)] -= 1                                                    # one crate too many
 add(weights(N, "blocks"), trucks_from(cs, "alt", "rand"))
-cs = [ri(1, 10) for _ in range(90)] + [ri(N // 8, N // 4) for _ in range(10)]
+cs = [ri(1, 10) for _ in range(MAXK - MAXK // 10)] + [ri(N // 8, N // 4) for _ in range(MAXK // 10)]
 random.shuffle(cs)
 add(weights(N, "rand"), trucks_from(cs, "rand", "mix"))
-rand_case(N, 100, 0.95, 1.1, "blocks", "dec", "small")
-rand_case(N, 100, 1.5, 3.0, "rand", "alt", "max")
-rand_case(N, 100, 0.5, 2.0, "dec", "close", "small")
+rand_case(N, MAXK, 0.95, 1.1, "blocks", "dec", "small")
+# large capacities: every window is long (an O(N * sum c) DP is far too slow here)
+add(weights(N, "blocks"), trucks_from([ri(N // 2, N) for _ in range(MAXK)], "dec", "small"))
+add(weights(N, "max"), trucks_from([ri(N // 4, N) for _ in range(MAXK)], "alt", "max"))
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t
