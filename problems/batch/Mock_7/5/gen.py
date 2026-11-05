@@ -1,182 +1,260 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
 import os, random
 
-random.seed(850505)
-MAXN, MAXR, MAXK, MAXV, MAXLEN = 50000, 50000, 250000, 10 ** 9, 3000000
+random.seed(905)
+MAXN, MAXW = 100000, 10 ** 6
 tests = []
+rnd = random.random
 
 
-def add(price, recipes):
-    """price[1..n] (price[0] unused); recipes: list of (target, fee, [ingredients])"""
-    n, r = len(price) - 1, len(recipes)
-    assert 1 <= n <= MAXN and 1 <= r <= MAXR
-    assert all(1 <= p <= MAXV for p in price[1:])
-    assert sum(len(x[2]) for x in recipes) <= MAXK
-    lines = [f"{n} {r}", " ".join(map(str, price[1:]))]
-    for t, f, ing in recipes:
-        assert 1 <= t <= n and 0 <= f <= MAXV and len(ing) >= 1
-        assert len(set(ing)) == len(ing) and all(1 <= x <= n for x in ing)
-        lines.append(f"{t} {f} {len(ing)} " + " ".join(map(str, ing)))
-    text = "\n".join(lines) + "\n"
-    assert len(text) <= MAXLEN, len(text)
-    tests.append(text)
+def ri(a, b):
+    """random integer in [a, b] (faster than randint, still deterministic)"""
+    return a + int(rnd() * (b - a + 1))
 
 
-def ri(lo, hi):
-    """uniform integer in [lo, hi] (faster than randint, still deterministic)"""
-    return lo + int(random.random() * (hi - lo + 1))
+def shuf(a):
+    """a shuffled copy of the list a (Fisher-Yates with rnd(): faster than random.shuffle)"""
+    b = list(a)
+    for i in range(len(b) - 1, 0, -1):
+        j = int(rnd() * (i + 1))
+        b[i], b[j] = b[j], b[i]
+    return b
 
 
-def pick(pool, k):
-    """k distinct elements of pool (k small: retry on repeats)"""
-    out = set()
-    res = []
-    while len(res) < k:
-        x = pool[ri(0, len(pool) - 1)]
-        if x not in out:
-            out.add(x)
-            res.append(x)
-    return res
+def add(n, c, plant, edges, tree_ok=False):
+    """edges = (us, vs, ws); tree_ok: emit() already proved the roads form a tree
+    (par[i] < i, relabelled by a permutation)"""
+    us, vs, ws = edges
+    assert 1 <= n <= MAXN and len(us) == len(vs) == len(ws) == n - 1
+    assert sorted(c) == list(range(1, n + 1))
+    assert len(plant) == n and set(plant) <= {"0", "1"} and "1" in plant
+    if n > 1:
+        assert 1 <= min(us) and max(us) <= n and 1 <= min(vs) and max(vs) <= n
+        assert all(map(int.__ne__, us, vs)) and 1 <= min(ws) and max(ws) <= MAXW
+    if not tree_ok:             # n - 1 roads that connect all towns: a tree
+        check_tree(n, us, vs)
+    lines = [str(n), " ".join(map(str, c)), plant] + list(map("{} {} {}".format, us, vs, ws))
+    tests.append("\n".join(lines) + "\n")
 
 
-class Shop:
-    def __init__(self, n):
-        self.n = n
-        self.price = [0] + [MAXV] * n
-        self.rec = []
-        self.ids = list(range(1, n + 1))
-        random.shuffle(self.ids)
-        self.next = 0
+def add_list(n, c, plant, roads):
+    """roads given as (u, v, w) triples (samples)"""
+    add(n, c, plant, tuple(map(list, zip(*roads))) if roads else ([], [], []))
 
-    def take(self, k):
-        """k fresh item numbers (random)"""
-        s = self.ids[self.next:self.next + k]
-        assert len(s) == k
-        self.next += k
-        return s
 
-    def chain(self, L, order, base):
-        """items u_1..u_L, u_(j+1) is made from u_j for 1 coin, price of u_j = base + 2j: crafting along the
-        chain always wins, the cost of u_j is base + j + 1. Item numbers fall along the chain. Returns the items
-        in chain order."""
-        u = sorted(self.take(L), reverse=True)
-        for j in range(L):
-            self.price[u[j]] = base + 2 * (j + 1)
-        rs = [(u[j + 1], 1, [u[j]]) for j in range(L - 1)]
-        if order == "rev":
-            rs.reverse()
+def check_tree(n, us, vs):
+    adj = [[] for _ in range(n + 1)]
+    for u, v in zip(us, vs):
+        adj[u].append(v)
+        adj[v].append(u)
+    seen = [False] * (n + 1)
+    seen[1] = True
+    stack = [1]
+    cnt = 1
+    while stack:
+        for u in adj[stack.pop()]:
+            if not seen[u]:
+                seen[u] = True
+                cnt += 1
+                stack.append(u)
+    assert cnt == n
+
+
+# ---------------------------------------------------------------- tree shapes on 0..n-1 (par[i] < i)
+def shape(kind, n):
+    par = [-1] * n
+    if kind == "random":
+        for i in range(1, n):
+            par[i] = int(rnd() * i)
+    elif kind == "deep":
+        for i in range(1, n):
+            par[i] = ri(max(0, i - 4), i - 1)
+    elif kind == "path":
+        for i in range(1, n):
+            par[i] = i - 1
+    elif kind == "caterpillar":
+        spine = max(1, n // 2)
+        for i in range(1, n):
+            par[i] = i - 1 if i < spine else int(rnd() * spine)
+    elif kind == "spurs":           # spine 0..h-1, vertex h + j hangs below spine vertex j
+        h = (n + 1) // 2
+        for i in range(1, n):
+            par[i] = i - 1 if i < h else i - h
+    elif kind == "star":
+        for i in range(1, n):
+            par[i] = 0
+    elif kind == "broom":
+        h = n // 2
+        for i in range(1, n):
+            par[i] = i - 1 if i <= h else h
+    elif kind == "binary":
+        for i in range(1, n):
+            par[i] = (i - 1) // 2
+    elif kind == "long-arms":       # a few long paths out of vertex 0
+        arms = 5
+        for i in range(1, n):
+            par[i] = i - arms if i > arms else 0
+    else:
+        raise ValueError(kind)
+    return par
+
+
+def weights(kind, n, par, plants):
+    w = [0] * n
+    for i in range(1, n):
+        if kind == "rand":
+            w[i] = ri(1, MAXW)
+        elif kind == "max":
+            w[i] = MAXW
+        elif kind == "small":
+            w[i] = ri(1, 10)
+        elif kind == "spur":        # roads into a plant leaf are short, the rest long
+            w[i] = ri(1, 3) if i in plants else ri(30000, 99999)
         else:
-            random.shuffle(rs)
-        self.rec += rs
-        return u
-
-    def mesh(self, items, R, kmin, kmax, pool, fee_hi, self_p=0.03, budget=MAXK):
-        """R recipes for targets among items (several per item), ingredients from pool (+ maybe the target);
-        stops early when the ingredient lists would exceed `budget` entries"""
-        for _ in range(R):
-            t = items[ri(0, len(items) - 1)]
-            k = ri(kmin, kmax)
-            if k > budget:
-                break
-            budget -= k
-            ing = pick(pool, k)
-            if t not in ing and random.random() < self_p:
-                ing[ri(0, len(ing) - 1)] = t
-            self.rec.append((t, ri(0, fee_hi), ing))
+            raise ValueError(kind)
+    return w
 
 
-def shuffled(xs):
-    xs = xs[:]
-    random.shuffle(xs)
-    return xs
+def has_child(n, par):
+    ch = [False] * n
+    for i in range(1, n):
+        ch[par[i]] = True
+    return ch
 
 
-def big_all(L, nbig, kbig, order, R_mesh, kmesh, fee_hi):
-    """a long chain, `nbig` recipes that use the first kbig chain items (cheapest first), a random cyclic mesh"""
-    sh = Shop(MAXN)
-    base = ri(10 ** 7, 10 ** 8)
-    u = sh.chain(L, order, base)
-    rest = sh.take(MAXN - L)
-    leaves, craft = rest[:len(rest) // 3], rest[len(rest) // 3:]
-    for x in leaves:
-        sh.price[x] = ri(1, 10 ** 6)
-    for x in craft:
-        sh.price[x] = ri(10 ** 8, MAXV)
-    for _ in range(nbig):
-        t = craft[ri(0, len(craft) - 1)]
-        sh.price[t] = MAXV
-        sh.rec.append((t, ri(0, 10 ** 6), u[:kbig]))
-    budget = MAXK - (L - 1) - nbig * kbig
-    R = min(MAXR - len(sh.rec), R_mesh)
-    sh.mesh(craft, R, 1, kmesh, craft + leaves + u[-200:], fee_hi, budget=budget)
-    recs = sh.rec
-    if order == "rand":
-        recs = shuffled(recs)
-    return sh.price, recs
+def choose_plants(kind, n, par, cnt):
+    ch = has_child(n, par)
+    leaves = [v for v in range(n) if not ch[v]]
+    if kind == "random":
+        return set(random.sample(range(n), cnt))
+    if kind == "leaves":
+        return set(random.sample(leaves, min(cnt, len(leaves))))
+    raise ValueError(kind)
 
 
-def mesh_only(n, R, kmin, kmax, leaf_frac, leaf_hi, craft_lo, fee_hi, self_p=0.03):
-    sh = Shop(n)
-    ids = sh.take(n)
-    nl = max(1, int(n * leaf_frac))
-    leaves, craft = ids[:nl], ids[nl:]
-    for x in leaves:
-        sh.price[x] = ri(1, leaf_hi)
-    for x in craft:
-        sh.price[x] = ri(craft_lo, MAXV)
-    sh.mesh(craft, R, kmin, kmax, ids, fee_hi, self_p)
-    return sh.price, sh.rec
+def choose_order(kind, n, par, plants, start=None):
+    """order of joining towns (0-based vertices); start = c_1 if given"""
+    ch = has_child(n, par)
+    if start is None:
+        start = int(rnd() * n)
+    if kind == "random":
+        return [start] + shuf([v for v in range(n) if v != start])
+    if kind == "leaves":            # non-plant leaves first, then the plants, then everything else
+        lv = shuf([v for v in range(n) if not ch[v] and v != start and v not in plants])
+        pl = shuf(sorted(v for v in plants if v != start))
+        seen = set(lv) | set(pl) | {start}
+        rest = shuf([v for v in range(n) if v not in seen])
+        return [start] + lv + pl + rest
+    if kind == "bfs":               # every new town is next to the network
+        adj = [[] for _ in range(n)]
+        for i in range(1, n):
+            adj[i].append(par[i])
+            adj[par[i]].append(i)
+        seen = [False] * n
+        seen[start] = True
+        frontier = [start]
+        out = []
+        while frontier:
+            j = int(rnd() * len(frontier))
+            frontier[j], frontier[-1] = frontier[-1], frontier[j]
+            v = frontier.pop()
+            out.append(v)
+            for u in adj[v]:
+                if not seen[u]:
+                    seen[u] = True
+                    frontier.append(u)
+        return out
+    if kind == "zigzag":            # path 0..n-1: start in the middle, then the two ends inwards
+        lo, hi = 0, n - 1
+        out = [start]
+        while lo <= hi:
+            for v in (lo, hi):
+                if v != start and v not in out[-2:]:
+                    out.append(v)
+            lo += 1
+            hi -= 1
+        assert sorted(out) == list(range(n))
+        return out
+    raise ValueError(kind)
+
+
+def emit(n, par, w, plants, order, keep_one=None):
+    """random labels; keep_one: vertex that gets label 1 (else a vertex that is not c_1)"""
+    lab = shuf(list(range(1, n + 1)))
+    if n > 1:
+        one = keep_one
+        if one is None:             # town 1 is never c_1 here (c_1 = 1 is tested on its own)
+            one = order[0]
+            while one == order[0]:
+                one = int(rnd() * n)
+        j = lab.index(1)
+        lab[j], lab[one] = lab[one], lab[j]
+    assert sorted(lab) == list(range(1, n + 1))
+    assert n == 1 or (min(par[1:]) >= 0 and all(map(int.__lt__, par[1:], range(1, n))))
+    c = [lab[v] for v in order]
+    plant = ["0"] * n
+    for v in plants:
+        plant[lab[v] - 1] = "1"
+    # roads in the order of the label of their lower end (labels are random), random direction
+    idx = sorted(range(1, n), key=lab.__getitem__)
+    lo = list(map(lab.__getitem__, idx))
+    hi = [lab[par[i]] for i in idx]
+    flip = format(random.getrandbits(n - 1), "0%db" % (n - 1)) if n > 1 else ""
+    us = [b if f == "1" else a for a, b, f in zip(lo, hi, flip)]
+    vs = [a if f == "1" else b for a, b, f in zip(lo, hi, flip)]
+    ws = [w[i] for i in idx]
+    add(n, c, "".join(plant), (us, vs, ws), tree_ok=True)
+
+
+def build(n, kind, wkind="rand", pkind="random", pcnt=3, okind="random", start=None, c1_plant=False,
+          one=None):
+    par = shape(kind, n)
+    if pkind == "spurs":            # plants = the hanging leaves of some spine vertices
+        h = (n + 1) // 2
+        plants = set(random.sample(range(h, n), min(pcnt, n - h))) if n > h else {0}
+    else:
+        plants = choose_plants(pkind, n, par, pcnt)
+    if start is None:
+        cand = [v for v in range(n) if v not in plants] or [0]
+        start = cand[int(rnd() * len(cand))]
+    if c1_plant:
+        plants.add(start)
+    w = weights(wkind, n, par, plants)
+    order = choose_order(okind, n, par, plants, start)
+    emit(n, par, w, plants, order, one)
 
 
 # samples
-add([0, 5, 3, 20, 15], [(3, 2, [1, 2]), (4, 1, [3]), (3, 10, [4])])
-add([0, 100, 4, 7], [(1, 0, [2, 3]), (2, 1, [1]), (3, 5, [3, 2])])
-add([0, 1000000000, 1000000000, 1000000000, 1], [(1, 0, [2, 3, 4]), (2, 0, [4]), (3, 999999999, [4])])
-add([0, 8], [(1, 0, [1])])
-add([0, 50, 6, 6, 40, 30, 2],
-    [(1, 5, [4, 5]), (4, 1, [2, 3, 6]), (5, 3, [4]), (2, 0, [6, 3]), (1, 20, [2, 3, 6]), (6, 4, [1])])
+add_list(7, [3, 6, 1, 5, 2, 7, 4], "0000101",
+    [(1, 2, 4), (2, 3, 2), (2, 4, 3), (4, 5, 1), (4, 6, 5), (1, 7, 6)])
+add_list(5, [3, 2, 4, 1, 5], "10001", [(1, 2, 3), (2, 3, 4), (3, 4, 1), (4, 5, 2)])
+add_list(1, [1], "1", [])
+add_list(4, [2, 4, 1, 3], "0100", [(1, 2, 7), (2, 3, 9), (2, 4, 1)])
+add_list(5, [2, 5, 3, 1, 4], "10000", [(1, 3, 5), (3, 2, 2), (3, 4, 4), (4, 5, 1)])
 # hidden: small (brute checks these)
-add([0, 7], [(1, 3, [1])])
-add([0, 10, 1], [(1, 0, [2]), (2, 0, [1])])
-add([0] + [1000000000] * 6, [(1, 1000000000, [2, 3, 4, 5, 6]), (2, 0, [3]), (6, 0, [1])])
-add(*mesh_only(10, 15, 1, 3, 0.3, 50, 30, 10))
-add(*mesh_only(60, 120, 1, 4, 0.2, 1000, 500, 100, 0.1))
-add(*mesh_only(300, 900, 1, 5, 0.1, 10 ** 6, 10 ** 8, 10 ** 4))
-add(*mesh_only(3000, 6000, 1, 3, 0.05, 10 ** 9, 10 ** 9, 0, 0.05))       # prices near 10^9, free recipes
-sh = Shop(3000)                                                   # a chain, a big recipe, a mesh
-u = sh.chain(1500, "rand", 1000)
-rest = sh.take(1500)
-for x in rest:
-    sh.price[x] = ri(10 ** 6, MAXV)
-sh.mesh(rest, 3000, 1, 4, rest + u, 1000)
-sh.rec.append((rest[0], 0, u[:1500]))
-add(sh.price, shuffled(sh.rec))
+add_list(2, [2, 1], "01", [(1, 2, MAXW)])
+build(12, "random", "small", "random", 2, "leaves")
+build(40, "spurs", "spur", "spurs", 3, "leaves")
+build(300, "random", "rand", "random", 1, "random")
+build(2000, "caterpillar", "spur", "leaves", 4, "leaves")
+build(3000, "path", "small", "random", 2, "zigzag", start=1500)
+build(9000, "deep", "rand", "random", 5, "random", c1_plant=True)
 # hidden: big
-N = MAXN
-add(*big_all(46000, 4, 46000, "rev", 3000, 6, 10 ** 6))
-add(*big_all(46000, 4, 46000, "rand", 3000, 6, 10 ** 6))
-add(*big_all(45000, 4, 45000, "rev", 4000, 6, 10 ** 4))
-add(*big_all(45000, 4, 45000, "rand", 4000, 6, 10 ** 9))
-add(*big_all(40000, 5, 40000, "rev", 7000, 3, 10 ** 6))
-add(*big_all(40000, 5, 40000, "rand", 7000, 3, 100))
-add(*big_all(48000, 4, 48000, "rand", 2000, 6, 1000))
-add(*big_all(35000, 6, 35000, "rand", 10000, 4, 10 ** 6))
-add(*big_all(30000, 7, 30000, "rev", 15000, 3, 10 ** 6))
-add(*big_all(44000, 4, 44000, "rand", 5000, 4, 0))
-add(*big_all(47000, 4, 47000, "rev", 2500, 6, 10 ** 7))
-add(*big_all(49000, 4, 49000, "rev", 0, 1, 0))                     # only the chain and the big recipes
-add(*big_all(49000, 4, 49000, "rand", 0, 1, 0))
-add(*mesh_only(N, MAXR, 2, 6, 0.3, MAXV, 9 * 10 ** 8, 10 ** 9))     # sums above 2^31
-add(*mesh_only(N, MAXR, 1, 3, 0.1, MAXV, 1, 0, 0.2))              # free recipes, many use their own target
-sh = Shop(N)                                                      # a chain plus big recipes in random order
-u = sh.chain(40000, "rev", 10 ** 6)
-rest = sh.take(N - 40000)
-for x in rest:
-    sh.price[x] = MAXV
-for t in rest[:4]:
-    sh.rec.append((t, 0, shuffled(u)))
-sh.mesh(rest, 9000, 1, 4, rest + u[-100:], 10 ** 6, budget=MAXK - 5 * 40000)
-add(sh.price, shuffled(sh.rec))
+build(MAXN, "path", "rand", "random", 2, "zigzag", start=MAXN // 2)
+build(MAXN, "path", "max", "random", 1, "random")
+build(MAXN, "path", "spur", "random", 30, "leaves", start=7)
+build(MAXN, "spurs", "spur", "spurs", 5, "leaves")
+build(MAXN, "random", "rand", "random", 3, "leaves")
+build(MAXN, "random", "spur", "leaves", 20, "leaves")
+build(MAXN, "deep", "spur", "leaves", 50, "leaves")
+build(MAXN, "caterpillar", "rand", "leaves", 3, "leaves")
+build(MAXN, "broom", "spur", "leaves", 10, "leaves", start=0)
+build(MAXN, "star", "rand", "random", 1, "random")
+build(MAXN, "binary", "spur", "leaves", 8, "leaves")
+build(MAXN, "long-arms", "rand", "random", 2, "leaves")
+build(MAXN, "random", "rand", "random", MAXN // 10, "bfs")
+build(MAXN, "deep", "max", "random", 1, "random", c1_plant=True)
+build(MAXN, "path", "max", "random", 1, "random", start=0, one=MAXN - 1)
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

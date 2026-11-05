@@ -1,100 +1,268 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
 import os, random
 
-random.seed(1302001)
-MAXQ, MAXV = 50000, 10 ** 18
+random.seed(2011)
+MAXN, MAXM, MAXLEN, MAXTOTAL = 100000, 100000, 20, 1000000
+LET = "abcdefghijklmnopqrstuvwxyz"
 tests = []
+rnd = random.random
 
 
-def add(qs):
-    assert 1 <= len(qs) <= MAXQ
-    for a, b in qs:
-        assert 0 <= a <= MAXV and 0 <= b <= MAXV
-    tests.append("\n".join([str(len(qs))] + [f"{a} {b}" for a, b in qs]) + "\n")
+def ri(a, b):
+    """random integer in [a, b] (only rnd(), so every Python version gives the same tests)"""
+    return a + int(rnd() * (b - a + 1))
 
 
-def isqrt(x):
-    r = int(x ** 0.5)
-    while r * r > x:
-        r -= 1
-    while (r + 1) * (r + 1) <= x:
-        r += 1
-    return r
+def pick(seq):
+    return seq[int(rnd() * len(seq))]
 
 
-def clip(v):
-    return max(0, min(MAXV, v))
+def shuffle(a):
+    for i in range(len(a) - 1, 0, -1):
+        j = ri(0, i)
+        a[i], a[j] = a[j], a[i]
 
 
-def logu(hi):
-    """a value spread over all orders of magnitude up to hi"""
-    return min(hi, int(10 ** random.uniform(0, 18.0001)))
+TABLE = {}
 
 
-def square_edge(p):
-    """the cans of p odd rows, give or take one"""
-    return clip(p * p + random.choice((-1, -1, 0, 1)))
+def table(alpha):
+    """all words of length c over the first alpha letters, c as large as keeps the table under 5 * 10^5"""
+    if alpha not in TABLE:
+        c = 1
+        while alpha ** (c + 1) <= 500000:
+            c += 1
+        t = [""]
+        for _ in range(c):
+            t = [w + ch for w in t for ch in LET[:alpha]]
+        TABLE[alpha] = (c, t)
+    return TABLE[alpha]
 
 
-def even_edge(q):
-    """the cans of q even rows, give or take one"""
-    return clip(q * (q + 1) + random.choice((-1, -1, 0, 1)))
+def word(L, alpha=26):
+    """random word of length L over the first alpha letters (one rnd() gives two pieces of the table)"""
+    c, t = table(alpha)
+    n = len(t)
+    if L <= 2 * c:
+        x = int(rnd() * n * n)
+        return (t[x // n] + t[x % n])[:L]
+    need = (L + c - 1) // c
+    parts = []
+    while need >= 2:
+        x = int(rnd() * n * n)
+        parts.append(t[x // n])
+        parts.append(t[x % n])
+        need -= 2
+    if need:
+        parts.append(t[int(rnd() * n)])
+    return "".join(parts)[:L]
 
 
-def edge_pair(lo, hi):
-    """one colour exactly at a boundary, the other with enough cans or just one row short of it"""
-    p = random.randint(lo, hi)
-    kind = random.randint(0, 3)
-    if kind == 0:
-        a, b = square_edge(p), even_edge(p + random.randint(-1, 1))
-    elif kind == 1:
-        a, b = square_edge(p), even_edge(p - 1 + random.randint(0, 1))
-    elif kind == 2:
-        a, b = even_edge(p), square_edge(p + random.randint(-1, 1))
-    else:
-        a, b = square_edge(p), clip(random.randint(p * p - 2 * p, p * p + 2 * p))
-    return (a, b) if random.random() < 0.5 else (b, a)
+def add(dic, text):
+    n, m = len(dic), len(text)
+    assert 1 <= n <= MAXN and 1 <= m <= MAXM
+    assert len(set(dic)) == n
+    allw = dic + text
+    assert min(map(len, allw)) >= 1 and max(map(len, allw)) <= MAXLEN
+    assert sum(map(len, allw)) <= MAXTOTAL
+    assert set("".join(allw)) <= set(LET)
+    tests.append(f"{n} {m}\n" + " ".join(dic) + "\n" + " ".join(text) + "\n")
+
+
+DICTS = {}
+
+
+def make_dict(n, lens, alpha=26, extra=()):
+    """n distinct words, lengths drawn from lens; words of extra come first (big lists are reused, as copies)"""
+    key = (n, tuple(lens), alpha, tuple(extra))
+    if n >= 50000 and key in DICTS:
+        return DICTS[key][:]
+    seen = set(extra)
+    dic = list(extra)
+    tries = 0
+    nl = len(lens)
+    while len(dic) < n:
+        w = word(lens[int(rnd() * nl)], alpha)
+        tries += 1
+        assert tries < 50 * n + 1000
+        if w not in seen:
+            seen.add(w)
+            dic.append(w)
+    if n >= 50000:
+        DICTS[key] = dic[:]
+    return dic
+
+
+def slip(w):
+    """swap one pair of different neighbouring letters (w itself if there is none)"""
+    L = len(w)
+    if L < 2:
+        return w
+    for _ in range(4):
+        j = int(rnd() * (L - 1))
+        if w[j] != w[j + 1]:
+            return w[:j] + w[j + 1] + w[j] + w[j + 2:]
+    js = [j for j in range(L - 1) if w[j] != w[j + 1]]
+    if not js:
+        return w
+    j = pick(js)
+    return w[:j] + w[j + 1] + w[j] + w[j + 2:]
+
+
+def far(w):
+    """swap two different letters that are not neighbours (w itself if impossible)"""
+    L = len(w)
+    for _ in range(10):
+        if L < 3:
+            break
+        i = ri(0, L - 3)
+        j = ri(i + 2, L - 1)
+        if w[i] != w[j]:
+            c = list(w)
+            c[i], c[j] = c[j], c[i]
+            return "".join(c)
+    return w
+
+
+def text_of(dic, budget, mix, lens=None, alpha=26, maxm=MAXM):
+    """text words until about budget letters: mix = list of (integer weight, kind)"""
+    kinds = [kind for p, kind in mix for _ in range(p)]
+    nk, nd = len(kinds), len(dic)
+    text, used = [], 0
+    while len(text) < maxm:
+        kind = kinds[int(rnd() * nk)]
+        if kind == "rand":
+            w = word(pick(lens), alpha)
+        else:
+            w = dic[int(rnd() * nd)]
+            if kind == "slip":
+                w = slip(w)
+            elif kind == "far":
+                w = far(w)
+            elif kind == "two":
+                w = slip(slip(w))
+        used += len(w)
+        if used > budget:
+            break
+        text.append(w)
+    return text
+
+
+def dict_chars(dic):
+    return sum(len(w) for w in dic)
 
 
 # samples
-add([(5, 6), (0, 7), (10, 2)])
-add([(3, 1), (2, 2)])
-add([(0, 0), (1, 0), (0, 1), (6, 3), (100, 100)])
-add([(7, 12), (12, 7), (16, 20), (20, 16), (1, 1000)])
-add([(1000000, 1000000), (123456789, 987654321), (999999999999, 0)])
+add("the cat sat on a mat".split(), "teh cat sta no a dog mta".split())
+add("ant tan at".split(), "nat tna ta at tan ant".split())
+add("dear dare friend i read your card".split(), "daer freind i raed yuor card tow times".split())
+add("we go to the zoo on sunday".split(), "ew og ot hte zoo on sunady ta".split())
+add("table black stable cable".split(), "talbe balck stalbe cbale tabel lbock table".split())
+
+# hidden: small hand-made (a tie inside one family of anagrams; words whose swap is also in the list)
+add("dare dear read".split(), "daer raed ared dera".split())
+add("i a no on is si to".split(), "on i so no ti a si ot".split())
+
 # hidden: small (brute checks these)
-add([(a, b) for a in range(0, 30) for b in range(0, 30)])
-add([(random.randint(0, 10 ** 4), random.randint(0, 10 ** 4)) for _ in range(2000)])
-add([edge_pair(1, 3000) for _ in range(2000)])
-add([(random.randint(0, 10 ** 8), random.randint(0, 10 ** 8)) for _ in range(300)])
-add([edge_pair(1000, 30000) for _ in range(300)])
-add([(random.randint(0, 10 ** 9), random.randint(0, 50)) for _ in range(200)]
-    + [(random.randint(0, 50), random.randint(0, 10 ** 9)) for _ in range(200)])
-add([(MAXV, MAXV)])
+add(["a"], ["a"])
+add(["ab"], ["ba", "ab", "a", "b", "aab"])
+abc = [x + y + z for x in "abc" for y in "abc" for z in "abc"]
+words3 = ["a", "b", "c"] + [x + y for x in "abc" for y in "abc"] + abc
+for seed in (1, 2, 3):
+    random.seed(seed)
+    d = [w for w in words3 if rnd() < 0.4] or ["a"]
+    add(d, words3[:])
+random.seed(7)
+for n, lens, alpha, m in [(100, [4, 5, 6], 2, 600), (500, [5, 6], 3, 1500),
+                          (1500, list(range(1, 9)), 4, 2000), (2000, [6, 7, 8], 26, 3000),
+                          (800, [8, 9, 10, 11], 2, 2500)]:
+    d = make_dict(n, lens, alpha)
+    shuffle(d)
+    t = text_of(d, 10 ** 6, [(2, "exact"), (4, "slip"), (1, "far"), (1, "two"), (2, "rand")], lens, alpha, m)
+    add(d, t)
+
 # hidden: big
-add([(MAXV - random.randint(1, 10 ** 9), MAXV) if i % 2 else (MAXV, MAXV - random.randint(1, 10 ** 9))
-     for i in range(MAXQ)])
-add([(MAXV - i, MAXV - random.randint(0, 3)) for i in range(MAXQ)])
-add([edge_pair(900000000, 1000000000) for _ in range(MAXQ)])
-add([edge_pair(900000000, 1000000000) for _ in range(MAXQ)])
-add([edge_pair(1, 1000000000) for _ in range(MAXQ)])
-add([edge_pair(100000000, 1000000000) for _ in range(MAXQ)])
-add([(logu(MAXV), logu(MAXV)) for _ in range(MAXQ)])
-add([(random.randint(0, MAXV), random.randint(0, MAXV)) if i % 2 else edge_pair(1, 1000000000) for i in range(MAXQ)])
-add([edge_pair(500000000, 1000000000) for _ in range(MAXQ)])
-add([edge_pair(200000000, 1000000000) for _ in range(MAXQ)])
-bigp = [(p * p - 1, MAXV) for p in range(10 ** 9, 10 ** 9 - MAXQ // 2, -1)]
-add(bigp + [(b, a) for a, b in bigp])
-bigq = [(MAXV, q * (q + 1) - 1) for q in range(999999999, 999999999 - MAXQ // 2, -1)]
-add(bigq + [(b, a) for a, b in bigq])
-add([(clip(p * p - 1), clip(p * p - p - 1)) for p in (random.randint(5 * 10 ** 8, 10 ** 9) for _ in range(MAXQ))])
-add([(clip(x), clip(x + random.randint(-2 * 10 ** 9, 2 * 10 ** 9)))
-     for x in (random.randint(10 ** 17, MAXV) for _ in range(MAXQ))])
-add([edge_pair(100000000, 1000000000) if i % 10 else edge_pair(1, 1000) for i in range(MAXQ)])
-add([(random.randint(0, 10 ** 12), random.randint(0, 10 ** 12)) for _ in range(MAXQ)])
-add([(random.randint(0, 10 ** 14), random.randint(0, MAXV)) if i % 2 else (random.randint(0, MAXV), random.randint(0, 10 ** 14))
-     for i in range(MAXQ)])
-add([edge_pair(999000000, 1000000000) for _ in range(MAXQ)])
+MIX = [(3, "exact"), (4, "slip"), (1, "far"), (1, "two"), (1, "rand")]
+
+
+def big_random(n, lens, alpha, mix=MIX, maxm=MAXM):
+    d = make_dict(n, lens, alpha)
+    shuffle(d)
+    t = text_of(d, MAXTOTAL - dict_chars(d), mix, lens, alpha, maxm)
+    return d, t
+
+
+def pairs_dict(n, L):
+    """n / 2 words together with one slip of each (both in the list)"""
+    d, seen = [], set()
+    while len(d) < n - 1:
+        w = word(L)
+        v = slip(w)
+        if w != v and w not in seen and v not in seen:
+            seen.update((w, v))
+            d += [w, v]
+    shuffle(d)
+    return d
+
+
+def same_letter_text():
+    d = make_dict(50000, [10], 26, extra=["a" * k for k in range(1, 21, 2)] + ["ab" * 5, "ba" * 5])
+    shuffle(d)
+    t = []
+    used = dict_chars(d)
+    while True:
+        k = ri(1, 20)
+        w = pick(["a" * k, "b" * k, "a" * (k - 1) + "b", "b" + "a" * (k - 1), ("ab" * 10)[:k], ("ba" * 10)[:k]])
+        if used + len(w) > MAXTOTAL or len(t) == MAXM:
+            break
+        t.append(w)
+        used += len(w)
+    return d, t
+
+
+def repeated_word():
+    d = make_dict(MAXN, [4, 5], 26)
+    w = slip(d[0])
+    t = [w] * min(MAXM, (MAXTOTAL - dict_chars(d)) // len(w))
+    return d, t
+
+
+def order_trap():
+    d = pairs_dict(50000, 9)
+    t = text_of(d, MAXTOTAL - dict_chars(d), [(5, "exact"), (4, "slip"), (1, "rand")], [9], 26)
+    return d, t
+
+
+def order_trap_short():
+    d = pairs_dict(MAXN, 6)
+    t = text_of(d, MAXTOTAL - dict_chars(d), [(4, "exact"), (5, "slip"), (1, "rand")], [6], 26)
+    return d, t
+
+
+BIG = [
+    (5001, lambda: big_random(50000, list(range(6, 13)), 26)),
+    (5002, lambda: big_random(20000, [14, 15], 2)),
+    (5003, lambda: big_random(40000, [15, 16, 17], 2)),
+    (5004, lambda: big_random(30000, [10], 3)),
+    (5005, lambda: big_random(25000, [20], 26, [(1, "exact"), (2, "slip"), (2, "far"), (3, "rand")])),
+    (5006, lambda: big_random(50000, [10], 26, [(1, "far"), (1, "rand"), (1, "two")])),
+    (5007, lambda: big_random(MAXN, [1, 2, 3, 3, 4, 4, 4, 4], 26, [(1, "exact"), (1, "slip"), (1, "rand")])),
+    (5008, lambda: big_random(50000, [8, 9], 4)),
+    (5009, lambda: big_random(50000, list(range(1, 21)), 26)),
+    (5011, same_letter_text),
+    (5012, repeated_word),
+    (5013, order_trap),
+    (5014, lambda: big_random(MAXN, [4, 5], 26, [(1, "slip")])),
+    (5015, lambda: big_random(30000, [18, 19, 20], 2, [(1, "slip"), (1, "rand")])),
+    (5017, lambda: big_random(50000, [9, 10, 11], 5, [(2, "slip"), (1, "two"), (1, "rand")])),
+    (5018, lambda: big_random(MAXN, [4, 5], 26, [(1, "rand"), (1, "far")])),
+    (5019, lambda: big_random(MAXN, [3, 4, 5, 6], 26, [(1, "exact"), (2, "slip"), (1, "rand")])),
+    (5020, lambda: order_trap_short()),
+]
+for seed, make in BIG:
+    random.seed(seed)
+    d, t = make()
+    add(d, t)
 
 os.makedirs("tests", exist_ok=True)
 for i, t in enumerate(tests, 1):

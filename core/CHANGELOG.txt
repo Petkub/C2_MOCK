@@ -1,13 +1,11 @@
 POSN Practice Judge - changes
 
-5.0  Four new sets (15 in all) and five new problems in the old sets, so every topic of the Camp 2 syllabus
-     (POSN 2569) is practised: number theory, strings and text formats, backtracking, divide and conquer,
-     Euler paths and more. All sets renumbered again from easy to hard.
-     A problem scores 100 only when every test passes, else 0 (like the real exam). Clearer Thai in every
-     statement, and a formula never breaks across two lines.
-4.0  Sets renumbered from easy to hard (set 1 is the easiest), and the problems inside each set too. No hints in
-     the statements: some samples and sample explanations changed (the old samples are now hidden tests).
-     Cover time plans end with "check your work".
+6.0  8 mock exams of 6 problems (3 hours, score /600, target 300), ordered from easy to hard, each set a little
+     harder than the real exam; inside each set the problems also go from easy to hard. The problems come from a
+     larger bank and cover every topic of the Camp 2 syllabus (POSN 2569); one new problem (4/1). A problem
+     scores 100 only when every test passes, else 0 (like the real exam). No hints in the statements; samples
+     are ordinary examples. New, cleaner statement layout; a formula never breaks across two lines.
+     All sets and problems have new numbers. Folders Mock_9 ... Mock_15 of an older version are no longer used.
 3.2  Stronger tests for 6/4, 6/5, 7/4, 7/5, 8/4, 10/3, 10/4 and 11/4 (some slow or wrong solutions passed too
      many). Clearer story in 8/2. The judge's help says 1.cpp ... 5.cpp.
 3.1  A big test left over from an older version of a problem is rebuilt, so it is never judged with old data.

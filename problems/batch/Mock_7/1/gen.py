@@ -1,115 +1,178 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
 import os, random
 
-random.seed(810451)
-MAXN, MAXT = 200000, 10 ** 9
+random.seed(510501)
+MAXN = 120000
+DAY = 86400
+rnd = random.random
 tests = []
 
 
-def add(k, t):
-    n = len(t)
-    assert 1 <= n <= MAXN and 1 <= k <= n
-    assert all(1 <= x <= MAXT for x in t)
-    tests.append(f"{n} {k}\n" + " ".join(map(str, t)) + "\n")
+def ri(a, b):
+    """random integer in [a, b] (faster than randint, still deterministic)"""
+    return a + int(rnd() * (b - a + 1))
 
 
-def relabel(t, big):
-    """replace type numbers by distinct random labels (up to 10^9 when big)"""
-    used = sorted(set(t))
-    hi = MAXT if big else max(len(used) * 3, 10)
-    lab = random.sample(range(1, hi + 1), len(used))
-    m = dict(zip(used, lab))
-    return [m[x] for x in t]
+CLOCK = ["%02d:%02d:%02d" % (c // 3600, c // 60 % 60, c % 60) for c in range(DAY)]
 
 
-def uniform(n, m):
-    return [random.randint(1, m) for _ in range(n)]
+def clock(t):
+    return CLOCK[t % DAY]
 
 
-def rare(n, common, rares, gaps, tail, late=False):
-    """`common` frequent types everywhere, rare types (labels common+1 .. common+rares) at spaced positions:
-    the gaps between consecutive rare items are drawn from `gaps` (a (lo, hi) range), the last rare item is
-    `tail` positions before the end; late: the longest gaps come last"""
-    t = [random.randint(1, common) for _ in range(n)]
-    g = [random.randint(*gaps) for _ in range(n // gaps[0] + 1)]
-    if late:
-        g.sort(reverse=True)
-    pos, j = n - 1 - tail, 0
-    while pos >= 0:
-        t[pos] = common + random.randint(1, rares)
-        pos -= g[j]
-        j += 1
-    return t
+def add_lines(lines):
+    """lines: list of (absolute second, name, kind) in log order"""
+    n = len(lines)
+    assert 1 <= n <= MAXN
+    out = [str(n)]
+    prev = None
+    for t, nm, k in lines:
+        assert 1 <= len(nm) <= 10 and nm.isalpha() and nm.islower() and k in ("IN", "OUT")
+        if prev is not None:
+            assert 0 <= t - prev < DAY          # the day rule recovers the true times
+        prev = t
+        out.append("%s %s %s" % (clock(t), nm, k))
+    tests.append("\n".join(out) + "\n")
 
 
-def tailfix(t, k, x):
-    """the last x items get only k - 1 of the types that occur in t"""
-    keep = random.sample(sorted(set(t)), k - 1)
-    return t[:len(t) - x] + [random.choice(keep) for _ in range(x)]
+def add_raw(rows):
+    """samples: rows of 'HH:MM:SS name KIND'"""
+    tests.append("\n".join([str(len(rows))] + rows) + "\n")
 
 
-def runs(n, m, mean):
-    """runs of one type with random lengths 1 .. 2 * mean"""
-    t = []
-    while len(t) < n:
-        t += [random.randint(1, m)] * random.randint(1, 2 * mean)
-    return t[:n]
+POOL = "".join(chr(97 + int(rnd() * 26)) for _ in range(300000))      # names are slices of this string
 
 
-def cyc(n, m, noise):
-    """a fixed order of m types repeated, with a few positions changed"""
-    p = list(range(1, m + 1))
-    random.shuffle(p)
-    t = [p[i % m] for i in range(n)]
-    for _ in range(noise):
-        t[random.randrange(n)] = random.randint(1, m)
-    return t
+def names(u, lmin=1, lmax=10):
+    """u distinct names; some are prefixes of others"""
+    out, seen = [], set()
+    while len(out) < u:
+        if out and rnd() < 0.08:
+            base = out[int(rnd() * len(out))]
+            nm = base[:ri(1, len(base))] if rnd() < 0.5 else (base + chr(97 + ri(0, 25)))[:10]
+        else:
+            L = ri(lmin, lmax) if rnd() < 0.3 else ri(lmin, min(lmax, max(lmin, 5)))
+            p = int(rnd() * (len(POOL) - 10))
+            nm = POOL[p:p + L]
+        if nm not in seen:
+            seen.add(nm)
+            out.append(nm)
+    return out
+
+
+def planned(n, u, horizon, grid=1, dmax=20000, ties=0.3, dup=0.15, stray=0.15, opn=0.3, heavy=0, seed=None):
+    """users with planned stays (some repeated lengths, extra INs, stray OUTs, stays left open);
+    events merged in time order, filler lines added so that consecutive lines are < 1 day apart, cut to n lines"""
+    if seed is not None:
+        random.seed(seed)
+    nms = names(u + 1)
+    filler = nms.pop()                 # this user only has OUT lines (never printed)
+    ev = []
+    per = max(2, n // u)
+    for idx, nm in enumerate(nms):
+        cnt = per * 30 if idx < heavy else ri(1, 2 * per)        # wanted number of lines
+        cur = ri(0, horizon)
+        if idx < heavy:
+            cur = ri(0, horizon // 50)
+        span = max(1, (horizon - cur) // max(1, cnt))
+        fixed = [ri(0, dmax) for _ in range(3)] if rnd() < ties else None
+        made = 0
+        while made < cnt:
+            t = cur + ri(0, 2 * span)
+            d = fixed[int(rnd() * 3)] if fixed else ri(0, dmax) if rnd() < 0.9 else ri(0, 3 * span)
+            t -= t % grid
+            d -= d % grid
+            ev.append((t, rnd(), nm, "IN"))
+            made += 1
+            if rnd() < dup:
+                x = t + ri(0, d)
+                ev.append((x - x % grid, rnd(), nm, "IN"))
+                made += 1
+            if made >= cnt and rnd() < opn:
+                break
+            ev.append((t + d, rnd(), nm, "OUT"))
+            made += 1
+            cur = t + d
+            if rnd() < stray:
+                x = cur + ri(0, span)
+                ev.append((x - x % grid, rnd(), nm, "OUT"))
+                made += 1
+        if rnd() < stray:
+            x = ri(0, horizon)
+            ev.append((x - x % grid, rnd(), nm, "OUT"))
+    ev.sort()
+    lines, prev = [], None
+    for t, _, nm, k in ev:
+        while prev is not None and t - prev >= DAY:
+            prev += ri(DAY // 2, DAY - 1)
+            lines.append((prev, filler, "OUT"))
+        lines.append((t, nm, k))
+        prev = t
+        if len(lines) >= n:
+            break
+    add_lines(lines[:n])
+
+
+def stream(n, u, gaps, pin=0.55, seed=None):
+    """random IN / OUT lines of u users; gaps is a list of (weight, lo, hi)"""
+    if seed is not None:
+        random.seed(seed)
+    nms = names(u)
+    tot = sum(w for w, _, _ in gaps)
+    t = ri(0, DAY - 1)
+    lines = []
+    for _ in range(n):
+        x = rnd() * tot
+        for w, lo, hi in gaps:
+            x -= w
+            if x < 0:
+                break
+        t += ri(lo, hi)
+        lines.append((t, nms[int(rnd() * u)], "IN" if rnd() < pin else "OUT"))
+    add_lines(lines)
 
 
 # samples
-add(3, [5, 2, 5, 5, 7, 2, 2, 7])
-add(4, [3, 1, 3, 1, 2])
-add(1, [4, 4, 4, 4, 4, 4])
-add(3, [1, 2, 3, 1, 2, 3, 4, 4, 4, 4])
-add(3, [9, 4, 4, 9, 1, 4, 1, 1, 9, 9, 4, 4])
+add_raw(["09:00:00 b IN", "09:05:30 a IN", "09:12:00 b OUT", "09:20:00 a OUT"])
+add_raw(["23:55:00 n IN", "23:58:00 t IN", "00:05:00 n OUT", "00:10:00 t OUT"])
+add_raw(["08:30:00 m IN", "08:32:10 p IN", "08:40:00 m OUT", "08:41:00 m IN", "08:44:30 p OUT", "08:46:00 m OUT"])
+add_raw(["17:50:00 t IN", "17:52:00 a IN", "17:58:00 a OUT", "18:02:00 t OUT", "09:05:00 a IN", "09:12:00 a OUT"])
+add_raw(["23:55:00 k IN", "23:56:00 b IN", "23:59:00 k OUT", "00:04:00 b OUT", "23:58:00 k IN", "00:03:00 k OUT"])
+
 # hidden: small (brute checks these)
-add(1, [7])
-add(2, [3, 8])
-add(2, [8, 8])
-add(6, [6, 1, 5, 2, 4, 3])
-add(30, relabel(uniform(30, 29), True))                      # K = N, a repeated type: -1
-add(7, relabel(rare(500, 6, 2, (20, 60), 120), False))     # long tail without rare types
-add(25, relabel(tailfix(runs(3000, 40, 6), 25, 900), False))
-add(40, relabel(cyc(4000, 45, 300), False))
-add(300, relabel(tailfix(uniform(20000, 330), 300, 2500), False))
-# hidden: big (N = 200000)
-N = MAXN
-add(5, relabel(rare(N, 4, 1, (10000, 30000), 95000), False))      # the tail decides
-add(5, relabel(rare(N, 4, 1, (25000, 50000), 2000, True), True))  # the last inner gap decides
-add(9, relabel(rare(N, 7, 3, (1, 70000), 80000), False))
-add(30, relabel(rare(N, 28, 5, (8000, 30000), 25000, True), True))
-add(3000, relabel(tailfix(uniform(N, 3000), 3000, 70000), False))
-add(4000, relabel(uniform(N, 4200), True))
-add(2500, relabel(tailfix(uniform(N, 2500), 2500, 100000), False))
-add(50, relabel(tailfix(uniform(N, 50), 50, 110000), True))
-add(100, relabel(tailfix(runs(N, 120, 300), 100, 90000), False))
-add(50, relabel(runs(N, 400, 150), True))
-add(60000, relabel(tailfix(uniform(N, 150000), 60000, 100000), True))
-add(20000, relabel(cyc(N, 20000, 0), False))                     # answer = K
-add(19000, relabel(tailfix(cyc(N, 20000, 5000), 19000, 40000), True))
-add(60000, relabel(cyc(N, 60001, 1), False))
-t = tailfix(rare(N, 12, 4, (5000, 20000), 0, True), 14, 110000)
-add(14, relabel(t, False))
-t = relabel(uniform(N, 5000), False)
-add(len(set(t)) + 1, t)                                            # -1
-add(1, relabel(uniform(N, 2), True))                               # K = 1
-t = [1] + [random.randint(2, 50) for _ in range(N - 1)]
-add(len(set(t)), relabel(t, True))                                 # type 1 only first: answer N
-t = rare(N, 10, 1, (1000, 40000), 0, True)
-t[-1] = 11
-add(11, relabel(t, False))                                         # a rare item at the very end
-add(2, relabel(tailfix(runs(N, 2, 20000), 2, 120000), False))
-add(N, list(range(1, N + 1)))                                      # K = N, all different
+add_raw(["10:00:00 a IN", "10:05:00 a IN", "10:10:00 a OUT", "10:12:00 a IN", "10:15:00 b OUT"])  # repeated IN, stray OUT, unfinished stay
+add_raw(["09:00:00 k IN", "09:05:00 k OUT", "08:00:00 k IN", "08:05:00 k OUT"])                    # equal longest stays
+add_raw(["00:00:00 a IN"])
+add_raw(["23:59:59 zz OUT", "00:00:00 zz OUT", "00:00:00 z OUT"])
+planned(40, 5, 5 * DAY, grid=600, dmax=7200)
+planned(300, 30, 40 * DAY, grid=60, dmax=30000)
+stream(2000, 20, [(3, 0, 0), (5, 1, 3600), (2, 40000, DAY - 1)])
+planned(5000, 400, 3000 * DAY, grid=1, dmax=80000, heavy=3)
+stream(8000, 3, [(1, 0, 0), (1, DAY - 1, DAY - 1), (2, 1, 600)], pin=0.5)
+planned(10000, 2000, 400 * DAY, grid=3600, dmax=4 * 3600)
+
+# hidden: big
+BIG = [
+    (520001, lambda: planned(MAXN, 40000, 60000 * DAY, grid=1, dmax=40000, heavy=2)),
+    (520002, lambda: planned(MAXN, 56000, 30000 * DAY, grid=60, dmax=DAY, heavy=1)),
+    (520003, lambda: planned(MAXN, 20000, 40000 * DAY, grid=3600, dmax=10 * 3600, heavy=3)),
+    (520004, lambda: planned(MAXN, 30000, 50000 * DAY, grid=1, dmax=3 * DAY, ties=0.8, heavy=2)),
+    (520005, lambda: planned(MAXN, 40000, 28000 * DAY, grid=10, dmax=5000, dup=0.4, stray=0.4, heavy=1)),
+    (520006, lambda: planned(MAXN, 60000, 70000 * DAY, grid=1, dmax=60000, opn=0.8, heavy=2)),
+    (520007, lambda: planned(MAXN, 10000, 45000 * DAY, grid=900, dmax=20 * 3600, heavy=5)),
+    (520009, lambda: stream(MAXN, 30000, [(4, 0, 0), (3, 1, 5000), (3, 50000, DAY - 1)])),
+    (520010, lambda: stream(MAXN, 50000, [(1, DAY - 1, DAY - 1), (1, 0, 0), (1, DAY - 2, DAY - 1)])),
+    (520011, lambda: stream(MAXN, 20000, [(9, 0, 0), (1, 1, DAY - 1)], pin=0.6)),
+    (520012, lambda: stream(MAXN, 40000, [(1, 1, DAY - 1)], pin=0.5)),
+    (520013, lambda: stream(MAXN, 5, [(2, 0, 0), (1, 1, 3600), (2, 60000, DAY - 1)], pin=0.5)),
+    (520014, lambda: planned(MAXN, 60000, 35000 * DAY, grid=1, dmax=DAY - 1, ties=0.5, opn=0.5)),
+    (520015, lambda: planned(MAXN, 25000, 60000 * DAY, grid=7200, dmax=DAY, heavy=4)),
+    (520016, lambda: planned(MAXN, 45000, 40000 * DAY, grid=1, dmax=1000, dup=0.3, heavy=2)),
+    (520017, lambda: stream(MAXN, 60000, [(1, 0, 0), (1, 1, 2), (1, 80000, DAY - 1)])),
+]
+for seed, make in BIG:
+    random.seed(seed)
+    make()
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

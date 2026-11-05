@@ -1,157 +1,124 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
 import os, random
 
-random.seed(1205)
-MAXN, MAXH, MAXC, MAXK = 100000, 10 ** 9, 1000, 10 ** 18
+random.seed(930503)
+MAXN, MAXA, MAXB = 5000, 10 ** 9, 10 ** 6
 tests = []
-rnd = random.random
 
 
-def ri(a, b):
-    """random integer in [a, b] (faster than randint, still deterministic)"""
-    return a + int(rnd() * (b - a + 1))
+def add(d):
+    n = len(d)
+    assert 1 <= n <= MAXN
+    assert all(0 <= a <= MAXA and 0 <= b <= MAXB for a, b in d)
+    tests.append(f"{n}\n" + "".join(f"{a} {b}\n" for a, b in d))
 
 
-def add(K, h, c):
-    n = len(h)
-    assert 1 <= n <= MAXN and len(c) == n and 0 <= K <= MAXK
-    assert all(1 <= x <= MAXH for x in h) and all(1 <= x <= MAXC for x in c)
-    tests.append(f"{n} {K}\n{' '.join(map(str, h))}\n{' '.join(map(str, c))}\n")
+def ri(lo, hi):
+    return random.randint(lo, hi)
 
 
-def cost(h, c, D):
-    """the smallest cost for roughness D (to place K exactly at a chosen answer)"""
-    g = list(h)
-    for i in range(1, len(g)):
-        if g[i - 1] + D < g[i]:
-            g[i] = g[i - 1] + D
-    for i in range(len(g) - 2, -1, -1):
-        if g[i + 1] + D < g[i]:
-            g[i] = g[i + 1] + D
-    return sum(ci * (hi - gi) for hi, ci, gi in zip(h, c, g))
+def uniform(n, alo=0, ahi=MAXA, blo=0, bhi=MAXB):
+    return [(ri(alo, ahi), ri(blo, bhi)) for _ in range(n)]
 
 
-def maxdiff(h):
-    return max([abs(a - b) for a, b in zip(h, h[1:])] + [0])
-
-
-def at(h, c, frac_lo, frac_hi, minus=0):
-    """K = cost of a roughness between frac_lo and frac_hi of the no-cut roughness (minus a little)"""
-    D = int(maxdiff(h) * (frac_lo + (frac_hi - frac_lo) * rnd()))
-    return max(0, cost(h, c, D) - minus)
-
-
-def pits(n, k, side):
-    """a high plateau with k deep pits: side 1 = pits in the right fifth, -1 = left fifth, 0 = both ends"""
-    h = [ri(MAXH - 1000, MAXH) for _ in range(n)]
-    for j in range(k):
-        s = side if side else (1 if j % 2 else -1)
-        p = ri(n - n // 5, n - 1) if s == 1 else ri(0, n // 5)
-        h[p] = ri(1, 1000)
-    return h
-
-
-def pitted(h, k, side):
-    """put k deep pits into h: side 1 = right fifth, 0 = both ends, 2 = anywhere (always one at the right end)"""
-    n = len(h)
-    for j in range(k):
-        if side == 2:
-            p = n - 1 if j == 0 else ri(0, n - 1)
-        elif side == 1 or j % 2:
-            p = ri(n - n // 5, n - 1)
-        else:
-            p = ri(0, n // 5)
-        h[p] = ri(1, 1000)
-    return h
-
-
-def at_d(h, c, dlo, dhi):
-    """K = cost of a roughness in [dlo, dhi]"""
-    return cost(h, c, ri(dlo, dhi))
-
-
-def cs(n, lo=1, hi=MAXC):
-    return [ri(lo, hi) for _ in range(n)]
-
-
-def rand_h(n, lo=1, hi=MAXH):
-    return [ri(lo, hi) for _ in range(n)]
-
-
-def zigzag(n, hi=MAXH):
-    return [ri(hi - hi // 10, hi) if i % 2 else ri(1, hi // 10) for i in range(n)]
-
-
-def spikes(n, k, base_hi=1000):
-    h = [ri(1, base_hi) for _ in range(n)]
-    for _ in range(k):
-        h[ri(0, n - 1)] = ri(MAXH // 2, MAXH)
-    return h
-
-
-def walk(n, step, lo=1, hi=MAXH):
-    """a random walk with steps up to `step`, kept inside [lo, hi]"""
-    h, v = [], ri(lo, hi)
+def anti(n):
+    """dishes with a large a also cool down fast (a and b grow together, with noise)"""
+    d = []
     for _ in range(n):
-        v = min(hi, max(lo, v + ri(-step, step)))
-        h.append(v)
-    return h
+        t = random.random()
+        a = int(t * MAXA * random.uniform(0.6, 1.0))
+        b = int(t * MAXB * random.uniform(0.2, 1.0))
+        d.append((min(MAXA, a), min(MAXB, b)))
+    return d
 
 
-def cliffs(n, rising):
-    """slow slopes ended by sudden cliffs; rising=False mirrors it (cliffs on the other side)"""
-    h, v = [], ri(1, 1000)
+def ratio_ties(n):
+    """a = q * b for a few rates q (many equal ratios a / b), plus noise dishes"""
+    qs = [ri(50, 3000) for _ in range(6)]
+    d = []
     for _ in range(n):
-        if rnd() < 0.002:
-            v = ri(1, 1000)
+        if random.random() < 0.8:
+            b = ri(1, MAXB // 3)
+            q = random.choice(qs)
+            d.append((min(MAXA, q * b), b))
         else:
-            v = min(MAXH, v + ri(0, 40000))
-        h.append(v)
-    return h if rising else h[::-1]
+            d.append((ri(0, MAXA), ri(0, MAXB)))
+    return d
+
+
+def levels(n, bs):
+    """few distinct b values, random a"""
+    return [(ri(0, MAXA), random.choice(bs)) for _ in range(n)]
+
+
+def traps(n):
+    """pairs: a fast-cooling dish with a small positive first gain and a slow dish with a large a"""
+    d = []
+    for _ in range(n // 2):
+        b = ri(MAXB // 2, MAXB)
+        d.append((b * ri(1, 4) + ri(0, b), b))
+        b2 = ri(0, MAXB // 20)
+        d.append((ri(MAXA // 2, MAXA), b2))
+    while len(d) < n:
+        d.append((ri(0, MAXA), ri(0, MAXB)))
+    random.shuffle(d)
+    return d
+
+
+def mixed_scale(n):
+    """dishes of very different sizes: some big a/big b, some small a/tiny b"""
+    d = []
+    for _ in range(n):
+        r = random.random()
+        if r < 0.3:
+            d.append((ri(MAXA // 2, MAXA), ri(MAXB // 2, MAXB)))
+        elif r < 0.6:
+            d.append((ri(0, MAXA // 1000), ri(0, MAXB // 10000)))
+        else:
+            d.append((ri(0, MAXA // 10), ri(0, MAXB // 50)))
+    return d
 
 
 # samples
-add(7, [3, 9, 4, 8, 2], [1, 1, 2, 1, 1])
-add(10, [1, 10, 1], [1, 3, 1])
-add(0, [7], [4])
-add(100, [6, 2, 9, 5], [2, 1, 3, 1])
-add(25, [12, 4, 15, 15, 3, 9, 20, 1], [2, 1, 3, 1, 2, 1, 1, 4])
-# hidden: small (brute checks these)
-for n, H, cmax in [(2, 30, 5), (6, 20, 3), (10, 40, 10), (15, 30, 1), (25, 40, 1000), (30, 25, 7)]:
-    h, c = rand_h(n, 1, H), cs(n, 1, cmax)
-    add(at(h, c, 0.1, 0.7, ri(0, 1)), h, c)
-add(0, [60, 1], [MAXC, MAXC])
-add(MAXK, [60, 1, 60], [MAXC, 1, MAXC])
-h = rand_h(40, 1, 60); c = cs(40)
-add(at(h, c, 0.1, 0.5), h, c)
-# hidden: big
-N = MAXN
-BIG = [
-    (12050, lambda: (lambda h, c: (at(h, c, 0.05, 0.9), h, c))(rand_h(N), cs(N))),
-    (12053, lambda: (lambda h, c: (0, h, c))(rand_h(N), cs(N))),
-    (12054, lambda: (lambda h, c: (MAXK, h, c))(rand_h(N), [MAXC] * N)),
-    (12055, lambda: (lambda h, c: (at(h, c, 0.1, 0.5), h, c))(zigzag(N), cs(N))),
-    (12056, lambda: (lambda h, c: (at_d(h, c, 2 * 10 ** 4, 8 * 10 ** 4), h, c))(pitted(walk(N, 10000, MAXH // 2), 5, 1), cs(N))),
-    (12058, lambda: (lambda h, c: (at(h, c, 0.0002, 0.001), h, c))(cliffs(N, True), cs(N))),
-    (12059, lambda: (lambda h, c: (at(h, c, 0.0002, 0.001), h, c))(cliffs(N, False), cs(N))),
-    (12060, lambda: (lambda h, c: (at_d(h, c, 4 * 10 ** 4, 15 * 10 ** 4), h, c))(pitted(walk(N, 40000, MAXH // 2), 15, 1), [MAXC] * N)),
-    (12061, lambda: (lambda h, c: (at_d(h, c, 3 * 10 ** 4, 10 ** 5), h, c))(pitted(walk(N, 30000, MAXH // 3), 50, 0), cs(N, 1, 1))),
-    (12062, lambda: (lambda h, c: (at_d(h, c, 10 ** 4, 3 * 10 ** 4), h, c))(pits(N, 3, 1), cs(N))),
-    (12069, lambda: (lambda h, c: (at_d(h, c, 2 * 10 ** 4, 10 ** 5), h, c))(pits(N, 20, 1), cs(N))),
-    (12070, lambda: (lambda h, c: (at_d(h, c, 10 ** 4, 5 * 10 ** 4), h, c))(pits(N, 4, -1), cs(N))),
-    (12071, lambda: (lambda h, c: (at_d(h, c, 10 ** 4, 4 * 10 ** 4), h, c))(pits(N, 6, 0), cs(N))),
-    (12064, lambda: (lambda h, c: (at(h, c, 0.2, 0.8), h, c))(rand_h(N, 1, 100), cs(N))),
-    (12065, lambda: (lambda h, c: (at(h, c, 0.5, 0.9, 1), h, c))(zigzag(N), cs(N, 900, MAXC))),
-    (12066, lambda: (lambda h, c: (0, h, c))([7] * N, cs(N))),
-    (12072, lambda: (lambda h, c: (at_d(h, c, 3 * 10 ** 4, 12 * 10 ** 4), h, c))(pitted(walk(N, 20000, MAXH // 2), 10, 1), cs(N))),
-    (12073, lambda: (lambda h, c: (at_d(h, c, 5 * 10 ** 4, 2 * 10 ** 5), h, c))(pitted(walk(N, 50000, MAXH // 2), 30, 0), [MAXC] * N)),
-    (12074, lambda: (lambda h, c: (at_d(h, c, 10 ** 4, 6 * 10 ** 4), h, c))(pits(N, 100, 1), cs(N, 1, 1))),
-    (12075, lambda: (lambda h, c: (at_d(h, c, 10 ** 4, 3 * 10 ** 4), h, c))(pitted(walk(N, 5000, MAXH // 2), 8, 2), cs(N))),
-    (12068, lambda: (lambda h, c: (at(h, c, 0.1, 0.4, 1), h, c))(spikes(N, 3000, 10 ** 6), cs(N))),
-]
-for seed, make in BIG:
-    random.seed(seed)
-    add(*make())
+add([(10, 3), (8, 1), (9, 4), (1, 5)])
+add([(2, 5), (3, 3), (0, 1)])
+add([(20, 6), (9, 1), (14, 4), (3, 3), (15, 5), (6, 0)])
+add([(7, 2)])
+add([(12, 4), (7, 1), (9, 3), (5, 2), (11, 4), (30, 10), (4, 1), (8, 3)])
+# hidden: small (the subset DP of brute.cpp checks these)
+add([(0, 0)])
+add([(5, 6)])
+add(uniform(8, 0, 100, 0, 30))
+add(uniform(12, 0, 1000, 0, 200))
+add([(ri(0, 50), ri(0, 10)) for _ in range(15)])
+add(levels(16, [3, 3, 7, 0]))
+add(uniform(18, 0, MAXA, 0, MAXB))
+add(traps(20))
+# hidden: medium (the assignment method of brute.cpp checks these)
+add(uniform(300))
+add(anti(400))
+add(ratio_ties(500))
+# hidden: big, N = 5000
+add(uniform(MAXN))
+add(uniform(MAXN))
+add(uniform(MAXN, MAXA // 2, MAXA))
+add(uniform(MAXN, 0, MAXA, 0, MAXB // 10))
+add(uniform(MAXN, 0, MAXA // 10, 0, MAXB // 100))
+add(anti(MAXN))
+add(anti(MAXN))
+add(ratio_ties(MAXN))
+add(levels(MAXN, [MAXB, MAXB // 2, MAXB // 5, MAXB // 20, 1000, 0]))
+add(levels(MAXN, [ri(0, MAXB) for _ in range(40)]))
+add(traps(MAXN))
+add(traps(MAXN))
+add(mixed_scale(MAXN))
+add(mixed_scale(MAXN))
+add(uniform(MAXN // 2) + [(ri(0, MAXA), 0) for _ in range(MAXN // 2)])
+add([(ri(MAXA - MAXA // 10, MAXA), MAXB) for _ in range(MAXN)])        # equal b, all near the maximum
+add([(MAXA, MAXB)] * MAXN)                                              # everything equal
+add([(MAXA, 0)] * MAXN)                                                 # nothing cools down
+add([(ri(0, 999), ri(1000, MAXB)) for _ in range(MAXN)])                # every dish loses
+add([(ri(0, MAXA), ri(MAXB - 100, MAXB)) for _ in range(MAXN)])         # b nearly equal
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

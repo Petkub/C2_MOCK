@@ -1,66 +1,52 @@
 import random, os
-random.seed(2607)
+random.seed(2601)
 os.makedirs("tests", exist_ok=True)
 cases = []
-cases.append(["S.a#....", "###...#.", "....#a#G"])
-cases.append(["S#G", ".#.", "..."])
-cases.append(["Sa#bG", "##b##", "a...."])
-cases.append(["S#", "#G"])
-cases.append(["Sab", "#ba", "G#a"])
-def rnd(R, C, pw, letters, pl):
-    g = [["#" if random.random() < pw else (random.choice(letters) if random.random() < pl else ".") for _ in range(C)] for _ in range(R)]
-    s, t = random.sample([(i, j) for i in range(R) for j in range(C)], 2)
-    g[s[0]][s[1]] = "S"; g[t[0]][t[1]] = "G"
-    if R * C > 100:                      # big grids: do not wall in S or G by accident
-        for (i, j) in (s, t):
-            for a, b in ((i + 1, j), (i - 1, j), (i, j + 1), (i, j - 1)):
-                if 0 <= a < R and 0 <= b < C and g[a][b] == "#": g[a][b] = "."
-    return ["".join(r) for r in g]
+# ---- samples (01-05) ----
+cases.append((1, 0, 10, [(2, 1), (7, 2), (12, 1)]))
+cases.append((2, 0, 10, [(2, 1), (7, 2), (12, 1)]))
+cases.append((2, 3, 5, [(4, 3), (0, 1), (10, 2), (4, 1)]))
+cases.append((3, 5, 5, [(5, 7), (5, 1), (5, 100), (6, 1)]))
+cases.append((2, -3, 8, [(0, 2), (5, 1), (-6, 3), (9, 4)]))
+# ---- small random (brute-checkable) ----
 for _ in range(6):
-    cases.append(rnd(random.randint(2, 8), random.randint(2, 8), 0.3, "abc", 0.2))
-cases.append(rnd(1000, 1000, 0.3, "abcdefghijklmnopqrstuvwxyz", 0.01))
-cases.append(rnd(1000, 1000, 0.42, "ab", 0.05))
-g = [["a"] * 1000 for _ in range(1000)]; g[0][0] = "S"; g[999][999] = "G"   # one letter everywhere
-cases.append(["".join(r) for r in g])
-g = [["a" if (i + j) % 2 else "b" for j in range(1000)] for i in range(1000)]; g[0][0] = "S"; g[999][998] = "G"
-cases.append(["".join(r) for r in g])
-# walls split the grid; only portals connect the halves
-g = [["." for _ in range(1000)] for _ in range(1000)]
-for i in range(1000): g[i][500] = "#"
-for _ in range(2000): g[random.randrange(1000)][random.randrange(500)] = "q"
-g[random.randrange(1000)][random.randrange(501, 1000)] = "q"
-g[0][0] = "S"; g[999][999] = "G"
-cases.append(["".join(r) for r in g])
-g[0][0] = "S"
-for i in range(1000):
-    for j in range(501, 1000):
-        if g[i][j] == "q": g[i][j] = "."
-cases.append(["".join(r) for r in g])                                        # same but no way across: -1
-# serpentine corridor with a few long-range portals
-n = 999
-g = [["." for _ in range(n)] for _ in range(n)]
-for r in range(1, n, 2):
-    for c in range(n): g[r][c] = "#"
-    g[r][n - 1 if (r // 2) % 2 == 0 else 0] = "."
-for k in range(5):
-    ch = "vwxyz"[k]
-    for _ in range(2): g[random.randrange(0, n, 2)][random.randrange(n)] = ch
-g[0][0] = "S"; g[n - 1][n - 1 if ((n - 1) // 2) % 2 == 0 else 0] = "G"
-cases.append(["".join(r) for r in g])
-cases.append(["S" + "a" * 998 + "G"])
-cases.append(rnd(1000, 1000, 0.0, "abcdefghijklmnopqrstuvwxyz", 0.5))
-cases.append(rnd(30, 40, 0.4, "abcde", 0.1))
-# dense portals of a single letter: scanning the letter list on every visit is far too slow
-for pw, pl in ((0.2, 0.6), (0.1, 0.8), (0.3, 0.5), (0.0, 0.95)):
-    cases.append(rnd(1000, 1000, pw, "a", pl))
-cases.append(rnd(1000, 1000, 0.25, "ab", 0.7))
-for pl in (0.8, 0.9, 0.7):
-    cases.append(rnd(500, 500, 0.1, "z", pl))
-cases.append(["SaG"])
-cases.append(["S.b.a....G", "#########.", "a........#"])   # must walk across portal a; warping leads to a dead end
-for i, g in enumerate(cases, 1):
-    R, C = len(g), len(g[0]); f = "".join(g)
-    assert 1 <= R <= 1000 and 1 <= C <= 1000 and all(len(r) == C for r in g)
-    assert f.count("S") == 1 and f.count("G") == 1 and set(f) <= set(".#SG" + "abcdefghijklmnopqrstuvwxyz")
-    open(f"tests/{i:02d}.in", "w").write(f"{R} {C}\n" + "\n".join(g) + "\n")
+    n = random.randint(1, 8)
+    k = random.randint(1, n)
+    A = random.randint(-30, 30); B = A + random.randint(0, 30)
+    cases.append((k, A, B, [(random.randint(-40, 40), random.randint(1, 5)) for _ in range(n)]))
+# ---- large ----
+def big(n, k, A, B, xr, sr):
+    return (k, A, B, [(random.randint(*xr), random.randint(*sr)) for _ in range(n)])
+N = 100000
+cases.append(big(N, 1, -10**9, 10**9, (-10**9, 10**9), (1, 1000)))
+cases.append(big(N, N, -10**9, 10**9, (-10**9, 10**9), (1, 10**9)))
+cases.append(big(N, 50000, -10**9, 10**9, (-10**9, 10**9), (1, 1000)))
+cases.append(big(50000, 777, 0, 10**6, (0, 10**6), (1, 3)))
+cases.append(big(N, 30000, -5 * 10**8, 5 * 10**8, (-10**9, 10**9), (1, 1)))
+cases.append(big(50000, 1000, 123456, 123456, (-10**9, 10**9), (1, 1000)))     # A = B
+# towers all outside [A, B]
+cases.append((5000, -1000, 1000, [(random.choice([-1, 1]) * random.randint(10**8, 10**9), random.randint(1, 100)) for _ in range(N)]))
+# overflow trap: huge s, answer near 2e9
+t = [(10**9, 1)] + [(random.randint(-10**9, 10**9), 10**9) for _ in range(N - 1)]
+cases.append((N, -10**9, 10**9, t))
+# dense equal positions, answer 0
+cases.append((N, 42, 42, [(42, random.randint(1, 10**9)) for _ in range(N)]))
+# evenly spaced, small s: answer depends on gaps
+cases.append((3, 0, 999999, [(i * 10, 1 + (i % 3)) for i in range(N)]))
+# intervals touch exactly (r + 1 = l') at the answer P = 5
+cases.append((1, 0, 11 * (N - 1), [(11 * i, 1) for i in range(N)]))
+cases.append((2, 0, 11 * 300, [(11 * i, 1) for i in range(301)] + [(11 * i + 5, 1) for i in range(301)]))
+# binding gap at the left end A: every tower is far to the right of A
+cases.append(big(N, 3, -10**6, 10**9, (0, 10**9), (1, 1000)))
+cases.append(big(N, 20, -10**9, -10**9 + 10**6, (-10**9 + 10**6, 10**9), (1, 10**4)))
+# more large random
+cases.append(big(50000, 49999, 0, 10**9, (0, 10**9), (1, 10**9)))
+# the old sample 5 (answer 2000000000), moved here when the sample was replaced (2026-11-02)
+cases.append((2, -10**9, 10**9, [(10**9, 1), (-10**9, 10**9)]))
+for i, (k, A, B, t) in enumerate(cases, 1):
+    n = len(t)
+    assert 1 <= k <= n <= 100000 and -10**9 <= A <= B <= 10**9
+    assert all(-10**9 <= x <= 10**9 and 1 <= s <= 10**9 for x, s in t)
+    with open(f"tests/{i:02d}.in", "w") as f:
+        f.write(f"{n} {k} {A} {B}\n" + "".join(f"{x} {s}\n" for x, s in t))
 print(len(cases), "tests")

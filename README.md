@@ -1,7 +1,7 @@
 # C2_MOCK — POSN Camp 2 Practice Judge (teacher's guide)
 
 This repo is the source of the judge that students run on their own computers for the Camp 2 mock exams
-(15 sets × 5 problems, no subtasks). Students never clone it: they download `C2_Mock_Test.zip` once from
+(8 sets × 6 problems, no subtasks). Students never clone it: they download `C2_Mock_Test.zip` once from
 [Releases](https://github.com/Petkub/C2_MOCK/releases/latest), and from then on their judge **updates itself from
 this repo** every time you push to `main`.
 
@@ -19,7 +19,7 @@ core/                  what students get inside Judge/   (judge.py, updater.py, 
 problems/batch/        test data: Mock_K/N/01.in, 01.out, ..., gen.py, manifest.json (the problem's own test list)
                        + problems.json (problem bank) + sets.json (sets)
 student/               the rest of the student package: README.txt, Progress.md, .vscode/, Mock_K/Mock_K.pdf,
-                       set_files/ (Makefile, judge.bat, template.cpp -> 1.cpp ... 5.cpp)
+                       set_files/ (Makefile, judge.bat, template.cpp -> 1.cpp ... 6.cpp)
 samples/               known-verdict programs used by the tests (expected.json says which verdict each must get)
 tests/run_regression.py          the test suite: run before every push
 tools/build_manifest.py          writes manifest.json (hashes of everything students get) and bundles/ (zips for fast updates)
@@ -29,7 +29,7 @@ VERSION                          the version students see ("Judge v1.3")
 manifest.json                    generated, served to students by GitHub; never edit by hand
 ```
 
-What a student has: `C2_Mock_Test/Judge/` (= `core/` + `problems/` + `manifest.json`), `C2_Mock_Test/Mock_K/1.cpp ... 5.cpp`
+What a student has: `C2_Mock_Test/Judge/` (= `core/` + `problems/` + `manifest.json`), `C2_Mock_Test/Mock_K/1.cpp ... 6.cpp`
 (their code, which the updater never touches) and `Judge/progress.json` (their best scores, never touched either).
 
 **Two manifests, do not mix them up.** `manifest.json` at the repo root lists every file of `Judge/` for the
@@ -90,14 +90,14 @@ Add one line to `core/CHANGELOG.txt` for each version; students can read it.
 ### 4c. Add a new mock set (e.g. set 16)
 Sets are written in the private `C2_MOCK_SRC` (sources of every set, ordered from easy to hard); its
 `python3 build.py all` does steps 1-4 here. By hand:
-1. Test data: `problems/batch/Mock_16/1/ ... Mock_16/5/` with `NN.in`/`NN.out` (and `gen.py` if big inputs are
+1. Test data: `problems/batch/Mock_9/1/ ... Mock_9/6/` with `NN.in`/`NN.out` (and `gen.py` if big inputs are
    generated), then `python3 tools/update_problem_manifest.py --all`.
-2. `problems/batch/problems.json`: one entry per new problem (`"en"`, `"title"`, `"tier"`, `"dir": "Mock_16/1"`,
-   `"samples"`), with ids 5 (set - 1) + 1 ... + 5.
-3. `problems/batch/sets.json`: append `{"set": 16, ..., "problems": [ids in order]}`.
-4. `student/Mock_16/Mock_16.pdf` (the statement).
-5. Release. Existing students get the test data, `Mock_16/Mock_16.pdf`, `Makefile`, `judge.bat`, and the
-   updater **creates** `Mock_16/1.cpp ... 5.cpp` (templates are only ever created, never overwritten).
+2. `problems/batch/problems.json`: one entry per new problem (`"en"`, `"title"`, `"tier"`, `"dir": "Mock_9/1"`,
+   `"samples"`), with ids 6 (set - 1) + 1 ... + 6.
+3. `problems/batch/sets.json`: append `{"set": 9, ..., "problems": [ids in order]}`.
+4. `student/Mock_9/Mock_9.pdf` (the statement).
+5. Release. Existing students get the test data, `Mock_9/Mock_9.pdf`, `Makefile`, `judge.bat`, and the
+   updater **creates** `Mock_9/1.cpp ... 6.cpp` (templates are only ever created, never overwritten).
 
 ### 4d. Change something students see outside Judge/ (README, Makefile, judge.bat, template, Progress.md)
 Edit it under `student/` and release. These are *managed* files: the updater replaces them on every student's

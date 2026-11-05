@@ -1,114 +1,130 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
 import os, random
 
-random.seed(1403)
-MAXRC, MAXK, MAXA = 500, 20, 10 ** 9
+random.seed(1302002)
+MAXN, MAXK, MAXL = 1000000, 50, 250
 tests = []
-rnd = random.random
 
 
-def ri(a, b):
-    """random integer in [a, b] (only random.random(), so every Python version gives the same tests)"""
-    return a + int(rnd() * (b - a + 1))
+def add(text, words):
+    assert 1 <= len(text) <= MAXN and set(text) <= set("abcdefghijklmnopqrstuvwxyz ")
+    assert text[0] != " " and text[-1] != " "
+    assert 1 <= len(words) <= MAXK and sum(map(len, words)) <= MAXL
+    for w in words:
+        assert len(w) >= 1 and set(w) <= set("abcdefghijklmnopqrstuvwxyz?")
+    tests.append("\n".join([text, str(len(words))] + words) + "\n")
 
 
-def add(K, g):
-    R, C = len(g), len(g[0])
-    assert 1 <= R <= MAXRC and 1 <= C <= MAXRC and 1 <= K <= MAXK
-    for row in g:
-        assert len(row) == C and -MAXA <= min(row) and max(row) <= MAXA
-    tests.append(f"{R} {C} {K}\n" + "".join(" ".join(map(str, row)) + "\n" for row in g))
+def fix_ends(t):
+    t = list(t)
+    if t[0] == " ":
+        t[0] = "a"
+    if t[-1] == " ":
+        t[-1] = "a"
+    return "".join(t)
 
 
-def uniform(R, C, lo, hi):
-    return [[ri(lo, hi) for _ in range(C)] for _ in range(R)]
+def rtext(n, alpha, space=0.0):
+    return fix_ends("".join(" " if random.random() < space else random.choice(alpha) for _ in range(n)))
 
 
-def staircase(R, C, steps, good, bad, noise=0):
-    """bad everywhere except a monotone staircase (from (1, 1) to (R, C)) with about `steps` turns, worth `good`"""
-    g = [[ri(bad[0], bad[1]) for _ in range(C)] for _ in range(R)]
-    r = c = 0
-    moves = ["R"] * (C - 1) + ["D"] * (R - 1)
-    # group the moves into `steps` + 1 alternating runs
-    runs = max(1, min(steps + 1, len(moves)))
-    seq, nr, nd = [], C - 1, R - 1
-    for i in range(runs):
-        left = runs - i
-        if i % 2 == 0:
-            k = nr if left <= 2 else ri(0, max(0, 2 * nr // left))
-            seq += ["R"] * k
-            nr -= k
-        else:
-            k = nd if left <= 2 else ri(0, max(0, 2 * nd // left))
-            seq += ["D"] * k
-            nd -= k
-    seq += ["R"] * nr + ["D"] * nd
-    g[0][0] = ri(good[0], good[1])
-    for m in seq:
-        if m == "R":
-            c += 1
-        else:
-            r += 1
-        g[r][c] = ri(good[0], good[1])
-        if noise and 0 <= r + 1 < R:
-            g[r + 1][c] = ri(good[0], good[1]) // noise
-    return g
+def words_text(n, vocab):
+    """words from a vocabulary separated by single spaces, exactly n characters"""
+    out = []
+    size = 0
+    while size < n:
+        w = random.choice(vocab)
+        out.append(w)
+        size += len(w) + 1
+    return fix_ends(" ".join(out)[:n])
 
 
-def transpose(g):
-    return [list(col) for col in zip(*g)]
+def from_text(t, cnt, lo, hi, wild=0.0):
+    """keywords cut out of the text (so they occur), some letters turned into '?'"""
+    ws = []
+    for _ in range(cnt):
+        L = random.randint(lo, hi)
+        s = random.randint(0, len(t) - L)
+        w = "".join("?" if (c == " " or random.random() < wild) else c for c in t[s:s + L])
+        ws.append(w)
+    return ws
 
 
-def bands(R, C, width, hi, lo):
-    """diagonal bands: good cells where (r + c) // width is even, so a straight line crosses many bad bands"""
-    return [[ri(hi // 2, hi) if ((r + c) // width) % 2 == 0 else ri(lo, lo // 2) for c in range(C)] for r in range(R)]
+def rword(L, alpha):
+    return "".join(random.choice(alpha) for _ in range(L))
 
 
-def checker(R, C, a, b):
-    return [[(a if (r + c) % 2 == 0 else b) + ri(-3, 3) for c in range(C)] for r in range(R)]
+def cap(ws):
+    """keep the keywords while the total length stays within MAXL"""
+    out, tot = [], 0
+    for w in ws:
+        if len(out) < MAXK and tot + len(w) <= MAXL:
+            out.append(w)
+            tot += len(w)
+    return out
 
+
+def pat(alpha, L, q):
+    """a random keyword of length L with q question marks"""
+    w = [random.choice(alpha) for _ in range(L)]
+    for p in random.sample(range(L), q):
+        w[p] = "?"
+    return "".join(w)
+
+
+VOCAB = ["the", "cat", "sat", "on", "a", "mat", "and", "dog", "ran", "to", "school", "rain", "is", "not", "in",
+         "spain", "banana", "band", "ana", "can", "cannot", "see", "sea", "is", "it", "at", "tea", "eat"]
 
 # samples
-add(2, [[2, -3, 4, 1], [1, 5, -2, 3], [-4, 2, 6, 1]])
-add(1, [[1, 8, -9, 0], [-2, 3, 7, -1], [5, -6, 4, 2], [0, 1, -3, 6]])
-add(3, [[4, -1, -2, 7, 3]])
-add(1, [[-5]])
-add(3, [[3, -2, 0, 1, 5], [1, 4, -3, 2, -1], [-6, 2, 8, -4, 0], [2, 0, 1, 3, 2], [-1, 5, -2, 6, 4]])
+add("banana bandana", ["ana", "b?n"])
+add("to be or not to be", ["o?b", "not", "zz"])
+add("hello world", ["abc"])
+add("mississippi", ["ss", "i?p", "si"])
+add("the cat sat on the mat", ["at", "c?t", "?he"])
 # hidden: small (brute checks these)
-add(1, [[7], [-2], [3]])
-add(20, [[MAXA] * 3] * 2)
-add(1, uniform(2, 2, -MAXA, MAXA))
-for R, C, K, lo, hi in [(9, 8, 2, -10, 10), (20, 25, 5, -10 ** 6, 10 ** 6),
-                        (40, 40, 20, -50, 80), (50, 60, 4, -MAXA, MAXA)]:
-    add(K, uniform(R, C, lo, hi))
-add(6, staircase(45, 50, 9, (10 ** 8, MAXA), (-MAXA, -10 ** 8)))
-add(3, bands(60, 60, 5, 10 ** 6, -10 ** 6))
+add("a", ["a"])
+add("a", ["b", "?", "aa"])
+add("ab cd ef", ["??", "b?c"])
+t = rtext(2000, "abcd", 0.05); add(t, cap(from_text(t, 10, 3, 12, 0.2) + [rword(4, "abcd") for _ in range(10)]))
+t = words_text(3000, VOCAB); add(t, cap(from_text(t, 20, 2, 10, 0.1) + ["cat", "is", "s?a", "zz", "an?"]))
+t = "ab" * 1000 + "c"; add(t, ["ab", "ba", "c"])
+add("abcdef xabcdef", ["abc", "def", "bcde", "f?x"])
+t = rtext(2500, "ab", 0.02); add(t, cap(from_text(t, 30, 3, 12, 0.15)))
+t = rtext(3000, "abc"); add(t, cap([pat("abc", random.randint(2, 6), random.randint(0, 2)) for _ in range(30)]))
+t = rtext(1500, "ab"); add(t, cap(["a" * 30 + "b"] + from_text(t, 15, 5, 40, 0.5)))
 # hidden: big
-M = MAXRC
-BIG = [
-    (14300, lambda: (20, uniform(M, M, -MAXA, MAXA))),
-    (14301, lambda: (1, uniform(M, M, -MAXA, MAXA // 2))),
-    (14302, lambda: (12, transpose(staircase(M, M, 12, (-3 * 10 ** 8, -10 ** 8), (-MAXA, -6 * 10 ** 8))))),
-    (14303, lambda: (20, [[MAXA] * M for _ in range(M)])),
-    (14304, lambda: (20, [[-MAXA] * M for _ in range(M)])),
-    (14305, lambda: (10, staircase(M, M, 30, (10 ** 8, MAXA), (-MAXA, -10 ** 8)))),
-    (14306, lambda: (20, staircase(M, M, 20, (5 * 10 ** 8, MAXA), (-MAXA, 0), noise=3))),
-    (14307, lambda: (18, staircase(M, M, 18, (MAXA, MAXA), (-10, 10)))),
-    (14308, lambda: (13, bands(M, M, 7, MAXA, -MAXA))),
-    (14309, lambda: (12, bands(M, M, 40, MAXA, -MAXA))),
-    (14310, lambda: (20, checker(M, M, MAXA - 3, -MAXA + 3))),
-    (14311, lambda: (16, checker(M, M, -10 ** 8, 10 ** 7))),
-    (14312, lambda: (20, uniform(1, M, -MAXA, 0))),
-    (14314, lambda: (15, uniform(M, 2, -MAXA, MAXA))),
-    (14318, lambda: (2, uniform(M, M, -10 ** 4, 10 ** 4))),
-    (14315, lambda: (11, uniform(M, M, -2 * 10 ** 8, 10 ** 7))),
-    (14316, lambda: (14, staircase(M, M, 60, (-10 ** 7, 0), (-10 ** 8, -10 ** 7)))),
-    (14317, lambda: (19, uniform(M, M, -10, 10))),
-    (14319, lambda: (4, transpose(staircase(M, M, 4, (-10 ** 7, 0), (-5 * 10 ** 7, -10 ** 7))))),
-]
-for seed, make in BIG:
-    random.seed(seed)
-    add(*make())
+N = MAXN
+L26 = "abcdefghijklmnopqrstuvwxyz"
+
+
+
+def sprinkle(t, ch, rate):
+    return fix_ends("".join(ch if random.random() < rate else c for c in t))
+
+
+add("a" * N, cap(["a" * (m - 1) + "b" for m in range(5, 25)]))                                  # nothing found
+add("a" * N, ["a" * 120 + "?", "a" * 120 + "?b"])                                              # everything
+add(fix_ends(("ab " * N)[:N]), ["ab"])                                                       # many runs
+add(fix_ends(("ab " * N)[:N]), ["ab", "b?a"])                                                # one run
+add(("abcd" * N)[:N], ["ab", "cd"])                                                          # touching runs
+add(fix_ends(("abc " * N)[:N]), ["ab", "c", "bc"])                                            # touching, many runs
+t = rtext(N, L26, 0.15); add(t, cap([pat(L26, 3, 1) for _ in range(50)]))
+t = rtext(N, L26, 0.0); add(t, cap([pat(L26, 2, 0) for _ in range(50)]))
+t = rtext(N, "ab", 0.0); add(t, cap([pat("ab", random.randint(7, 9), random.randint(0, 1)) for _ in range(30)]))
+t = rtext(N, "ab", 0.08); add(t, cap([pat("ab", random.randint(3, 10), 1) for _ in range(35)]))
+t = rtext(N, "abcd", 0.1); add(t, cap([pat("abcd", random.randint(4, 6), random.randint(0, 2)) for _ in range(50)]))
+t = words_text(N, VOCAB); add(t, ["school", "spain", "cannot", "banana", "tea", "s?a"])
+t = words_text(N, VOCAB); add(t, ["a?c", "e?t", "n?s", "t?c", "n?n"])                          # across spaces
+t = words_text(N, ["x", "y", "z", "xy", "yz", "zx", "xyz"]); add(t, cap(from_text(t, 30, 6, 9, 0.1)))
+t = sprinkle("a" * N, "b", 0.003)
+add(t, cap(["a" * m for m in (30, 60, 90)] + ["a" * 40 + "?" + "a" * 20]))                     # long matches, gaps
+t = sprinkle(("aab" * N)[:N], "c", 0.01)
+add(t, cap(["aab" * 15 + "aac"] * 4 + ["aac", "caa"]))                                        # long partial matches
+t = sprinkle(rtext(N, "a", 0.0), "b", 0.05); add(t, cap(["a" * 30 + "?" * 10] * 5 + ["b?b", "ab"]))
+t = rtext(N, L26, 0.05); add(t, cap(from_text(t, 40, 3, 3, 0.0) + [pat(L26, 2, 1) for _ in range(6)]))
+t = rtext(N, "ab", 0.0); add(t, cap(from_text(t, 30, 3, 12, 0.0)))                           # many lengths overlap
+t = words_text(N, ["ab", "ba", "abc", "cab", "bca", "cc", "a", "b", "c", "abcab"])                # many runs, mixed lengths
+add(t, cap(["ab", "c?b", "?ca", "abca", "b?b", "cab?", "a?c?b"]))
 
 os.makedirs("tests", exist_ok=True)
 for i, t in enumerate(tests, 1):

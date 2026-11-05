@@ -103,7 +103,7 @@ def make_keys(n, maxlen):
         else:
             k = pick(["Ann", "Bob", "ann", "A", "a", " ", "  ", ",", '"', '""', "Ann, B", "Ann,B", "Ann ,B",
                       "x" * ri(1, 5), '"q"', "B" * ri(1, 3)]) + (str(ri(0, 99)) if rnd() < 0.5 else "")
-        k = k[:maxlen]
+        k = k[:maxlen].rstrip(" ")                      # no name ends with a space (output lines never end with one)
         if k and k not in keys:
             keys.add(k)
             base.append(k)
@@ -197,11 +197,16 @@ def records(n, C, K, V, nkeys, pbad, big=False, maxlen=8, keylen=10, total=19000
 
 # samples
 add(3, 1, 3, ['"Ann, B",x,10', 'Bob,y,"-5"', '"Ann, B",z,7', 'Bob,"q"x,1', '"He said ""hi""",,3'])
-add(2, 2, 1, ['5,apple', '12', '1234567890,pear', '7,ap"ple'])
-add(3, 2, 1, ['-007,  x ,a', '', '3,"  x ",', ',y,z', '"4",x,'])
+add(2, 2, 1, ['5,apple', '12', '-3,pear', '7,ap"ple', '8,apple'])
+add(3, 2, 1, ['300,Nok,lunch', '-120,Nok,"bus, taxi"', '50,"Lee, K.",', '75,Ploy,snack,extra', '200,Ploy,books'])
 add(3, 3, 1, ['250,x,"Lee, K."', '"-40",y,Ploy', '90,,"Lee, K."', '0,x,ploy'])
-add(2, 1, 2, ['"abc,5', ' "a",5', '"a""b",5', '"",5', 'x,"5"'])
+add(4, 2, 4, ['2024-01-03,"Smith, J.",food,120', '2024-01-03,Mary,"rent, May",-4500',
+              '2024-01-04,"Smith, J.",travel,"35"', '2024-01-05,Tom,"6"" pipe",80', '2024-01-05,Mary,food,12.50',
+              '2024-01-06,Tom,gift'])
 # hidden: small (brute checks these)
+add(3, 2, 1, ['-007,  x,a', '', '3,"  x",', ',y,z', '"4",x,'])
+add(2, 1, 2, ['"abc,5', ' "a",5', '"a""b",5', '"",5', 'x,"5"'])
+add(2, 2, 1, ['5,apple', '12', '1234567890,pear', '7,ap"ple', '-999999999,pear', '"-0000000001",apple'])
 add(2, 2, 1, ['0,a'])
 add(2, 1, 2, [''])
 for C, K, V, n, nk, pb in [(2, 1, 2, 30, 4, 0.5), (3, 3, 1, 60, 8, 0.4), (5, 2, 4, 200, 20, 0.3),

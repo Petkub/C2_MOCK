@@ -13,7 +13,7 @@ Layout produced:
                                                never progress.json or the big tests gen.py rebuilds
   C2_Mock_Test/Mock_K/Mock_K.pdf                  from student/Mock_K/
   C2_Mock_Test/Mock_K/Makefile, judge.bat         from student/set_files/
-  C2_Mock_Test/Mock_K/1.cpp ... 5.cpp             empty template (student/set_files/template.cpp)
+  C2_Mock_Test/Mock_K/1.cpp ... 6.cpp             empty template (student/set_files/template.cpp)
 The zip holds the contents of C2_Mock_Test/ without the folder itself (see make_zip).
 The manifest is rebuilt first, so the zip and manifest.json always agree.
 """

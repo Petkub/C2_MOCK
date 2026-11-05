@@ -1,239 +1,170 @@
-# Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-import os, random
-
-random.seed(240401)
-MAXT, MAXL = 100000, 1000000
-LOW = "abcdefghijklmnopqrstuvwxyz"
-DIG = "0123456789"
-UP = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-ALLOWED = set(LOW + DIG + UP + "<>/")
-tests = []
-rnd = random.random
-
-
-def ri(a, b):
-    return a + int(rnd() * (b - a + 1))
-
-
-def add(docs):
-    assert 1 <= len(docs) <= MAXT
-    assert sum(len(d) for d in docs) <= MAXL
-    for d in docs:
-        assert len(d) >= 1 and set(d) <= ALLOWED
-    tests.append(str(len(docs)) + "\n" + "\n".join(docs) + "\n")
-
-
-def name(maxlen):
-    k = ri(1, maxlen)
-    return random.choice(LOW) + "".join(random.choice(LOW + DIG) for _ in range(k - 1))
-
-
-def text(k, chars=LOW + DIG + UP + "/"):
-    m = len(chars)
-    return "".join([chars[int(rnd() * m)] for _ in range(k)])
-
-
-def valid(L, pool, p_text=0.2, p_single=0.1, drift=0.5, maxtext=5):
-    """a valid document of about L characters; drift = probability of opening rather than closing"""
-    parts, st, n = [], [], 0
-    while n < L:
-        r = rnd()
-        if r < p_text:
-            x = text(ri(1, maxtext))
-        elif r < p_text + p_single:
-            x = "<" + random.choice(pool) + "/>"
-        elif st and (rnd() > drift or n > L - 20 * len(st)):
-            x = "</" + st.pop() + ">"
-        else:
-            nm = random.choice(pool)
-            st.append(nm)
-            x = "<" + nm + ">"
-        parts.append(x)
-        n += len(x)
-    while st:
-        parts.append("</" + st.pop() + ">")
-    return parts, n
-
-
-def doc(parts):
-    return "".join(parts)
-
-
-def pool_of(k, maxlen):
-    return sorted(set(name(maxlen) for _ in range(k)))
-
-
-def mutate(parts, kind):
-    """break a valid token list near its end (the error is the first one only if every earlier token stays valid)"""
-    closers = [i for i, x in enumerate(parts) if x.startswith("</")]
-    if not closers:
-        return parts + [">"]
-    i = closers[-1 - ri(0, min(5, len(closers) - 1))]
-    if kind == "wrong":
-        nm = parts[i][2:-1]
-        parts[i] = "</" + (nm[:-1] + ("b" if nm[-1] != "b" else "c") if rnd() < 0.5 else nm + "x") + ">"
-    elif kind == "extra":
-        parts.append("</" + parts[i][2:-1] + ">")
-    elif kind == "open":
-        del parts[i]
-    elif kind == "stray":
-        parts.insert(i, ">")
-    elif kind == "bad":
-        parts[i] = random.choice(["<" + parts[i][2:-1].upper() + ">", "</>", "<>", "<" + parts[i][2:],
-                                  "<9" + parts[i][2:], "</" + parts[i][2:-1] + "/>", "<//" + parts[i][2:]])
-    return parts
-
-
-def single_at_deepest(parts):
-    """put a single tag right after the first opening tag of greatest depth (so a single tag holds the maximum)"""
-    d, best, at = 0, 0, 0
-    for i, x in enumerate(parts):
-        if x.startswith("</"):
-            d -= 1
-        elif x.startswith("<") and not x.endswith("/>"):
-            d += 1
-            if d > best:
-                best, at = d, i
-    return parts[:at + 1] + ["<s/>"] + parts[at + 1:]
-
-
-def bad_name(parts):
-    """replace a closing tag near the end by a tag whose name breaks the name rules"""
-    closers = [i for i, x in enumerate(parts) if x.startswith("</")]
-    i = closers[-1 - ri(0, min(5, len(closers) - 1))]
-    nm = parts[i][2:-1]
-    parts[i] = random.choice(["<" + nm.upper() + ">", "<" + str(ri(0, 9)) + nm + ">", "</" + str(ri(0, 9)) + nm + ">",
-                              "</" + nm[0].upper() + nm[1:] + ">", "<" + nm + "Q/>"])
-    return parts
-
-
-def mixed(n, pool, drift=0.6, p_text=0.2, maxtext=5):
-    """n documents; every detail of the rules decides at least one of them, and every document that ends
-    with a non-empty list is followed by a valid one. Document 2 (valid, few text runs) takes 70% of the length."""
-    half = (L - 200) * 7 // 10
-    rest = (L - 200 - half) // (n - 1)
-    kinds = ["stray", "single", "bad", "open2", "single", "wrong", "single"]
-    docs = []
-    for j in range(n):
-        k = kinds[j % len(kinds)]
-        parts = valid((half if j == 1 else rest) - 60, pool, 0.03 if j == 1 else p_text, 0.0 if k == "single" else 0.1, drift, maxtext)[0]
-        if k == "single":
-            parts = single_at_deepest(parts)
-        elif k == "bad":
-            parts = bad_name(parts)
-        elif k == "open2":
-            parts = ["<r>", "<s>"] + parts
-        else:
-            parts = mutate(parts, k)
-        docs.append(doc(parts))
-    return docs
-
-
-def small_random(T, maxparts):
-    docs = []
-    for _ in range(T):
-        parts, st = [], []
-        for _ in range(ri(1, maxparts)):
-            r = rnd()
-            if r < 0.3:
-                x = random.choice(["a", "b", "ab", "a1", "b2c"])
-                st.append(x)
-                parts.append("<" + x + ">")
-            elif r < 0.6 and st:
-                x = st.pop() if rnd() < 0.85 else random.choice(["a", "b", "ab"])
-                parts.append("</" + x + ">")
-            elif r < 0.7:
-                parts.append("<" + random.choice(["a", "b", "c2"]) + "/>")
-            elif r < 0.85:
-                parts.append(text(ri(1, 3), "xY9/"))
-            elif r < 0.95:
-                parts.append(text(ri(1, 4), "<>/aB1"))
-            else:
-                parts.append(random.choice(["<A>", "<1a>", "</>", "<>", "<a//>", "</a/>", "<a", ">", "<a<b>"]))
-        docs.append(doc(parts) or "x")
-    return docs
-
-
-# samples
-add(["<p><b>c</b><br/></p>", "<p><i>x</p></i>", "ab</p>"])
-add(["<a><b/></a><c>", "x>y", "<list><item>1</item>"])
-add(["<x/><y/>", "<Tr>", "a<b>", "<a></a/>"])
-add(["<a><a><a/></a></a>", "<td>5/2</td><td/>"])
-add(["noTags/at/all", "<x></x></x>", "<u><v><w></v>"])
-# hidden: small (brute checks these)
-for T, mp in [(500, 3), (2000, 6), (2000, 12), (1000, 30)]:
-    add(small_random(T, mp))
-pl = pool_of(6, 3)
-add([doc(mutate(valid(ri(20, 200), pl)[0], k)) for k in ["wrong", "extra", "open", "stray", "bad"] * 200])
-add([doc(valid(ri(10, 300), pl, drift=0.6)[0]) for _ in range(600)])
-
-# hidden: big
-BIG = []
-
-
-def big(seed, make):
-    BIG.append((seed, make))
-
-
-def deep(k, nm, single=False):
-    mid = "<" + nm + "/>" if single else "x"
-    return ["<" + nm + ">"] * k + [mid] + ["</" + nm + ">"] * k
-
-
-L = MAXL - 100
-P8 = pool_of(8, 3)
-big(1, lambda: [doc(deep(L // 7, "a"))])                                   # deepest, valid
-big(2, lambda: [doc(deep(L // 7 - 1, "a", True))])                         # deepest point is a single tag
-big(3, lambda: [doc(["<a></a>"] * (L // 7))])                              # flat, many tags
-big(4, lambda: [doc(deep(L // 9, "a", True) + [">"])])                    # stray > at the end
-big(5, lambda: mixed(5, pool_of(30, 4)))
-big(6, lambda: mixed(7, pool_of(30, 6), drift=0.7, p_text=0.05))
-big(7, lambda: [doc(mutate(valid(L, pool_of(50, 5), drift=0.6)[0], "wrong"))])
-big(8, lambda: [doc(mutate(valid(L, pool_of(50, 5), drift=0.65)[0], "extra"))])
-big(9, lambda: mixed(14, pool_of(10, 3)))
-big(10, lambda: [doc(["<r>", "<s>"] + valid(L - 10, pool_of(10, 3), drift=0.6)[0])])  # two tags stay open
-big(11, lambda: [doc(mutate(valid(L, pool_of(20, 4), drift=0.6)[0], "stray"))])
-big(12, lambda: [doc(mutate(valid(L, pool_of(20, 4), drift=0.6)[0], "bad"))])
-big(13, lambda: [doc(valid(L - 1000, pool_of(20, 4), drift=0.6)[0] + ["<abc"])])  # the last < has no >
-big(14, lambda: [doc(deep(L // 2004, "q" * 1000)[:-1] + ["</" + "q" * 999 + "r>"])])  # long names, differ at the end
-big(15, lambda: [doc(deep(L // 9 - 1, "ab")[:-1] + ["</a>"])])           # a prefix of the open name
-big(16, lambda: mixed(6, pool_of(300, 8), p_text=0.45, maxtext=12))
-big(17, lambda: [text(L)])                                                 # no tag at all
-big(18, lambda: budget(MAXT, lambda: doc(valid(ri(1, 12), P8, drift=0.6)[0])))  # many short documents
-big(19, lambda: budget(MAXT, lambda: doc(mutate(valid(ri(30, 70), P8, drift=0.6)[0], random.choice(["wrong", "extra", "open", "stray", "bad"])))))
-big(20, lambda: mixed(9, pool_of(15, 4), drift=0.7))
-big(21, lambda: [doc(deep(L // 14, "b") + ["<b>"] + deep(L // 14 - 1, "b"))])  # the first tag closes, a later one stays open
-
-
-def budget(T, make):
-    """up to T documents made by make() while the total length stays within MAXL"""
-    docs, tot = [], 0
-    while len(docs) < T:
-        d = make()
-        if tot + len(d) > MAXL:
-            break
-        docs.append(d)
-        tot += len(d)
-    return docs
-big(22, lambda: [doc(["<a>"] * (L // 3 // 2) + ["</a>"] * (L // 3 // 4))])  # only the outer half closes
-big(23, lambda: mixed(7, pool_of(40, 5), drift=0.65))
-big(24, lambda: mixed(21, pool_of(12, 4), drift=0.6, p_text=0.3))
-
-
-def cap(docs):
-    """trim the last document parts so the total length fits"""
-    tot = sum(len(d) for d in docs)
-    assert tot <= MAXL, tot
-    return docs
-
-
-for seed, make in BIG:
-    random.seed(241000 + seed)
-    add(cap(make()))
-
-for t in tests:
-    assert t.endswith("\n") and " " not in t
+import random, os
+from operator import ne, itemgetter
+g0, g1 = itemgetter(0), itemgetter(1)
+random.seed(2614)
 os.makedirs("tests", exist_ok=True)
-for i, t in enumerate(tests, 1):
-    with open(f"tests/{i:02d}.in", "w") as f:
-        f.write(t)
+cases = []
+cases.append(([3, 2, 4, 1, 2], [(1, 2), (1, 3), (2, 4), (3, 4), (4, 5)]))
+cases.append(([2, 4, 3, 2], [(1, 2), (1, 3), (3, 4)]))   # 2026-11 port: ordinary sample (old one is the last test)
+cases.append(([1, 1, 1], [(1, 2), (2, 3), (3, 1)]))
+cases.append(([2, 3, 3], [(1, 3), (2, 3)]))
+cases.append(([4, 1, 1, 1, 6], [(1, 5), (2, 3), (3, 4), (4, 5), (2, 4)]))
+def dag(n, m, tmax, cyc=False, layered=None):
+    perm = list(range(1, n + 1)); random.shuffle(perm); E = []
+    while len(E) < m - cyc:
+        if layered:
+            i = random.randrange(n - layered); j = random.randint(i + 1, min(n - 1, i + layered))
+        else:
+            i, j = sorted(random.sample(range(n), 2))
+        E.append((perm[i], perm[j]))
+    if cyc:
+        a, b = random.choice(E) if E else (perm[0], perm[1]); E.append((b, a))   # reverse an existing edge: cycle
+    random.shuffle(E)
+    return ([random.randint(1, tmax) for _ in range(n)], E)
+for _ in range(6):
+    n = random.randint(1, 8)
+    cases.append(dag(n, random.randint(0, 10) if n > 1 else 0, 5, cyc=(n > 2 and random.random() < 0.3)))
+N, M, B = 50000, 50000, 10**9
+cases.append(dag(3000, 6000, 1000))
+cases.append(dag(N, M, B))
+cases.append(dag(N, M, 10, layered=5))                    # deep: long chains, many ties
+cases.append(dag(N, M, 1, layered=3))                     # all equal durations: many critical courses
+cases.append(dag(N, M, B, cyc=True, layered=50))          # one cycle hidden in a large graph
+cases.append(([B] * N, [(i, i + 1) for i in range(1, N)]))  # one long chain: 2*10^14
+cases.append(([random.randint(1, B) for _ in range(N)], []))
+cases.append(([1] * N, [(1, i) for i in range(2, N + 1)]))   # star: every course critical
+E = [(i, i + 1) for i in range(1, N)] + [(N, 1)]            # big cycle
+cases.append(([1] * N, E))
+# two parallel chains of equal length -> both critical; plus a short branch
+h = N // 2
+E = [(i, i + 1) for i in range(1, h)] + [(i, i + 1) for i in range(h + 1, N)]
+cases.append(([2] * N, E))
+cases.append(dag(N, M, 1000, layered=1000))
+for n, m, tmax, lay in ((30000, 60000, 10**9, None), (40000, 40000, 5, 4), (50000, 80000, 100, 20), (30000, 90000, 1, 2)):
+    cases.append(dag(n, m, tmax, layered=lay))
+cases.append(dag(100000, 100000, B))
+cases.append(([10**9] * 100000, [(i, i + 1) for i in range(1, 100000)]))
+cases.append(([10**9] * 5000, [(i, i + 1) for i in range(1, 5000)] + [(1, 5000)]))
+cases.append(dag(20000, 40000, 10**9, layered=3))
+# ---- legacy strengthening (2026-10): the big tests were mostly N = 5 * 10^4 and shallow, so repeated relaxation
+# over the edge list (Bellman-Ford style) and "count the courses on one longest path" scored 83%. The new big tests
+# use M = 10^5 with deep DAGs in shuffled edge order (thousands of relaxation rounds) and many tied longest paths.
+# The stars, cycles, the sorted chain and the all-equal shallow DAG keep their N = 5 * 10^4 tests (size does not
+# matter there).
+# The cases above are still generated so the unchanged tests keep their bytes; `override` replaces some of them,
+# `extra` adds tests at the end. All new data comes from R, not from `random`.
+R = random.Random(26142)
+rr = R.random
+def ri(a, b): return a + int(rr() * (b - a + 1))
+def shuffle(L):
+    """Fisher-Yates driven by rr() (faster than R.shuffle)"""
+    for i in range(len(L) - 1, 0, -1):
+        j = int(rr() * (i + 1)); L[i], L[j] = L[j], L[i]
+def dag2(n, m, tmax, cyc=False, layered=None, shuffled=True):
+    """like dag() above (random 1-D DAGs are shallow: every few hundred courses no edge crosses a gap)"""
+    perm = list(range(1, n + 1))
+    if shuffled: shuffle(perm)
+    k = m - cyc
+    if layered:
+        E = [(perm[i], perm[i + 1 + int(rr() * min(layered, n - 1 - i))]) for i in [int(rr() * (n - layered)) for _ in range(k)]]
+    else:
+        E = []
+        while len(E) < k:
+            E += [(perm[min(i, j)], perm[max(i, j)]) for i, j in [(int(rr() * n), int(rr() * n)) for _ in range(k - len(E))] if i != j]
+    if cyc:
+        a, b = E[int(rr() * len(E))]; E.append((b, a))
+    if shuffled: shuffle(E)
+    return ([ri(1, tmax) for _ in range(n)], E)
+def relabel(t, E):
+    """random course numbers and edge order for a graph built on 1..n"""
+    n = len(t); perm = list(range(1, n + 1)); shuffle(perm)
+    t2 = [0] * n
+    for i in range(n): t2[perm[i] - 1] = t[i]
+    E2 = [(perm[a - 1], perm[b - 1]) for a, b in E]; shuffle(E2)
+    return (t2, E2)
+def diamonds(k, w):
+    """(build on 1..n, then relabel) k diamonds in a row (a -> b, a -> c, b -> d, c -> d), all durations w: both sides of each diamond are critical"""
+    t = [w] * (3 * k + 1); E = []
+    for d in range(k):
+        a = 3 * d + 1
+        E += [(a, a + 1), (a, a + 2), (a + 1, a + 3), (a + 2, a + 3)]
+    return (t, E)
+def grid(layers, width, m, tmax):
+    """(build on 1..n, then relabel) deep DAG: layers of `width` courses, edges only between consecutive layers, every course has an edge in and
+    out (so with equal durations every course is critical, and longest paths end at many different courses)"""
+    n = layers * width; E = []
+    for L in range(layers - 1):
+        for x in range(width):
+            E.append((L * width + x + 1, (L + 1) * width + ri(0, width - 1) + 1))
+            E.append((L * width + ri(0, width - 1) + 1, (L + 1) * width + x + 1))
+    while len(E) < m:
+        L = ri(0, layers - 2); E.append((L * width + ri(1, width), (L + 1) * width + ri(1, width)))
+    assert len(E) == m
+    return ([ri(1, tmax) for _ in range(n)], E)
+def twin(g):
+    """two disjoint copies of the same graph: the longest paths (and the courses finishing at T) come in pairs"""
+    t, E = g; n = len(t)
+    return relabel(t + t, E + [(a + n, b + n) for a, b in E])
+M = 100000
+h = M // 2
+override = {
+    13: twin(dag2(h, h, B, shuffled=False)),
+    14: twin(grid(6250, 4, h, 10)),                            # deep instead of the shallow random layered DAGs
+    18: ([ri(1, 1000) for _ in range(M)], []),               # no conditions: every longest course is critical
+    21: relabel([2] * M, [(i, i + 1) for i in range(1, h)] + [(i, i + 1) for i in range(h + 1, M)]),
+    22: relabel(*grid(5000, 10, M, 1000)),
+    23: twin(dag2(h, h, B, shuffled=False)),
+    24: twin(grid(12500, 2, h, 5)),
+    25: twin(grid(3125, 8, h, 100)),
+    26: relabel(*grid(25000, 2, M, 1)),
+    30: twin(grid(5000, 5, h, B)),
+}
+extra = [
+    relabel(*diamonds(25000, 1)),
+    twin(diamonds(12500, 10**9)),                              # 2.5 * 10^13, twice
+    twin(grid(5000, 5, h, 2)),
+    # long chain with a back edge from its end to its middle: a cycle hidden deep
+    relabel([ri(1, B) for _ in range(M)], [(i, i + 1) for i in range(1, M)] + [(M, M // 2)]),
+    # many chains of the same total length: every chain is critical, they end at different courses
+    relabel([1] * M, [(i, i + 1) for i in range(1, M) if i % 5000]),
+    # duplicated conditions along two deep chains of nearly equal length
+    relabel([3] * h, ([(i, i + 1) for i in range(1, h // 2)] + [(i, i + 1) for i in range(h // 2 + 1, h)]) * 2),
+]
+extra.append(([5, 5, 5], []))                      # old sample 2 (no conditions, equal durations), now hidden
+# ---- 2026-11 review: 37 tests were above the 25-35 rule, "int" times passed 78% and ignoring the -1 case 84%.
+# Two tiny tests that failed nothing are dropped (old 11, old sample 2); the tests with small equal durations are
+# scaled (same critical courses, T well above int); five tests become hidden cycles (three of them at the largest size).
+def back_edge_grid(layers, width, m, tmax):
+    """grid() plus one edge from the end of a long forward walk back to its start: one long cycle, then relabel"""
+    t, E = grid(layers, width, m - 1, tmax)
+    out = {}
+    for a, b in E: out.setdefault(a, []).append(b)
+    s = ri(1, width); v = s
+    while v in out: v = out[v][int(rr() * len(out[v]))]
+    return relabel(t, E + [(v, s)])
+override.update({
+    7: ([2, 1, 3, 1], [(1, 2), (2, 3), (3, 2), (1, 4)]),
+    10: ([2, 1, 3, 1, 2, 1], [(1, 2), (2, 3), (4, 5), (5, 6), (6, 4)]),
+    12: back_edge_grid(2500, 20, M, 1000),
+    15: dag2(M, M, 1, cyc=True, layered=3),
+    19: relabel([1] * M, [(1, i) for i in range(2, M + 1)] + [(M, 1)]),   # star plus one edge back to the centre
+})
+scale = {14: 10**8, 24: 2 * 10**8, 26: 10**9, 33: 5 * 10**8, 36: 3 * 10**8}
+drop = {11, 37}
+k = 0
+for i, (t, E) in enumerate(cases + extra, 1):
+    if i in drop:
+        continue
+    if i in override:
+        t, E = override[i]
+    if i in scale:
+        t = [x * scale[i] for x in t]
+    k += 1
+    n = len(t)
+    assert 1 <= n <= 100000 and len(E) <= 100000 and 1 <= min(t) and max(t) <= B
+    if E:
+        As, Bs = list(map(g0, E)), list(map(g1, E))
+        assert 1 <= min(As) and max(As) <= n and 1 <= min(Bs) and max(Bs) <= n and all(map(ne, As, Bs))
+    open(f"tests/{k:02d}.in", "w").write(f"{n} {len(E)}\n" + " ".join(map(str, t)) + "\n" + "".join(f"{a} {b}\n" for a, b in E))
+assert k <= 35
+print(k, "tests")

@@ -6,7 +6,7 @@ Regression tests for the POSN Camp 2 Practice Judge.
 
 Everything runs inside a student package built with tools/build_dist.py in a temporary folder, so the big tests
 that gen.py rebuilds and progress.json are never written into the repo.
-1. The package ships no rebuilt tests and no progress.json; Mock_K/1.cpp ... 5.cpp are untouched starters.
+1. The package ships no rebuilt tests and no progress.json; Mock_K/1.cpp ... 6.cpp are untouched starters.
 2. Every sample in samples/expected.json is judged and must get its verdict (and score, when given; that run
    also rebuilds the problem's big tests with gen.py and checks them).
    Verdict = CE if it does not compile, else the first non-AC verdict, else AC.
@@ -37,8 +37,8 @@ NAME = "C2_Mock_Test"
 FAILED = []
 os.environ["JUDGE_NO_UPDATE"] = "1"       # the judge never contacts GitHub during the tests
 judge = None        # the package's judge.py, imported by main()
-# the towers_*.cpp samples solve Signal Towers: set 11, problem 2 (id 52); TOWERS_SET/TOWERS_CPP is its student file
-TOWERS, TOWERS_ID, TOWERS_SET, TOWERS_CPP = "11-2", "52", "Mock_11", "2.cpp"
+# the towers_*.cpp samples solve Signal Towers: set 3, problem 2 (id 14); TOWERS_SET/TOWERS_CPP is its student file
+TOWERS, TOWERS_ID, TOWERS_SET, TOWERS_CPP = "3-2", "14", "Mock_3", "2.cpp"
 
 
 def check(ok, name, detail=""):
@@ -72,7 +72,7 @@ def test_package(root):
     with open(os.path.join(REPO, "problems", "batch", "sets.json"), encoding="utf-8") as f:
         expected = sum(len(s["problems"]) for s in json.load(f))
     check(len(starters) == expected and all(judge.is_untouched_starter(s) for s in starters),
-          "Mock_K/1.cpp ... 5.cpp are untouched starters", f"{len(starters)} files")
+          "Mock_K/1.cpp ... 6.cpp are untouched starters", f"{len(starters)} files")
 
 
 def test_crlf_generator():
@@ -260,7 +260,7 @@ def test_cli(root):
     check(code == 0 and "First failure" in out and plain, "judge.py --ascii shows the failure, ASCII only",
           f"exit {code}, ascii={plain}\n{out}")
     code, out, _ = run_judge(["--no-color"], set1)
-    check(code == 0 and "Total" in out and "Problem 5" in out, f"inside {TOWERS_SET}: judge.py (whole set)",
+    check(code == 0 and "Total" in out and "Problem 6" in out, f"inside {TOWERS_SET}: judge.py (whole set)",
           f"exit {code}\n{out}")
     code, out, plain = run_judge(["--progress", "--ascii"], set1)
     check(code == 0 and plain, "judge.py --progress --ascii", f"exit {code}, ascii={plain}\n{out}")
@@ -359,7 +359,7 @@ def test_updater():
         # a) automatic update during a normal run: new files, backup, restart with the new judge
         repo2 = make_repo2(tmp, "9.9", "marker-v9.9")
         edit_manifest(repo2, lambda m: m["create_only"].update(
-            {TOWERS_SET + "/6.cpp": [sha(os.path.join(REPO, "student", "set_files", "template.cpp")), "student/set_files/template.cpp"]}))
+            {TOWERS_SET + "/7.cpp": [sha(os.path.join(REPO, "student", "set_files", "template.cpp")), "student/set_files/template.cpp"]}))
         srv, url = serve(repo2)
         code, out, _ = run_student([TOWERS_CPP, "--no-color"], set1, url)
         check(code == 0 and "restarting" in out and "ACCEPTED" in out and "Judge v9.9" in out,
@@ -377,8 +377,8 @@ def test_updater():
               f"managed files README.txt and {TOWERS_SET}/Makefile replaced, old copies in Judge/.backup/_package/")
         check(sha(os.path.join(set1, TOWERS_CPP)) == student_hash and sha(os.path.join(set1, other)) == template,
               "student files untouched")
-        check(os.path.exists(os.path.join(set1, "6.cpp")) and sha(os.path.join(set1, "6.cpp")) == template,
-              f"create-only {TOWERS_SET}/6.cpp added")
+        check(os.path.exists(os.path.join(set1, "7.cpp")) and sha(os.path.join(set1, "7.cpp")) == template,
+              f"create-only {TOWERS_SET}/7.cpp added")
         check(not os.path.exists(os.path.join(judge_dir, ".update_tmp")), "no temp folder left behind")
         progress = os.path.join(judge_dir, "progress.json")
         with open(progress, encoding="utf-8") as f:

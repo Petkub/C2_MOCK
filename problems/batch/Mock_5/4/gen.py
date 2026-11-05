@@ -1,115 +1,81 @@
-# Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-import os, random
-
-random.seed(1404001)
-MAXN, MAXW = 150000, 10 ** 9
-tests = []
-rnd = random.random
-
-
-def ri(a, b):
-    """random integer in [a, b] (faster than randint, still deterministic)"""
-    return a + int(rnd() * (b - a + 1))
-
-
-def add(people):
-    n = len(people)
-    assert 1 <= n <= MAXN
-    for w, c in people:
-        assert 1 <= w <= MAXW and 1 <= c <= n
-    tests.append(f"{n}\n" + "".join(f"{w} {c}\n" for w, c in people))
-
-
-def shuffled(people):
-    people = list(people)
-    random.shuffle(people)
-    return people
-
-
-def cheap_small(n, wmax, noise=0):
-    """the cheaper the applicant, the smaller the team he accepts"""
-    ws = sorted(ri(1, wmax) for _ in range(n))
-    cs = sorted(ri(1, n) for _ in range(n))
-    out = []
-    for w, c in zip(ws, cs):
-        if noise and ri(1, noise) == 1:
-            c = ri(1, n)
-        out.append((w, c))
-    return shuffled(out)
-
-
-def cheap_big(n, wmax):
-    """the cheaper the applicant, the larger the team he accepts"""
-    ws = sorted(ri(1, wmax) for _ in range(n))
-    cs = sorted((ri(1, n) for _ in range(n)), reverse=True)
-    return shuffled(zip(ws, cs))
-
-
-def few_limits(n, k, wmax):
-    """only k different limits, many applicants share each"""
-    lim = [ri(1, n) for _ in range(k)]
-    return [(ri(1, wmax), lim[int(rnd() * k)]) for _ in range(n)]
-
-
-def upper_half(n, wmax):
-    """every applicant accepts at least half of n, so most sizes have an answer"""
-    return [(ri(1, wmax), ri(n // 2, n)) for _ in range(n)]
-
-
-def steps(n, wmax):
-    """limit c is taken by about c applicants... a staircase where c applicants accept exactly c"""
-    out = []
-    c = n
-    while len(out) < n:
-        take = min(n - len(out), max(1, c // 3))
-        out += [(ri(1, wmax), c) for _ in range(take)]
-        c = max(1, c - take)
-    return shuffled(out)
-
-
-# samples
-add([(5, 2), (3, 4), (8, 5), (1, 1), (4, 3)])
-add([(6, 4), (2, 3), (7, 4), (1, 2)])
-add([(3, 2), (3, 2), (3, 2)])
-add([(10, 6), (4, 2), (9, 5), (2, 3), (7, 6), (5, 1)])
-add([(1, 7), (8, 3), (6, 4), (2, 2), (9, 7), (3, 5), (4, 6)])
-# hidden: small (brute checks these)
-add([(MAXW, 1)])
-add([(ri(1, 9), ri(1, 8)) for _ in range(8)])
-add(cheap_small(1000, 1000))
-add(cheap_big(1000, MAXW))
-add(few_limits(2000, 3, 50))
-add(upper_half(2000, MAXW))
-add(steps(2000, 10 ** 6))
-add([(MAXW, 3000)] * 3000)
-# hidden: big (each with its own seed)
-N = MAXN
-BIG = [
-    (1407000, lambda: [(MAXW, N)] * N),
-    (1407001, lambda: [(ri(1, MAXW), ri(1, N)) for _ in range(N)]),
-    (1407002, lambda: cheap_small(N, MAXW)),
-    (1407003, lambda: cheap_small(N, 1000, 50)),
-    (1407004, lambda: cheap_big(N, MAXW)),
-    (1407005, lambda: few_limits(N, 5, 10 ** 6)),
-    (1407006, lambda: few_limits(N, 100, 1000)),
-    (1407007, lambda: upper_half(N, 10 ** 6)),
-    (1407008, lambda: steps(N, 10 ** 6)),
-    (1407009, lambda: [(ri(MAXW - 1000, MAXW), ri(N - 1000, N)) for _ in range(N)]),
-    (1407010, lambda: shuffled([(i + 1, i + 1) for i in range(N)])),
-    (1407011, lambda: shuffled([(MAXW - i, i + 1) for i in range(N)])),
-    (1407012, lambda: [(ri(1, 10 ** 6), N if ri(0, 1) else ri(1, 10)) for _ in range(N)]),
-    (1407013, lambda: [(ri(1, 10), ri(1, N)) for _ in range(N)]),
-    (1407014, lambda: cheap_small(N, 10 ** 6, 1000)),
-    (1407015, lambda: [(ri(1, 10 ** 6), N - int(N * rnd() ** 3)) for _ in range(N)]),
-    (1407016, lambda: [(ri(1, 10 ** 5), N // 2) for _ in range(N)]),
-]
-for seed, make in BIG:
-    random.seed(seed)
-    add(make())
-
-for t in tests:
-    assert t.endswith("\n") and "  " not in t and " \n" not in t
+import random, os
+random.seed(2603)
 os.makedirs("tests", exist_ok=True)
-for i, t in enumerate(tests, 1):
-    with open(f"tests/{i:02d}.in", "w") as f:
-        f.write(t)
+cases = []
+# ---- samples ----
+cases.append((2, 2, [3, -1, 4, -10, 5, -9, 2]))
+cases.append((1, 1, [1, 2, 3, 4, 5]))
+cases.append((2, 1, [4, 4, 4]))
+cases.append((1, 6, [-3, 1, -4, 1, -5, 9]))
+cases.append((3, 2, [-1, -2, 7, 8, -100, -3, -4, 6, 6]))
+# ---- small random ----
+def rnd(n, k, L, lo, hi):
+    return (k, L, [random.randint(lo, hi) for _ in range(n)])
+for _ in range(6):
+    n = random.randint(3, 12); L = random.randint(1, 3)
+    k = random.randint(1, max(1, (n + 1) // (L + 1)))
+    cases.append(rnd(n, k, L, -20, 20))
+# ---- large ----
+N = 100000
+B = 10**9
+cases.append(rnd(N, 100, 1, -B, B))
+cases.append(rnd(N, 100, 50, -B, B))
+cases.append(rnd(N, 100, 990, -B, B))                 # K(L+1) = N + 1 - 1 + ... near tight
+cases.append(rnd(N, 1, 1000, -B, B))
+cases.append(rnd(N, 100, 1, 1, B))                    # all positive: rest days are the only loss
+cases.append(rnd(N, 100, 3, -B, -1))                  # all negative
+cases.append(rnd(N, 50, 1999, -B, B))                 # 50 * 2000 = 100000 <= N + 1 (tight)
+cases.append((100, 999, [B if (i // 1000) % 2 == 0 else -B for i in range(N)]))
+cases.append(rnd(N, 37, 7, -1000, 1000))
+cases.append((100, 1, [B] * N))                        # sum fits only in 64-bit
+cases.append(rnd(N, 100, 1, -B, B // 10))              # mostly negative, must still pick 100
+cases.append((1, 1, [-7]))                              # N = 1
+cases.append(rnd(3000, 100, 2, -B, B))                  # medium: O(N^2 K) still too slow
+cases.append(rnd(5000, 20, 10, -B, B))
+cases.append(rnd(N, 100, 999, -B, B))                   # tight: 100 * 1000 = N
+cases.append(rnd(N, 80, 1, -5, 5))                      # many ties
+cases.append(rnd(N, 2, 30000, -B, B))
+cases.append(rnd(N, 100, 7, -B, B // 3))
+# ---- stronger tests (2026-10-20): long runs, so the O(N K L) DP over the run length is too slow ----
+# (a separate random stream, so the tests that stay as they were keep their bytes)
+rng = random.Random(260320)
+def big(k, L, lo, hi): return (k, L, [rng.randint(lo, hi) for _ in range(N)])
+cases[14] = big(1, 40000, -B, B)                         # test 15: one long run
+cases[15] = big(100, 300, 1, B)                          # test 16: all positive, rest days are the only loss
+cases[16] = big(100, 600, -B, -1)                        # test 17: all negative
+cases[19] = big(37, 2000, 1, 1000)                       # test 20: small positive values, every rest day costs
+cases[20] = (100, 900, [B] * N)                          # test 21: sum fits only in 64-bit
+cases[21] = big(100, 400, -B, B // 10)                   # test 22: mostly negative, must still pick 100
+cases[26] = big(80, 250, -5, 5)                          # test 27: many ties
+cases[28] = big(100, 700, -B, B // 3)                    # test 29
+cases.append((100, 999, [rng.randint(1, B) for _ in range(N)]))   # K (L + 1) = N: no slack at all
+# positive days with about 40 negative valleys: fewer valleys than the K - 1 rest days needed
+a = [rng.randint(1, B) for _ in range(N)]
+for _ in range(40):
+    st = rng.randrange(N - 200)
+    for j in range(st, st + rng.randint(1, 200)): a[j] = -rng.randint(1, B)
+cases.append((100, 500, a))
+cases.append(big(100, 800, B // 2, B))                   # all positive: where the 99 rest days go decides
+cases.append(big(10, 9999, -B, B))
+# long positive stretches cut by single very negative days: the best runs are much longer than L
+a = []
+while len(a) < N:
+    a += [rng.randint(1, B) for _ in range(rng.randint(3000, 6000))] + [-B]
+cases.append((35, 2500, a[:N]))
+# positive blocks of length L + 1 .. 3L separated by one negative day: a rest day costs only that day
+a = []
+while len(a) < N:
+    a += [rng.randint(B // 2, B) for _ in range(rng.randint(1000, 3000))] + [-rng.randint(1, 1000)]
+cases.append((100, 300, a[:N]))
+cases.append(big(99, 1000, -5, 5))
+cases.append((100, 990, [-B] * N))                       # all equal negative: shortest runs everywhere
+cases.append((50, 1000, [B] * N))
+cases.append(big(1, 60000, -B, B))
+cases.append(big(30, 3000, 1, B))
+assert len(cases) <= 40
+for i, (k, L, a) in enumerate(cases, 1):
+    n = len(a)
+    assert 1 <= n <= 100000 and 1 <= k <= 100 and 1 <= L <= n and k * (L + 1) <= n + 1
+    assert all(-10**9 <= x <= 10**9 for x in a)
+    open(f"tests/{i:02d}.in", "w").write(f"{n} {k} {L}\n" + " ".join(map(str, a)) + "\n")
+print(len(cases), "tests")

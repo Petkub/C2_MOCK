@@ -1,88 +1,247 @@
-import random, os, math
-random.seed(2617)
+# Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
+import os, random
+
+random.seed(240401)
+MAXT, MAXL = 100000, 1000000
+LOW = "abcdefghijklmnopqrstuvwxyz"
+DIG = "0123456789"
+UP = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+ALLOWED = set(LOW + DIG + UP + "<>/")
+tests = []
+rnd = random.random
+
+
+def ri(a, b):
+    return a + int(rnd() * (b - a + 1))
+
+
+def add(docs):
+    assert 1 <= len(docs) <= MAXT
+    assert sum(len(d) for d in docs) <= MAXL
+    for d in docs:
+        assert len(d) >= 1 and set(d) <= ALLOWED
+    tests.append(str(len(docs)) + "\n" + "\n".join(docs) + "\n")
+
+
+def name(maxlen):
+    k = ri(1, maxlen)
+    return random.choice(LOW) + "".join(random.choice(LOW + DIG) for _ in range(k - 1))
+
+
+def text(k, chars=LOW + DIG + UP + "/"):
+    m = len(chars)
+    return "".join([chars[int(rnd() * m)] for _ in range(k)])
+
+
+def valid(L, pool, p_text=0.2, p_single=0.1, drift=0.5, maxtext=5):
+    """a valid document of about L characters; drift = probability of opening rather than closing"""
+    parts, st, n = [], [], 0
+    while n < L:
+        r = rnd()
+        if r < p_text:
+            x = text(ri(1, maxtext))
+        elif r < p_text + p_single:
+            x = "<" + random.choice(pool) + "/>"
+        elif st and (rnd() > drift or n > L - 20 * len(st)):
+            x = "</" + st.pop() + ">"
+        else:
+            nm = random.choice(pool)
+            st.append(nm)
+            x = "<" + nm + ">"
+        parts.append(x)
+        n += len(x)
+    while st:
+        parts.append("</" + st.pop() + ">")
+    return parts, n
+
+
+def doc(parts):
+    return "".join(parts)
+
+
+def pool_of(k, maxlen):
+    return sorted(set(name(maxlen) for _ in range(k)))
+
+
+def mutate(parts, kind):
+    """break a valid token list near its end (the error is the first one only if every earlier token stays valid)"""
+    closers = [i for i, x in enumerate(parts) if x.startswith("</")]
+    if not closers:
+        return parts + [">"]
+    i = closers[-1 - ri(0, min(5, len(closers) - 1))]
+    if kind == "wrong":
+        nm = parts[i][2:-1]
+        parts[i] = "</" + (nm[:-1] + ("b" if nm[-1] != "b" else "c") if rnd() < 0.5 else nm + "x") + ">"
+    elif kind == "extra":
+        parts.append("</" + parts[i][2:-1] + ">")
+    elif kind == "open":
+        del parts[i]
+    elif kind == "stray":
+        parts.insert(i, ">")
+    elif kind == "bad":
+        parts[i] = random.choice(["<" + parts[i][2:-1].upper() + ">", "</>", "<>", "<" + parts[i][2:],
+                                  "<9" + parts[i][2:], "</" + parts[i][2:-1] + "/>", "<//" + parts[i][2:],
+                                  "<" + parts[i][2:-1] + "Q>", "</" + parts[i][2:-1] + "R>"])
+    return parts
+
+
+def single_at_deepest(parts):
+    """put a single tag right after the first opening tag of greatest depth (so a single tag holds the maximum)"""
+    d, best, at = 0, 0, 0
+    for i, x in enumerate(parts):
+        if x.startswith("</"):
+            d -= 1
+        elif x.startswith("<") and not x.endswith("/>"):
+            d += 1
+            if d > best:
+                best, at = d, i
+    return parts[:at + 1] + ["<s/>"] + parts[at + 1:]
+
+
+BAD_K = 0
+
+
+def bad_name(parts):
+    """replace a closing tag near the end by a tag whose name breaks the name rules"""
+    closers = [i for i, x in enumerate(parts) if x.startswith("</")]
+    i = closers[-1 - ri(0, min(5, len(closers) - 1))]
+    nm = parts[i][2:-1]
+    global BAD_K
+    BAD_K += 1
+    # even: an upper-case letter inside the name; odd: the name starts with a digit
+    variants = ["<" + nm[0] + "K" + nm[1:] + ">", "<" + str(ri(0, 9)) + nm + ">", "<" + nm + "Q/>",
+                "</" + str(ri(0, 9)) + nm + ">", "</" + nm + "Z>", "<" + str(ri(0, 9)) + nm + "/>"]
+    parts[i] = variants[BAD_K % len(variants)]
+    return parts
+
+
+def mixed(n, pool, drift=0.6, p_text=0.2, maxtext=5):
+    """n documents; every detail of the rules decides at least one of them, and every document that ends
+    with a non-empty list is followed by a valid one. Document 2 (valid, few text runs) takes 70% of the length."""
+    half = (L - 200) * 7 // 10
+    rest = (L - 200 - half) // (n - 1)
+    kinds = ["stray", "single", "bad", "extra", "bad", "wrong", "open2", "single"]
+    docs = []
+    for j in range(n):
+        k = kinds[j % len(kinds)]
+        parts = valid((half if j == 1 else rest) - 60, pool, 0.03 if j == 1 else p_text, 0.0 if k == "single" else 0.1, drift, maxtext)[0]
+        if k == "single":
+            parts = single_at_deepest(parts)
+        elif k == "bad":
+            parts = bad_name(parts)
+        elif k == "open2":
+            parts = ["<r>", "<s>"] + parts
+        else:
+            parts = mutate(parts, k)
+        docs.append(doc(parts))
+    return docs
+
+
+def small_random(T, maxparts):
+    docs = []
+    for _ in range(T):
+        parts, st = [], []
+        for _ in range(ri(1, maxparts)):
+            r = rnd()
+            if r < 0.3:
+                x = random.choice(["a", "b", "ab", "a1", "b2c"])
+                st.append(x)
+                parts.append("<" + x + ">")
+            elif r < 0.6 and st:
+                x = st.pop() if rnd() < 0.85 else random.choice(["a", "b", "ab"])
+                parts.append("</" + x + ">")
+            elif r < 0.7:
+                parts.append("<" + random.choice(["a", "b", "c2"]) + "/>")
+            elif r < 0.85:
+                parts.append(text(ri(1, 3), "xY9/"))
+            elif r < 0.95:
+                parts.append(text(ri(1, 4), "<>/aB1"))
+            else:
+                parts.append(random.choice(["<A>", "<1a>", "<aB>", "</bA>", "<a1C/>", "</>", "<>", "<a//>", "</a/>", "<a", ">", "<a<b>"]))
+        docs.append(doc(parts) or "x")
+    return docs
+
+
+# samples
+add(["<p><b>c</b><br/></p>", "<p><i>x</p></i>", "ab</p>"])
+add(["<a><b/></a><c>", "x>y", "<list><item>1</item>"])
+add(["<x/><y/>", "<Tr>", "a<b>", "<a></a/>", "<i><></i>"])
+add(["<a><a><a/></a></a>", "<td>5/2</td><td/>"])
+add(["noTags/at/all", "<x></x></x>", "<u><v><w></v>", "<h><p>1</p><p>2"])
+# hidden: small (brute checks these)
+for T, mp in [(500, 3), (2000, 6), (2000, 12), (1000, 30)]:
+    add(small_random(T, mp))
+pl = pool_of(6, 3)
+add([doc(mutate(valid(ri(20, 200), pl)[0], k)) for k in ["wrong", "extra", "open", "stray", "bad"] * 200])
+add([doc(valid(ri(10, 300), pl, drift=0.6)[0]) for _ in range(600)])
+
+# hidden: big
+BIG = []
+
+
+def big(seed, make):
+    BIG.append((seed, make))
+
+
+def deep(k, nm, single=False):
+    mid = "<" + nm + "/>" if single else "x"
+    return ["<" + nm + ">"] * k + [mid] + ["</" + nm + ">"] * k
+
+
+L = MAXL - 100
+P8 = pool_of(8, 3)
+big(1, lambda: [doc(deep(L // 7, "a"))])                                   # deepest, valid
+big(2, lambda: [doc(deep(L // 7 - 1, "a", True))])                         # deepest point is a single tag
+big(3, lambda: [doc(["<a></a>"] * (L // 7))])                              # flat, many tags
+big(4, lambda: [doc(deep(L // 9, "a", True) + [">"])])                    # stray > at the end
+big(5, lambda: mixed(5, pool_of(30, 4)))
+big(6, lambda: mixed(7, pool_of(30, 6), drift=0.7, p_text=0.05))
+big(7, lambda: [doc(mutate(valid(L, pool_of(50, 5), drift=0.6)[0], "wrong"))])
+big(8, lambda: [doc(mutate(valid(L, pool_of(50, 5), drift=0.65)[0], "extra"))])
+big(9, lambda: mixed(14, pool_of(10, 3)))
+big(10, lambda: [doc(["<r>", "<s>"] + valid(L - 10, pool_of(10, 3), drift=0.6)[0])])  # two tags stay open
+big(11, lambda: [doc(mutate(valid(L, pool_of(20, 4), drift=0.6)[0], "stray"))])
+big(12, lambda: [doc(mutate(valid(L, pool_of(20, 4), drift=0.6)[0], "bad"))])
+big(13, lambda: [doc(valid(L - 1000, pool_of(20, 4), drift=0.6)[0] + ["<abc"])])  # the last < has no >
+big(14, lambda: [doc(deep(L // 2004, "q" * 1000)[:-1] + ["</" + "q" * 999 + "r>"])])  # long names, differ at the end
+big(15, lambda: [doc(deep(L // 9 - 1, "ab")[:-1] + ["</a>"])])           # a prefix of the open name
+big(16, lambda: mixed(6, pool_of(300, 8), p_text=0.45, maxtext=12))
+big(17, lambda: [text(L)])                                                 # no tag at all
+big(18, lambda: budget(MAXT, lambda: doc(valid(ri(1, 12), P8, drift=0.6)[0])))  # many short documents
+big(19, lambda: budget(MAXT, lambda: doc(mutate(valid(ri(30, 70), P8, drift=0.6)[0], random.choice(["wrong", "extra", "open", "stray", "bad"])))))
+big(20, lambda: mixed(9, pool_of(15, 4), drift=0.7))
+big(21, lambda: [doc(deep(L // 14, "b") + ["<b>"] + deep(L // 14 - 1, "b"))])  # the first tag closes, a later one stays open
+
+
+def budget(T, make):
+    """up to T documents made by make() while the total length stays within MAXL"""
+    docs, tot = [], 0
+    while len(docs) < T:
+        d = make()
+        if tot + len(d) > MAXL:
+            break
+        docs.append(d)
+        tot += len(d)
+    return docs
+big(22, lambda: [doc(["<a>"] * (L // 3 // 2) + ["</a>"] * (L // 3 // 4))])  # only the outer half closes
+big(23, lambda: mixed(7, pool_of(40, 5), drift=0.65))
+big(24, lambda: mixed(21, pool_of(12, 4), drift=0.6, p_text=0.3))
+
+
+def cap(docs):
+    """trim the last document parts so the total length fits"""
+    tot = sum(len(d) for d in docs)
+    assert tot <= MAXL, tot
+    return docs
+
+
+for seed, make in BIG:
+    random.seed(241000 + seed)
+    add(cap(make()))
+
+for t in tests:
+    assert t.endswith("\n") and " " not in t
 os.makedirs("tests", exist_ok=True)
-cases = []
-cases.append((2, [3, 5, 4, 8, 7, 6, 9]))
-cases.append((0, [1, 1, 2, 2, 2, 1]))
-cases.append((10, [-5, 5, -5, 5]))
-cases.append((0, [42]))
-cases.append((3, [10, 1, 2, 3, 4, 20, 21, 22, 23]))
-for _ in range(6):
-    n = random.randint(1, 15); cases.append((random.randint(0, 6), [random.randint(-6, 6) for _ in range(n)]))
-B = 10**9
-N = 100000
-def rnd(n, K, lo, hi): return (K, [random.randint(lo, hi) for _ in range(n)])
-def walk(n, K, step, start=0):
-    t = [start]
-    for _ in range(n - 1): t.append(max(-B, min(B, t[-1] + random.randint(-step, step))))
-    return (K, t)
-cases.append(rnd(3000, 100, -1000, 1000))
-cases.append(rnd(N, B, -B, B))
-cases.append(walk(N, 3000, 10))
-cases.append(walk(N, 0, 1))
-cases.append((2 * B, [random.choice([-B, B]) for _ in range(N)]))   # difference 2*10^9: whole array
-cases.append((2 * B - 1, [-B] + [0] * (N - 2) + [B]))
-cases.append((5, [i // 3 for i in range(N)]))                        # slow ramp
-cases.append((10**6, [int(10**8 * math.sin(i / 5000)) for i in range(N)]))
-for K, step in ((800, 5), (1500, 10), (160, 1), (3000, 20), (450, 3)):
-    cases.append(walk(N, K, step))
-cases.append((1, [0, 1] * (N // 2)))                                 # answer N, start 1
-cases.append((3, [5] * 10 + [0, 9] * 50 + [5] * 10))                 # two equal best windows: take the left one
-cases.append((N // 4, list(range(N))))                    # every window of length N/4+1 works
-cases.append((N // 3, list(range(N, 0, -1))))
-cases.append(walk(N, 20000, 300))
-for K, step in ((150, 1), (240, 2), (4000, 25), (30000, 200)):     # long windows everywhere (sum of window lengths ~10^9+)
-    cases.append(walk(N, K, step))
-cases.append((N // 5, [i % (N // 2) for i in range(N)]))            # sawtooth
-cases.append((N // 6, [(i * 7) % N if i % 1000 else i for i in range(N)][:0] + list(range(0, 2 * N, 2))))                          # long windows everywhere, answer in the middle
-for _ in range(3):                                          # medium random data: resetting the window on violation is wrong
-    cases.append((random.randint(3, 8), [random.randint(0, 10) for _ in range(random.randint(2000, 5000))]))
-# ---- legacy strengthening (2026-10): the brute force that stops once the best can no longer be beaten scored 95%,
-# because long windows were either the whole array or started near day 1. The new big tests have stable windows
-# of about N/2 days everywhere and the (slightly longer) best one starting after day 0.4 N, so that brute does
-# ~2 * 10^9 steps. The cases above are still generated so the unchanged tests keep their bytes; `override`
-# replaces some of them, `extra` adds tests at the end. All new data comes from R, not from `random`.
-R = random.Random(26172)
-rr = R.random
-def late(A, step, tail, s, sign=1, rand=False, jitter=0, n=N):
-    """days rise (sign 1) or fall (-1) by `step` per day (random in [0, 2 step] if rand), the last `tail` days s times
-    slower; K = (A - 1) * step, so windows are about A days long and the longest ones lie in the slow tail"""
-    t = []; x = 0.0
-    for i in range(n):
-        t.append(int(x))
-        st = step if i < n - tail else step * s
-        x += (rr() * 2 * st) if rand else st
-    if jitter:
-        t = [v + int(rr() * (2 * jitter + 1)) - jitter for v in t]
-    shift = -(max(t) + min(t)) // 2
-    return (int(round((A - 1) * step)), [sign * (v + shift) for v in t])
-override = {
-    13: late(50000, 20000, 55000, 0.9),                          # values from -10^9 to 10^9: max - min near 2 * 10^9
-    14: late(50000, 10, 52000, 0.92, rand=True),
-    18: late(48000, 1 / 3, 55000, 0.9),                          # slow ramp (steps of 1 every 3 days)
-    19: (lambda K, t: (K, [v + abs(i % 4000 - 2000) - 1000 for i, v in enumerate(t)]))(*late(50000, 1000, 54000, 0.9)),   # wavy ramp
-    20: late(50000, 5, 55000, 0.9, rand=True),
-    21: late(52000, 10, 56000, 0.93, sign=-1, rand=True),
-    22: late(45000, 1, 54000, 0.85, rand=True),
-    23: late(50000, 20, 55000, 0.9, rand=True, jitter=15),
-    24: late(53000, 3, 56000, 0.95, sign=-1, rand=True),
-    29: late(50000, 300, 55000, 0.9, rand=True),
-    30: late(49000, 2, 54000, 0.9, rand=True),
-    31: late(50000, 25, 55000, 0.9, sign=-1),
-    32: late(51000, 200, 55000, 0.92, rand=True, jitter=100),
-    33: late(50000, 7, 56000, 0.88, rand=True),
-    34: late(47000, 100, 53000, 0.9, sign=-1, rand=True, jitter=40),
-    27: (N // 2 - 1, list(range(N))),                            # every window of N/2 days works: take day 1
-    35: late(50000, 2, 60000, 0.9),          # exact slopes: every window inside the tail has the same length: take the first
-}
-extra = [
-    late(50000, 9000, 58000, 0.9, sign=-1),                      # large values, falling
-    late(52000, 50, 57000, 0.94, rand=True),
-]
-for i, (K, t) in enumerate(cases + extra, 1):
-    if i in override:
-        K, t = override[i]
-    assert 1 <= len(t) <= N and 0 <= K <= 2 * B and -B <= min(t) and max(t) <= B
-    open(f"tests/{i:02d}.in", "w").write(f"{len(t)} {K}\n" + " ".join(map(str, t)) + "\n")
-assert len(cases) + len(extra) <= 40
-print(len(cases) + len(extra), "tests")
+for i, t in enumerate(tests, 1):
+    with open(f"tests/{i:02d}.in", "w") as f:
+        f.write(t)

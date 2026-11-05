@@ -1,6 +1,6 @@
 # C2_MOCK: POSN Camp 2 Practice Judge
 
-A terminal judge that students run on their own machines to practice for the POSN Computer Olympiad (Camp 2: 15 sets x 5 problems, no subtasks).
+A terminal judge that students run on their own machines to practice for the POSN Computer Olympiad (Camp 2: 8 sets x 6 problems ordered easy to hard, no subtasks).
 Sibling repo `C1_MOCK` is the Camp 1 judge (same structure); fix shared bugs in both.
 Today it judges batch problems (`judge.py`). We are adding interactive and communication problems,
 and it updates itself from this GitHub repo so bugs can be fixed without re-sending zip files.
@@ -40,11 +40,11 @@ C2_MOCK/
     communication/<name>/{problem.json, manager.cpp, stub/, tests/}
   student/                      # student-side files outside Judge/ (copied by build_dist.py)
     README.txt, Progress.md, .vscode/, Mock_K/Mock_K.pdf
-    set_files/{Makefile, judge.bat, template.cpp}   # put in every Mock_K; template.cpp -> 1.cpp ... 5.cpp
+    set_files/{Makefile, judge.bat, template.cpp}   # put in every Mock_K; template.cpp -> 1.cpp ... 6.cpp
   samples/                      # known-verdict programs used as regression tests
     batch/towers_ok.cpp, towers_smallhi.cpp, towers_slow.cpp, towers_crash.cpp, towers_syntax.cpp
     interactive/guess_ok.cpp, guess_noflush.cpp, guess_linear.cpp, guess_crash.cpp
-    expected.json               # {"batch/towers_ok.cpp": {"problem": "11-2", "verdict": "AC", "score": 100}, ...}
+    expected.json               # {"batch/towers_ok.cpp": {"problem": "3-2", "verdict": "AC", "score": 100}, ...}
                                 # verdict: AC/WA/TLE/RE/MLE/CE (first failing test); "score" optional (runs all tests)
   tools/
     build_manifest.py           # writes manifest.json (VERSION + SHA-256 of every file in Judge/); --check for CI
@@ -58,7 +58,7 @@ C2_MOCK/
 ```
 
 Student-side layout (what `build_dist.py` produces): `C2_Mock_Test/Judge/` = `core/` + `problems/`,
-and `C2_Mock_Test/Mock_K/1.cpp ... 5.cpp` = student files. The repo layout is **not** the student layout.
+and `C2_Mock_Test/Mock_K/1.cpp ... 6.cpp` = student files. The repo layout is **not** the student layout.
 `judge.py` finds batch data in the first existing of `Judge/problems/batch/` (student package),
 `../problems/batch/` (repo, run from `core/`) and `Judge/tests/` (older zips, JSON files next to judge.py).
 
@@ -161,7 +161,7 @@ python3 tools/build_manifest.py          # after changing anything under core/, 
 python3 tools/build_manifest.py --check  # CI: fails if manifest.json is stale
 python3 tools/update_problem_manifest.py Mock_K/N   # after adding NN.in/NN.out to a problem (--check --all in CI)
 python3 tools/build_dist.py              # build dist/C2_Mock_Test/ + dist/C2_Mock_Test.zip (--out DIR, --no-zip)
-python3 core/judge.py samples/batch/towers_ok.cpp 11-2     # judge one file from the repo (creates big tests, see above)
+python3 core/judge.py samples/batch/towers_ok.cpp 3-2      # judge one file from the repo (creates big tests, see above)
 python3 core/interactive_judge.py guess samples/interactive/guess_ok.cpp
 ```
 
