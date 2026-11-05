@@ -1,5 +1,7 @@
 POSN Practice Judge - changes
 
+6.0.1  Typography: more space between lines and below headings (Thai marks never touch), bold section
+       headings, sample labels inside the sample boxes; every statement still fits on one A4 page.
 6.0  8 mock exams of 6 problems (3 hours, score /600, target 300), ordered from easy to hard, each set a little
      harder than the real exam; inside each set the problems also go from easy to hard. The problems come from a
      larger bank and cover every topic of the Camp 2 syllabus (POSN 2569); one new problem (4/1). A problem

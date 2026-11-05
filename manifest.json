@@ -320,7 +320,7 @@
 ]
 },
 "files": {
-"CHANGELOG.txt": "96f49e4289ab81b0fa09a51b2f8f82b52d808b9fddad3e189cc1a1a70d580ad0",
+"CHANGELOG.txt": "32a2e57b33bc310361f7ff9d1a24be56dbb9349b0ef2fb4f1a29d303b0b32c2b",
 "README.txt": "4d27071055e08bad3d78f0d6622458d1bbea150a300d4d52b70a4961c12857cd",
 "include/bits/stdc++.h": "1545f1f4b55b3acb866effca73203f3a9131773f147331cbf4e983ebf36d6cc9",
 "judge.py": "4c98d25e1c43f97da28818c91f0ecf5e499ce5235c05300479876d16450697e5",
@@ -2361,7 +2361,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_1/Mock_1.pdf": [
-"49e4a4d0f9014f2619b0f0a5a0a066899e7da512c0fec75a907d85e090f991c6",
+"a154cd226febdd58d708377df525b21343d3b611472944f5f59eb64306df0556",
 "student/Mock_1/Mock_1.pdf"
 ],
 "Mock_1/judge.bat": [
@@ -2373,7 +2373,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_2/Mock_2.pdf": [
-"2ecfd3793267dcbe6f3a20a6a7889322bca5dfe13c027a40e90cac25dc4bbb75",
+"8713e65ecbd9d39cba76948ebb7f1fa8eef406258ed0a93e0ba6f42526292ec0",
 "student/Mock_2/Mock_2.pdf"
 ],
 "Mock_2/judge.bat": [
@@ -2385,7 +2385,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_3/Mock_3.pdf": [
-"f424891a29b0c4fc03621674f2b0a4b046e41df9301dc2e6a81458ff63291b99",
+"4082ffd889bfdf6ffb1d7ba72a0d9503270c29398e8d2c81a2329b7e2b58ed7c",
 "student/Mock_3/Mock_3.pdf"
 ],
 "Mock_3/judge.bat": [
@@ -2397,7 +2397,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_4/Mock_4.pdf": [
-"4c9ec6fe8470754d3e62ff3561b6576397b63723ea43b41ffe040815d11c6e6e",
+"8b5238b09bbcd67a0e8deef6064eec41de2041f5b435fb7e49ea55b3c2be7767",
 "student/Mock_4/Mock_4.pdf"
 ],
 "Mock_4/judge.bat": [
@@ -2409,7 +2409,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_5/Mock_5.pdf": [
-"fdc48d3e3754332f9e910cb6c93e17d2c7f7548cac9d17c6e128728837911ac3",
+"4f9a1cc1622b46de4f6bf9fd98a2a8614a4aac7919bc5905d7c2d39eb4297602",
 "student/Mock_5/Mock_5.pdf"
 ],
 "Mock_5/judge.bat": [
@@ -2421,7 +2421,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_6/Mock_6.pdf": [
-"0072b07372be2e868727ca163a06c31e238290415b0fca7ecf11fcc731dcc1c8",
+"070ce3ad52f348f04158fb92cb7bb8d188df6c618dfaeb23e6941bf3051504cf",
 "student/Mock_6/Mock_6.pdf"
 ],
 "Mock_6/judge.bat": [
@@ -2433,7 +2433,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_7/Mock_7.pdf": [
-"75f5f428bdd60648150a27040b6c55941b32309e6f08cedcd6c9d3ad333340bc",
+"da8280d997073b6878b7b42d6492a72f46b6b734258b8850a17653f01550e379",
 "student/Mock_7/Mock_7.pdf"
 ],
 "Mock_7/judge.bat": [
@@ -2445,7 +2445,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_8/Mock_8.pdf": [
-"03bfe9581b2f81faaceb5fe8d56be0e9b5e1b2a8d94b927df2f7ec6b2c93cda2",
+"7fb6f584a653e3e07ebae365eb3c8d8b2de59b484a4b0df51f17c32283dbc7d8",
 "student/Mock_8/Mock_8.pdf"
 ],
 "Mock_8/judge.bat": [
@@ -2465,7 +2465,7 @@
 "": "core/",
 "problems/": "problems/"
 },
-"version": "6.0"
+"version": "6.0.1"
 },
 "managed": {
 ".vscode/settings.json": [
