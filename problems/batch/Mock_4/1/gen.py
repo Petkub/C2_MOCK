@@ -2,7 +2,7 @@
 import os, random
 
 random.seed(2011)
-MAXN, MAXM, MAXLEN, MAXTOTAL = 100000, 100000, 20, 1000000
+MAXN, MAXM, MAXLEN, MAXTOTAL = 100000, 8000, 20, 1000000
 LET = "abcdefghijklmnopqrstuvwxyz"
 tests = []
 rnd = random.random
@@ -206,7 +206,7 @@ def pairs_dict(n, L):
 
 
 def same_letter_text():
-    d = make_dict(50000, [10], 26, extra=["a" * k for k in range(1, 21, 2)] + ["ab" * 5, "ba" * 5])
+    d = make_dict(80000, [10], 26, extra=["a" * k for k in range(1, 21, 2)] + ["ab" * 5, "ba" * 5])
     shuffle(d)
     t = []
     used = dict_chars(d)
@@ -228,7 +228,7 @@ def repeated_word():
 
 
 def order_trap():
-    d = pairs_dict(50000, 9)
+    d = pairs_dict(90000, 9)
     t = text_of(d, MAXTOTAL - dict_chars(d), [(5, "exact"), (4, "slip"), (1, "rand")], [9], 26)
     return d, t
 
@@ -240,21 +240,21 @@ def order_trap_short():
 
 
 BIG = [
-    (5001, lambda: big_random(50000, list(range(6, 13)), 26)),
-    (5002, lambda: big_random(20000, [14, 15], 2)),
-    (5003, lambda: big_random(40000, [15, 16, 17], 2)),
-    (5004, lambda: big_random(30000, [10], 3)),
-    (5005, lambda: big_random(25000, [20], 26, [(1, "exact"), (2, "slip"), (2, "far"), (3, "rand")])),
-    (5006, lambda: big_random(50000, [10], 26, [(1, "far"), (1, "rand"), (1, "two")])),
+    (5001, lambda: big_random(90000, list(range(6, 13)), 26)),
+    (5002, lambda: big_random(45000, [14, 15], 2)),
+    (5003, lambda: big_random(50000, [15, 16, 17], 2)),
+    (5004, lambda: big_random(50000, [10], 3)),
+    (5005, lambda: big_random(40000, [20], 26, [(1, "exact"), (2, "slip"), (2, "far"), (3, "rand")])),
+    (5006, lambda: big_random(80000, [10], 26, [(1, "far"), (1, "rand"), (1, "two")])),
     (5007, lambda: big_random(MAXN, [1, 2, 3, 3, 4, 4, 4, 4], 26, [(1, "exact"), (1, "slip"), (1, "rand")])),
-    (5008, lambda: big_random(50000, [8, 9], 4)),
-    (5009, lambda: big_random(50000, list(range(1, 21)), 26)),
+    (5008, lambda: big_random(90000, [8, 9], 4)),
+    (5009, lambda: big_random(75000, list(range(1, 21)), 26)),
     (5011, same_letter_text),
     (5012, repeated_word),
     (5013, order_trap),
     (5014, lambda: big_random(MAXN, [4, 5], 26, [(1, "slip")])),
-    (5015, lambda: big_random(30000, [18, 19, 20], 2, [(1, "slip"), (1, "rand")])),
-    (5017, lambda: big_random(50000, [9, 10, 11], 5, [(2, "slip"), (1, "two"), (1, "rand")])),
+    (5015, lambda: big_random(40000, [18, 19, 20], 2, [(1, "slip"), (1, "rand")])),
+    (5017, lambda: big_random(80000, [9, 10, 11], 5, [(2, "slip"), (1, "two"), (1, "rand")])),
     (5018, lambda: big_random(MAXN, [4, 5], 26, [(1, "rand"), (1, "far")])),
     (5019, lambda: big_random(MAXN, [3, 4, 5, 6], 26, [(1, "exact"), (2, "slip"), (1, "rand")])),
     (5020, lambda: order_trap_short()),

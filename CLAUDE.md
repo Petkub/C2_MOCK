@@ -74,7 +74,14 @@ and `C2_Mock_Test/Mock_K/1.cpp ... 6.cpp` = student files. The repo layout is **
 
 ## Judging rules (batch)
 
-- Compile: `g++ -O2 -std=c++17 -Wall -Wno-sign-compare -Wno-char-subscripts` (Windows: `-static`, 256 MB stack).
+- Compile: `g++ -O2 -std=c++17 -Wall -Wno-sign-compare -Wno-char-subscripts` (Windows: `-static`).
+- Stack: 256 MB on every platform (recursion of depth 10^6 runs; regression test `towers_deep.cpp`). Linux:
+  `raise_stack_limit` raises the judge's soft RLIMIT_STACK (inherited by the program; capped by the hard limit,
+  normally unlimited). macOS: the hard limit is 64 MB, so `-Wl,-stack_size,0x10000000` is linked in (dropped if
+  the linker rejects it; then 64 MB). Windows: `-Wl,--stack,268435456`.
+- Time = wall-clock time of the run (`perf_counter`, includes process start); a slow but finished run is measured
+  once more. Memory is not capped while the program runs: the peak is checked after it (below), so a 400 MB
+  program gets MLE, it is not killed at 256 MB.
   Warnings are shown after "Compiled" (a count in set mode); they do not change the verdict.
 - Limits: time `--tl` (default 1 s, hard kill at 2x+0.5 s), memory `--ml` (default 256 MB, the statements;
   `"ml"` in `problems.json` per problem). Memory = the program's peak resident size, read every millisecond while

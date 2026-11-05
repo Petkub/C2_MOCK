@@ -12,6 +12,9 @@ def ri(a, b):
     return a + int(rnd() * (b - a + 1))
 
 
+DROP = False  # True: draw a test (so later tests stay the same) but do not write it
+
+
 def add(n, edges, s, cap, pas):
     m, k = len(edges), len(pas)
     assert 1 <= n <= MAXN and 0 <= m <= MAXM and 1 <= cap <= k <= MAXK and 1 <= s <= n
@@ -21,7 +24,8 @@ def add(n, edges, s, cap, pas):
         assert 1 <= a <= n and 1 <= b <= n
     lines = [f"{n} {m} {k} {cap} {s}", " ".join(str(a) for a, b in pas), " ".join(str(b) for a, b in pas)]
     lines += [f"{u} {v} {w}" for u, v, w in edges]
-    tests.append("\n".join(lines) + "\n")
+    if not DROP:
+        tests.append("\n".join(lines) + "\n")
 
 
 def relabel(n, edges, s, pas):
@@ -142,7 +146,9 @@ def big_random(cap, w=(1, MAXW), stops=None):
 
 
 big_random(2)
+DROP = True  # v6.0.2: replaced by the large-capacity tests at the end
 big_random(3)
+DROP = False
 big_random(7)
 big_random(25, (1, 1000))
 big_random(K)
@@ -164,12 +170,14 @@ for cap, sizes in ((3, [1500, 1500]), (10, [1000, 1000, 1000]), (2, [1200, 600, 
 
 # two-way traffic between two clusters
 for cap in (2, 5):
+    DROP = cap == 5  # v6.0.2: only the capacity-2 version is kept
     e, gr = clusters([1500, 1500], [4990, 4990], 10 ** 6)
     pas = []
     for j in range(K):
         a, b = (0, 1) if (j // ri(1, 4)) % 2 == 0 else (1, 0)
         pas.append((random.choice(gr[a]), random.choice(gr[b])))
     emit(MAXN, e, gr[0][0], cap, pas)
+DROP = False
 
 # a long line with heavy roads (lengths beyond 32 bits), stops jump between the two ends
 e = line_graph(MAXN, 0, (MAXW, MAXW))
@@ -209,13 +217,26 @@ emit(MAXN, e, towns[0], 5, pas)
 pas[K // 2] = (pas[K // 2][0], ri(2001, MAXN))
 emit(MAXN, e, towns[0], 5, pas)
 # long roads along a line (totals far beyond 32 bits), stops anywhere
+DROP = True  # v6.0.2: replaced (tests 24 and 25 still need 64-bit totals)
 e = line_graph(MAXN, 3000, (MAXW // 2, MAXW), (MAXW, MAXW))
 pas = [(ri(1, MAXN), ri(1, MAXN)) for _ in range(K)]
 emit(MAXN, e, ri(1, MAXN), 5, pas)
+DROP = False
 # the shuttle starts in a part that holds no stop: -1
 e = random_graph(1000, 3000) + [(u + 1000, v + 1000, w) for u, v, w in random_graph(MAXN - 1000, MAXM - 3000)]
 towns = random.sample(range(1001, MAXN + 1), 2 * K)
 emit(MAXN, e, ri(1, 1000), 3, [(towns[2 * j], towns[2 * j + 1]) for j in range(K)])
+
+# large capacity (v6.0.2): many (boarded, dropped) pairs are possible, so a search over (town, boarded, dropped)
+# has about N * K * C / 2 states
+random.seed(6020305)
+big_random(50)
+e, gr = clusters([1500, 1500], [4990, 4990], 10 ** 6)
+pas = [(random.choice(gr[0]), random.choice(gr[1])) for _ in range(K)]
+emit(MAXN, e, gr[0][0], 80, pas)
+e = grid_graph(50, 60, MAXM - 5890, (1, 1000))
+towns = random.sample(range(1, MAXN + 1), 2 * K + 1)
+emit(MAXN, e, towns[0], K, [(towns[2 * j + 1], towns[2 * j + 2]) for j in range(K)])
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

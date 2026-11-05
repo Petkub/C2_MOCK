@@ -202,23 +202,24 @@ pts = pick(base, (0, 1, 1, 0))
 relabel(80, pts, shortcuts(80, pts, es))
 pts, es = hshape(150, 400, (12, 15, 10, 14), 8, unif(1, 100), unif(10**4, 10**5), PAIR_AC)
 relabel(150, pts, es)
+# the friends and the concert in one part, other junctions in another part that they cannot reach
+es = rand_connected(7, 5, unif(1, 30)) + rand_connected(3, 1, unif(1, 30), base=7)
+relabel(10, tuple(random.sample(range(7), 4)), es)
 # hidden: maximum size (N = 400)
 # grids with the four friends near the corners: the left pair and the right pair belong together
 for (h, w), pairing, inset, wf, drop, m in (
         ((10, 40), PAIR_AC, (1, 8), unif(1, 10**6), 0.0, MAXM),
         ((10, 40), PAIR_AT, (2, 10), unif(1, 30), 0.0, 0),
         ((8, 50), PAIR_AB, (0, 0), unif(1, 1000), 0.1, MAXM),
-        ((20, 20), PAIR_AT, (4, 4), unif(1, 1000), 0.0, 5000),
         ((16, 25), PAIR_AC, (3, 5), unif(1, 1000), 0.1, MAXM),
         ((4, 100), PAIR_AT, (0, 20), unif(MAXW - 10**6, MAXW), 0.0, MAXM),
-        ((5, 80), PAIR_AC, (1, 15), unif(1, 10**6), 0.0, 12_000),
         ((8, 50), PAIR_AT, (2, 10), unif(1, 100), 0.05, MAXM),
         ((20, 20), PAIR_AC, (6, 6), unif(1, 10**6), 0.0, MAXM)):
     es = grid(h, w, wf, drop)
     pts = corners(h, w, inset, pairing)
     relabel(h * w, pts, shortcuts(h * w, pts, pad(es, m - 6, (0, 1000)) if m else es))
 # two dense clusters joined by a few expensive roads
-for pairing in (PAIR_AT, PAIR_AB, PAIR_AC):
+for pairing in (PAIR_AT, PAIR_AC):
     base, es = clusters((200, 200), ((0, 1, 5),), unif(1, 1000), unif(10**4, 10**5))
     for _ in range(MAXM - 6 - len(es)):             # more roads inside the clusters
         c = ri(0, 1)
@@ -268,6 +269,13 @@ for i in range(4):
     for j in range(i + 1, 4):
         es.append((ends[i], ends[j], lens[i] + lens[j] - ri(1, 1000)))
 relabel(v, (ends[1], ends[2], ends[3], ends[0]), pad(es, MAXM, (10**6, 10**7)))
+# not connected, but the friends and the concert are in one part (an answer exists)
+es = grid(15, 20, unif(1, 10**6), 0.05) + rand_connected(60, 200, unif(1, 1000), base=300)
+pts = corners(15, 20, (2, 3), PAIR_AT)                       # junctions 360..399: no roads at all
+relabel(MAXN, pts, shortcuts(MAXN, pts, pad(es, MAXM - 6, (0, 1000))))
+base, es = clusters((250, 150), (), unif(1, 10**5), None)
+pts = pick(base, (0, 0, 0, 0))
+relabel(MAXN, pts, shortcuts(MAXN, pts, pad(es, MAXM - 6, (0, 10**5))))
 # two components: c cannot reach the concert
 base, es = clusters((MAXN // 2, MAXN // 2), (), unif(1, 10**6), None)
 pts = pick(base, (0, 0, 1, 0))

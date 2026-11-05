@@ -635,6 +635,10 @@ def compile_source(src, outdir):
         # Windows default stack is only 1 MB. -static: the program does not need libstdc++-6.dll at run time,
         # so another (incompatible) copy of that DLL earlier in PATH cannot make every test crash
         cmd[1:1] = [f"-Wl,--stack,{STACK_BYTES}", "-static"]
+    elif sys.platform == "darwin":
+        # macOS caps RLIMIT_STACK at 64 MB (its hard limit), so raise_stack_limit cannot reach 256 MB there:
+        # the main thread's stack size is written into the program when linking instead
+        cmd[1:1] = [f"-Wl,-stack_size,{STACK_BYTES:#x}"]
     inc = os.path.join(ROOT, "include")
     if os.path.isdir(inc):
         # fallback <bits/stdc++.h> for macOS (g++ = Apple clang); searched after the system headers,
@@ -664,6 +668,11 @@ def compile_source(src, outdir):
         # a MinGW without static libraries ("cannot find -lstdc++"): link the usual way instead
         if p.returncode != 0 and "-static" in cmd and b"cannot find -l" in out:
             cmd.remove("-static")
+            continue
+        # a linker without -stack_size: link the usual way (the stack is then RLIMIT_STACK, 64 MB on macOS)
+        mac_stack = [a for a in cmd if a.startswith("-Wl,-stack_size,")]
+        if p.returncode != 0 and mac_stack and b"stack_size" in out:
+            cmd.remove(mac_stack[0])
             continue
         break
     dt = time.perf_counter() - t0

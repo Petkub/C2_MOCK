@@ -1,5 +1,5 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-import os, random
+import itertools, os, random
 
 random.seed(1302002)
 MAXN, MAXK, MAXL = 1000000, 50, 250
@@ -109,7 +109,14 @@ add(fix_ends(("ab " * N)[:N]), ["ab", "b?a"])                                   
 add(("abcd" * N)[:N], ["ab", "cd"])                                                          # touching runs
 add(fix_ends(("abc " * N)[:N]), ["ab", "c", "bc"])                                            # touching, many runs
 t = rtext(N, L26, 0.15); add(t, cap([pat(L26, 3, 1) for _ in range(50)]))
-t = rtext(N, L26, 0.0); add(t, cap([pat(L26, 2, 0) for _ in range(50)]))
+# v6.0.2: this test was replaced; its random draws stay so that the later tests stay the same
+t = rtext(N, L26, 0.0); cap([pat(L26, 2, 0) for _ in range(50)])
+# every keyword occurs at every position: about 5 * 10^7 occurrences in all
+ws = []
+for L in range(1, 6):
+    pats = ["".join(p) for p in itertools.product("a?", repeat=L)]
+    ws += [pats[(3 * i + L) % len(pats)] for i in range(10)]
+add("a" * N, ws)
 t = rtext(N, "ab", 0.0); add(t, cap([pat("ab", random.randint(7, 9), random.randint(0, 1)) for _ in range(30)]))
 t = rtext(N, "ab", 0.08); add(t, cap([pat("ab", random.randint(3, 10), 1) for _ in range(35)]))
 t = rtext(N, "abcd", 0.1); add(t, cap([pat("abcd", random.randint(4, 6), random.randint(0, 2)) for _ in range(50)]))

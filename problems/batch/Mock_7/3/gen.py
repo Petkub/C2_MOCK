@@ -3,7 +3,7 @@ import bisect, gc, itertools, os, random
 
 gc.disable()     # only acyclic data: the cyclic garbage collector just slows gen.py down
 
-MAXN, MAXQ, MAXV = 100000, 100000, 10 ** 7
+MAXN, MAXQ, MAXV = 200000, 200000, 10 ** 7
 tests = []
 rnd = random.random
 
@@ -32,11 +32,12 @@ PRIMES = list(itertools.compress(range(MAXV + 1), sieve))
 
 def primes_in(lo, hi):
     """a function returning a random prime in [lo, hi]"""
-    i, j = bisect.bisect_left(PRIMES, lo), bisect.bisect_right(PRIMES, hi)
-    return lambda: PRIMES[i + int(rnd() * (j - i))]
+    sub = PRIMES[bisect.bisect_left(PRIMES, lo):bisect.bisect_right(PRIMES, hi)]
+    m = len(sub)
+    return lambda: sub[int(rnd() * m)]
 
 
-BIGP, MIDP, HIP = primes_in(10 ** 6, MAXV), primes_in(1000, 3162), primes_in(2700, 3162)
+BIGP, MIDP, HIP = primes_in(10 ** 6, MAXV), primes_in(1000, 3162), primes_in(3000, 3162)
 LOWP, ANYP, TOPP = primes_in(2, 200000), primes_in(2, MAXV), primes_in(9 * 10 ** 6, MAXV)
 
 
@@ -53,6 +54,11 @@ class Built:
 # each val_* returns a value v <= MAXV and its factorisation as pairs (p, e)
 def val_bigprime():
     p = BIGP()
+    return p, ((p, 1),)
+
+
+def val_top():
+    p = TOPP()
     return p, ((p, 1),)
 
 
@@ -97,7 +103,7 @@ def val_mixed():
     return v, fac.items()
 
 
-KINDS = {"big": val_bigprime, "semi": val_semi, "semihi": val_semihi, "pow": val_power, "smooth": val_smooth, "mixed": val_mixed}
+KINDS = {"top": val_top, "big": val_bigprime, "semi": val_semi, "semihi": val_semihi, "pow": val_power, "smooth": val_smooth, "mixed": val_mixed}
 
 
 def build_array(n, weights, raw=0.0):
@@ -197,7 +203,7 @@ add([12, 18, 5, 49, 15], [180, 7, 49, 60])
 add([7, 1, 14, 3], [2, 21, 1, 9])
 # hidden: small (brute checks these)
 ALL = {"big": 1, "semi": 1, "pow": 2, "smooth": 3, "mixed": 2}
-for seed, n, q in [(1, 10, 30), (2, 60, 200), (3, 300, 1000), (4, 2000, 3000), (5, 3000, 3000)]:
+for seed, n, q in [(1, 10, 30), (2, 60, 200), (3, 300, 1000), (4, 3000, 3000)]:
     random.seed(150200 + seed)
     case(n, q, ALL, raw=0.2)
 random.seed(150301)
@@ -210,24 +216,17 @@ case(2500, 4000, {"pow": 4, "smooth": 2}, late=0.6, none=0.35)
 BIG = [
     (150401, dict(weights=ALL, raw=0.3)),
     (150402, dict(weights={"big": 1}, late=0.5, none=0.45)),
-    (150403, dict(weights={"semi": 1}, late=0.5, none=0.45)),
     (150404, dict(weights={"pow": 2, "smooth": 1}, late=0.55, none=0.4)),
     (150405, dict(weights={"smooth": 1}, late=0.5, none=0.45)),
     (150406, dict(weights={"mixed": 1}, late=0.45, none=0.45)),
-    (150407, dict(weights={"big": 1, "semi": 1}, raw=0.5)),
-    (150408, dict(weights=ALL, late=0.7, none=0.25)),
     (150409, dict(weights=ALL, late=0.2, none=0.75)),
-    (150410, dict(weights={"pow": 1, "big": 1}, late=0.5, none=0.45)),
-    (150411, dict(weights={"semi": 2, "smooth": 1}, raw=0.2)),
-    (150412, dict(weights={"mixed": 2, "pow": 1}, late=0.5, none=0.45)),
     (150413, dict(weights=ALL, raw=1.0, late=0.0, none=0.6)),
     (150414, dict(weights={"big": 3, "pow": 1, "semi": 1}, late=0.45, none=0.5)),
-    (150415, dict(weights={"smooth": 1, "mixed": 1}, raw=0.1, late=0.6, none=0.35)),
-    (150416, dict(weights={"semi": 1, "big": 1}, late=0.35, none=0.6)),
     # values and queries whose factorisation needs the most trial divisions
     (150418, dict(weights={"semihi": 1}, late=0.2, none=0.1, hard=0.7)),
     (150419, dict(weights={"semihi": 1, "big": 1}, late=0.2, none=0.2, hard=0.6)),
-    (150420, dict(weights={"big": 1}, late=0.1, none=0.1, hard=0.8)),
+    (150420, dict(weights={"top": 1}, late=0.1, none=0.1, hard=0.8)),
+    (150421, dict(weights={"top": 1, "semihi": 1}, late=0.3, none=0.2, hard=0.5)),
 ]
 for seed, kw in BIG:
     random.seed(seed)

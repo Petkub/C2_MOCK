@@ -86,6 +86,11 @@ add(flip(shuffled(cycles(150, 1, 6) + paths(150, 1, 5, 1000))))
 add(relabel(flip(rand_edges(400, 300, 0.3))))
 add(flip(rand_edges(600, 25)))
 add(relabel(flip(shuffled(paths(500, 1, 3) + [(v, v) for v in range(2000, 2100)]))))
+# hidden: tiny (N <= 16, the brute searches every order of the dominoes)
+add(flip(rand_edges(16, 5, 0.2)))
+add(flip(rand_edges(15, 12, 0.1)))
+add(relabel(flip(shuffled(cycles(8, 1, 4) + paths(8, 1, 3, 100)))))
+add(flip(shuffled([(1, 2)] * 5 + [(2, 3)] * 4 + [(4, 4)] * 3 + [(5, 6)] * 4)))
 # hidden: big
 BIG = [
     (12040, lambda: flip(rand_edges(MAXN, MAXV))),

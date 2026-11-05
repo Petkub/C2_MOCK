@@ -110,6 +110,9 @@ def weights(kind, n, par, plants):
             w[i] = ri(1, 10)
         elif kind == "spur":        # roads into a plant leaf are short, the rest long
             w[i] = ri(1, 3) if i in plants else ri(30000, 99999)
+        elif kind == "decoy":       # most plants sit behind a very long road: the plant fewest roads away
+            # is often not the nearest one by length
+            w[i] = (MAXW if rnd() < 0.8 else 1) if i in plants else ri(1, 100)
         else:
             raise ValueError(kind)
     return w
@@ -239,9 +242,10 @@ build(300, "random", "rand", "random", 1, "random")
 build(2000, "caterpillar", "spur", "leaves", 4, "leaves")
 build(3000, "path", "small", "random", 2, "zigzag", start=1500)
 build(9000, "deep", "rand", "random", 5, "random", c1_plant=True)
+build(500, "random", "decoy", "leaves", 30, "bfs")
 # hidden: big
 build(MAXN, "path", "rand", "random", 2, "zigzag", start=MAXN // 2)
-build(MAXN, "path", "max", "random", 1, "random")
+build(MAXN, "random", "decoy", "leaves", 30, "bfs")
 build(MAXN, "path", "spur", "random", 30, "leaves", start=7)
 build(MAXN, "spurs", "spur", "spurs", 5, "leaves")
 build(MAXN, "random", "rand", "random", 3, "leaves")

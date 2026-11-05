@@ -24,16 +24,16 @@
   "scoring": "all"
  },
  "4": {
-  "title": "อาหารที่ค่อย ๆ เย็นลง",
-  "en": "Dishes That Cool Down",
+  "title": "ร้านรับพิมพ์งาน",
+  "en": "Print Shop",
   "tier": 0,
   "dir": "Mock_1/4",
   "samples": 5,
   "scoring": "all"
  },
  "5": {
-  "title": "ร้านรับพิมพ์งาน",
-  "en": "Print Shop",
+  "title": "อาหารที่ค่อย ๆ เย็นลง",
+  "en": "Dishes That Cool Down",
   "tier": 0,
   "dir": "Mock_1/5",
   "samples": 5,
@@ -72,16 +72,16 @@
   "scoring": "all"
  },
  "10": {
-  "title": "แนวตึกจากหัวมุม",
-  "en": "Skyline From the Corner",
+  "title": "รถไฟเที่ยวสุดท้าย",
+  "en": "Last Train",
   "tier": 0,
   "dir": "Mock_2/4",
   "samples": 5,
   "scoring": "all"
  },
  "11": {
-  "title": "รถไฟเที่ยวสุดท้าย",
-  "en": "Last Train",
+  "title": "แนวตึกจากหัวมุม",
+  "en": "Skyline From the Corner",
   "tier": 0,
   "dir": "Mock_2/5",
   "samples": 5,

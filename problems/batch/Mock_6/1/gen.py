@@ -14,7 +14,7 @@ N, B = 100000, 10**9
 def rnd(n, K, L, lo, hi): return (K, L, [random.randint(lo, hi) for _ in range(n)])
 cases.append(rnd(3000, 7, 10, -B, B))
 cases.append(rnd(N, 7, 1, -B, B))
-cases.append(rnd(N, 1, 1, -B, B))                       # every subarray: answer ~2*10^10
+cases.append(rnd(N, 1, 1, -B, B))                       # every subarray: answer N(N+1)/2 = 5000050000
 cases.append(rnd(N, 1000, 50, -B, B))
 cases.append(rnd(N, 10**9, 1, -1, 1))                   # sums are small: divisible only when 0
 cases.append(rnd(N, 999999937, 1000, -B, B))

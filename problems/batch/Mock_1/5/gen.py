@@ -1,131 +1,124 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
 import os, random
 
-random.seed(350501)
-MAXN, MAXK, MAXS, MAXP, MAXT, MAXW = 100000, 100000, 100000, 10000, 10 ** 9, 10 ** 9
+random.seed(930503)
+MAXN, MAXA, MAXB = 5000, 10 ** 9, 10 ** 6
 tests = []
-rnd = random.random
 
 
-def ri(a, b):
-    """random integer in [a, b] (faster than randint, still deterministic)"""
-    return a + int(rnd() * (b - a + 1))
+def add(d):
+    n = len(d)
+    assert 1 <= n <= MAXN
+    assert all(0 <= a <= MAXA and 0 <= b <= MAXB for a, b in d)
+    tests.append(f"{n}\n" + "".join(f"{a} {b}\n" for a, b in d))
 
 
-def add(speeds, jobs):
-    n, k = len(jobs), len(speeds)
-    assert 1 <= n <= MAXN and 1 <= k <= MAXK
-    assert all(1 <= s <= MAXS for s in speeds)
-    for a, p, w, c in jobs:
-        assert 0 <= a <= MAXT and 1 <= p <= MAXP and 1 <= w <= MAXW
-        assert c == -1 or a <= c <= MAXT
-    lines = [f"{n} {k}", " ".join(map(str, speeds))] + [f"{a} {p} {w} {c}" for a, p, w, c in jobs]
-    tests.append("\n".join(lines) + "\n")
+def ri(lo, hi):
+    return random.randint(lo, hi)
 
 
-def make(n, k, smax, pmax, tmax, wmax, cfrac, cdelay, smin=1, pmin=1):
-    """random jobs: arrivals in [0, tmax], a share cfrac of them asks to cancel at most cdelay after arriving
-    (a third of those at the very moment they arrive)"""
-    speeds = [ri(smin, smax) for _ in range(k)]
-    jobs = []
+def uniform(n, alo=0, ahi=MAXA, blo=0, bhi=MAXB):
+    return [(ri(alo, ahi), ri(blo, bhi)) for _ in range(n)]
+
+
+def anti(n):
+    """dishes with a large a also cool down fast (a and b grow together, with noise)"""
+    d = []
     for _ in range(n):
-        a = ri(0, tmax)
-        c = -1
-        if rnd() < cfrac:
-            c = a if rnd() < 1 / 3 else min(MAXT, a + ri(0, cdelay))
-        jobs.append((a, ri(pmin, pmax), ri(1, wmax), c))
-    return speeds, jobs
+        t = random.random()
+        a = int(t * MAXA * random.uniform(0.6, 1.0))
+        b = int(t * MAXB * random.uniform(0.2, 1.0))
+        d.append((min(MAXA, a), min(MAXB, b)))
+    return d
 
 
-def busy_low(n, k, hold, smax, pmax, tmax, wmax, cfrac, cdelay):
-    """the first `hold` jobs arrive at 0 with the most pages and keep the low-numbered printers busy
-    for the whole test; the rest are short jobs served by the high-numbered printers"""
-    speeds = [MAXS] * hold + [ri(1, smax) for _ in range(k - hold)]
-    jobs = [(0, MAXP, 1, -1) for _ in range(hold)]
-    for _ in range(n - hold):
-        a = ri(1, tmax)
-        c = min(MAXT, a + ri(0, cdelay)) if rnd() < cfrac else -1
-        jobs.append((a, ri(1, pmax), ri(1, wmax), c))
-    return speeds, jobs
+def ratio_ties(n):
+    """a = q * b for a few rates q (many equal ratios a / b), plus noise dishes"""
+    qs = [ri(50, 3000) for _ in range(6)]
+    d = []
+    for _ in range(n):
+        if random.random() < 0.8:
+            b = ri(1, MAXB // 3)
+            q = random.choice(qs)
+            d.append((min(MAXA, q * b), b))
+        else:
+            d.append((ri(0, MAXA), ri(0, MAXB)))
+    return d
 
 
-def two_phase(n1, n2, k, t1, burst, wmax, cfrac):
-    """a quiet phase (n1 short jobs over [0, t1]: printers are often idle and free up in every order),
-    then a burst of n2 long jobs arriving in [t1 + 1, t1 + burst] that queue far beyond 2^31"""
-    speeds = [ri(1, MAXS) for _ in range(k)]
-    jobs = []
-    for _ in range(n1):
-        a = ri(0, t1)
-        c = min(MAXT, a + ri(0, 3 * MAXS)) if rnd() < cfrac else -1
-        jobs.append((a, ri(1, 3), ri(1, wmax), c))
-    for _ in range(n2):
-        a = ri(t1 + 1, t1 + burst)
-        c = min(MAXT, a + ri(0, 10 ** 9)) if rnd() < cfrac else -1
-        jobs.append((a, ri(1, MAXP), ri(1, wmax), c))
-    random.shuffle(jobs)
-    return speeds, jobs
+def levels(n, bs):
+    """few distinct b values, random a"""
+    return [(ri(0, MAXA), random.choice(bs)) for _ in range(n)]
 
 
-def held(h, made):
-    """h extra printers numbered first, each taking at second 0 one extra job that lasts 10^9 seconds (the extra
-    jobs have the smallest ids and the highest priority used), so the later jobs go to printers numbered above h"""
-    speeds, jobs = made
-    top = max(w for _, _, w, _ in jobs)
-    return [MAXS] * h + speeds, [(0, MAXP, top, -1)] * h + jobs
+def traps(n):
+    """pairs: a fast-cooling dish with a small positive first gain and a slow dish with a large a"""
+    d = []
+    for _ in range(n // 2):
+        b = ri(MAXB // 2, MAXB)
+        d.append((b * ri(1, 4) + ri(0, b), b))
+        b2 = ri(0, MAXB // 20)
+        d.append((ri(MAXA // 2, MAXA), b2))
+    while len(d) < n:
+        d.append((ri(0, MAXA), ri(0, MAXB)))
+    random.shuffle(d)
+    return d
+
+
+def mixed_scale(n):
+    """dishes of very different sizes: some big a/big b, some small a/tiny b"""
+    d = []
+    for _ in range(n):
+        r = random.random()
+        if r < 0.3:
+            d.append((ri(MAXA // 2, MAXA), ri(MAXB // 2, MAXB)))
+        elif r < 0.6:
+            d.append((ri(0, MAXA // 1000), ri(0, MAXB // 10000)))
+        else:
+            d.append((ri(0, MAXA // 10), ri(0, MAXB // 50)))
+    return d
 
 
 # samples
-add([1, 2], [(0, 3, 1, -1), (0, 2, 5, -1), (1, 1, 2, 3), (1, 2, 3, -1), (2, 1, 3, -1)])
-add([3, 1, 2], [(0, 2, 2, 1), (0, 1, 2, -1), (1, 4, 7, -1), (1, 1, 1, -1)])
-add([2], [(5, 1, 1, -1), (0, 2, 4, -1), (3, 1, 9, -1)])
-add([5, 1, 1, 3], [(2, 3, 1, -1), (2, 2, 6, -1), (0, 1, 1, -1)])
-add([2, 1], [(0, 2, 3, -1), (1, 3, 5, -1), (1, 1, 3, 2), (2, 2, 1, -1)])
-
-# hidden: small (brute checks these); small time ranges so that many events share a moment
-add([7], [(MAXT, MAXP, MAXW, MAXT)])
-add([1, 1, 1], [(4, 1, 1, -1)])
-for n, k, smax, pmax, tmax, wmax, cfrac, cdelay in [
-        (10, 2, 3, 3, 6, 3, 0.3, 3), (40, 3, 2, 4, 15, 4, 0.3, 5), (120, 5, 3, 3, 40, 3, 0.25, 6),
-        (200, 1, 2, 3, 100, 5, 0.3, 50), (250, 20, 4, 5, 30, 2, 0.4, 3), (300, 8, 1, 6, 60, 10, 0.2, 20)]:
-    add(*make(n, k, smax, pmax, tmax, wmax, cfrac, cdelay))
-
-# hidden: big (each with its own seed, so changing one test does not change the others)
-N, K = MAXN, MAXK
-BIG = [
-    # one printer, everything waits: a long queue and finish times far beyond 2^31
-    (350601, lambda: make(N, 1, MAXS, MAXP, 1000, MAXW, 0.3, 10 ** 6, smin=MAXS // 2, pmin=MAXP // 2)),
-    # many printers and still more work than they can do: a long queue, long varied jobs, few priority values
-    (350602, lambda: make(N, 20000, MAXS, MAXP, 1000, 5, 0.3, 10 ** 9, smin=50000, pmin=5000)),
-    (350603, lambda: make(N, 12000, MAXS, MAXP, 100, 50, 0.25, 10 ** 9, smin=10000, pmin=3000)),
-    (350604, lambda: make(N, 25000, MAXS, MAXP, 10 ** 5, 3, 0.35, 10 ** 9, smin=60000, pmin=5000)),
-    (350605, lambda: make(N, 30000, MAXS, MAXP, 0, 3, 0.3, 10 ** 9, smin=60000, pmin=6000)),
-    (350606, lambda: make(N, 25000, MAXS, MAXP, 10 ** 5, 1, 0.3, 10 ** 9, smin=40000, pmin=4000)),
-    (350607, lambda: make(N, 1000, MAXS, MAXP, 3000, 1000, 0.3, 10 ** 9, smin=2000, pmin=2000)),
-    (350621, lambda: make(N, 10000, MAXS, MAXP, 10 ** 4, 7, 0.3, 10 ** 9, smin=8000, pmin=8000)),
-    (350608, lambda: make(N, 5000, MAXS, MAXP, 10 ** 6, 10, 0.9, 10 ** 9, smin=50000, pmin=5000)),
-    (350609, lambda: make(N, 35000, MAXS, MAXP, 50, MAXW, 0.3, 10 ** 9, smin=80000, pmin=8000)),
-    # short jobs arriving in a burst: many printers finish, jobs arrive and requests come at the same moments
-    # (held(h, ...): printers 1..h stay busy for the whole test)
-    (350610, lambda: held(50000, make(N - 50000, 10000, 2, 2, 10, 3, 0.3, 3))),
-    # a quiet phase, then a burst that queues
-    (350624, lambda: two_phase(20000, 80000, 400, 10 ** 8, 1000, 5, 0.3)),
-    # short jobs, a few arriving every second, very many printers
-    (350613, lambda: make(N, K, 3, 3, 10 ** 5, 3, 0.3, 3)),
-    (350611, lambda: held(50000, make(N - 50000, 40000, 2, 4, 50000, 2, 0.4, 2))),
-    # the low-numbered printers are busy all the time
-    (350614, lambda: busy_low(N, K, 60000, 5, 5, 200000, 10, 0.2, 20)),
-    (350615, lambda: busy_low(N, K, 90000, 3, 4, 50000, 3, 0.3, 10)),
-    # light load: printers often wait, several of them free at the same moment
-    (350622, lambda: held(50000, make(N - 50000, 200, 3, 3, 30000, 3, 0.3, 5))),
-    (350623, lambda: held(50000, make(N - 50000, 1000, 5, 5, 20000, 2, 0.3, 10))),
-    (350616, lambda: make(N, 30000, MAXS, MAXP, MAXT, 100, 0.3, 1000)),
-    # a small shop with a huge queue
-    (350618, lambda: make(N, 50, MAXS, MAXP, 10 ** 6, 10 ** 6, 0.3, 10 ** 9, smin=1000, pmin=1000)),
-    (350625, lambda: two_phase(50000, 50000, 2000, 5 * 10 ** 8, 50, 3, 0.3)),
-]
-for seed, mk in BIG:
-    random.seed(seed)
-    add(*mk())
+add([(10, 3), (8, 1), (9, 4), (1, 5)])
+add([(2, 5), (3, 3), (0, 1)])
+add([(20, 6), (9, 1), (14, 4), (3, 3), (15, 5), (6, 0)])
+add([(7, 2)])
+add([(12, 4), (7, 1), (9, 3), (5, 2), (11, 4), (30, 10), (4, 1), (8, 3)])
+# hidden: small (the subset DP of brute.cpp checks these)
+add([(0, 0)])
+add([(5, 6)])
+add(uniform(8, 0, 100, 0, 30))
+add(uniform(12, 0, 1000, 0, 200))
+add([(ri(0, 50), ri(0, 10)) for _ in range(15)])
+add(levels(16, [3, 3, 7, 0]))
+add(uniform(18, 0, MAXA, 0, MAXB))
+add(traps(20))
+# hidden: medium (the assignment method of brute.cpp checks these)
+add(uniform(300))
+add(anti(400))
+add(ratio_ties(500))
+# hidden: big, N = 5000
+add(uniform(MAXN))
+add(uniform(MAXN))
+add(uniform(MAXN, MAXA // 2, MAXA))
+add(uniform(MAXN, 0, MAXA, 0, MAXB // 10))
+add(uniform(MAXN, 0, MAXA // 10, 0, MAXB // 100))
+add(anti(MAXN))
+add(anti(MAXN))
+add(ratio_ties(MAXN))
+add(levels(MAXN, [MAXB, MAXB // 2, MAXB // 5, MAXB // 20, 1000, 0]))
+add(levels(MAXN, [ri(0, MAXB) for _ in range(40)]))
+add(traps(MAXN))
+add(traps(MAXN))
+add(mixed_scale(MAXN))
+add(mixed_scale(MAXN))
+add(uniform(MAXN // 2) + [(ri(0, MAXA), 0) for _ in range(MAXN // 2)])
+add([(ri(MAXA - MAXA // 10, MAXA), MAXB) for _ in range(MAXN)])        # equal b, all near the maximum
+add([(MAXA, MAXB)] * MAXN)                                              # everything equal
+add([(MAXA, 0)] * MAXN)                                                 # nothing cools down
+add([(ri(0, 999), ri(1000, MAXB)) for _ in range(MAXN)])                # every dish loses
+add([(ri(0, MAXA), ri(MAXB - 100, MAXB)) for _ in range(MAXN)])         # b nearly equal
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t
