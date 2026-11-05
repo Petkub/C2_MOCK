@@ -1,6 +1,6 @@
 POSN Practice Judge - changes
 
-6.0.1  Typography: Thai text in a looped font (Noto Sans Thai Looped), more space between lines and below
+6.0.1  Typography: all text in Sarabun (a looped Thai font), more space between lines and below
        headings (Thai marks never touch), semibold section headings, sample labels inside the sample boxes;
        every statement still fits on one A4 page.
 6.0  8 mock exams of 6 problems (3 hours, score /600, target 300), ordered from easy to hard, each set a little
