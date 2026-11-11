@@ -40,7 +40,7 @@ C2_MOCK/
     communication/<name>/{problem.json, manager.cpp, stub/, tests/}
   student/                      # student-side files outside Judge/ (copied by build_dist.py)
     README.txt, Progress.md, .vscode/, Mock_K/Mock_K.pdf
-    set_files/{Makefile, judge.bat, template.cpp}   # put in every Mock_K; template.cpp -> 1.cpp ... 6.cpp
+    set_files/{Makefile, judge.bat, template.cpp}   # put in every Mock_K; template.cpp (empty) -> 1.cpp ... 6.cpp
   samples/                      # known-verdict programs used as regression tests
     batch/towers_ok.cpp, towers_smallhi.cpp, towers_slow.cpp, towers_crash.cpp, towers_syntax.cpp
     interactive/guess_ok.cpp, guess_noflush.cpp, guess_linear.cpp, guess_crash.cpp

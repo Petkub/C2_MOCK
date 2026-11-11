@@ -73,6 +73,13 @@ def test_package(root):
         expected = sum(len(s["problems"]) for s in json.load(f))
     check(len(starters) == expected and all(judge.is_untouched_starter(s) for s in starters),
           "Mock_K/1.cpp ... 6.cpp are untouched starters", f"{len(starters)} files")
+    check(all(os.path.getsize(s) == 0 for s in starters), "Mock_K/1.cpp ... 6.cpp are empty files")
+    old = os.path.join(root, "old_template.cpp")          # the starter of versions before 6.0.2
+    with open(old, "w") as f:
+        f.write("#include <bits/stdc++.h>\nusing namespace std;\n\nint32_t main() {\n"
+                "    cin.tie(0); ios::sync_with_stdio(0);\n\n    return 0;\n}\n")
+    check(judge.is_template(old) and judge.is_untouched_starter(old), "the old main() starter still counts as untouched")
+    os.remove(old)
 
 
 def test_crlf_generator():
@@ -257,13 +264,16 @@ def test_cli(root):
     shutil.copy(os.path.join(SAMPLES, "batch", "towers_deep.cpp"), os.path.join(set1, "towers_deep.cpp"))
     code, out, _ = run_judge(["towers_deep.cpp", TOWERS, "--no-color", "--stop"], set1)
     check(code == 0 and "ACCEPTED" in out, "a recursive DFS of depth 10^6 runs (256 MB stack)", f"exit {code}\n{out}")
+    code, out, _ = run_judge(["1.cpp", "--no-color"], set1)              # the empty starter
+    check(code == 0 and "1.cpp is empty" in out and "Compil" not in out, "an empty .cpp: plain message, no compile",
+          f"exit {code}\n{out}")
     code, out, _ = run_judge(["--ml", "0"], set1)
     check(code == 2 and "--ml must be" in out, "judge.py --ml 0 is rejected", f"exit {code}\n{out}")
     code, out, plain = run_judge(["wrong.cpp", TOWERS, "--ascii", "--no-color"], set1)
     check(code == 0 and "First failure" in out and plain, "judge.py --ascii shows the failure, ASCII only",
           f"exit {code}, ascii={plain}\n{out}")
     code, out, _ = run_judge(["--no-color"], set1)
-    check(code == 0 and "Total" in out and "Problem 6" in out, f"inside {TOWERS_SET}: judge.py (whole set)",
+    check(code == 0 and "Total" in out and "Problem 6" in out and "still empty - skipped" in out, f"inside {TOWERS_SET}: judge.py (whole set)",
           f"exit {code}\n{out}")
     code, out, plain = run_judge(["--progress", "--ascii"], set1)
     check(code == 0 and plain, "judge.py --progress --ascii", f"exit {code}, ascii={plain}\n{out}")

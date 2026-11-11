@@ -7,6 +7,7 @@ POSN Practice Judge - changes
        near 1 s): smaller limits in 4/1 (M), 6/5 (N, K), 7/3 (N, Q) and 8/1 (N); stronger tests in 2/4, 3/5,
        4/2, 5/3, 6/4, 6/5, 7/3, 7/5, 7/6, 8/1; clearer wording in 2/3, 6/4, 6/5, 6/6; some samples replaced
        by ordinary ones (8/1, 8/5). Big tests of 2/4 and 7/3 are built faster.
+       New sets come with empty 1.cpp ... 6.cpp (your existing files are never changed).
 6.0.1  Typography: all text in Sarabun (a looped Thai font), more space between lines and below
        headings (Thai marks never touch), semibold section headings, sample labels inside the sample boxes;
        every statement still fits on one A4 page.

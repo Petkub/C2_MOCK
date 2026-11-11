@@ -478,8 +478,22 @@ PROGRESS_FILE = os.path.join(ROOT, "progress.json")
 STARTER_BODY = "cin.tie(0);ios::sync_with_stdio(0);return0;}"
 
 
+def is_empty_source(src):
+    """True for a .cpp with nothing in it but whitespace (the starter files 1.cpp ... 6.cpp are empty)."""
+    try:
+        with open(src, "rb") as f:
+            data = f.read(4096)
+            more = f.read(1)
+    except OSError:
+        return False
+    return not more and not data.decode("utf-8", "replace").lstrip("\ufeff").strip()
+
+
 def is_untouched_starter(src):
-    """True for the starter file that comes with the set (nothing written yet): such runs are not recorded."""
+    """True for the starter file that comes with the set (nothing written yet): such runs are not recorded.
+    The starters are empty files; versions before 6.0.2 shipped a main() template, which still counts."""
+    if is_empty_source(src):
+        return True
     try:
         with open(src, encoding="utf-8", errors="replace") as f:
             text = "".join(f.read().split())
@@ -1285,6 +1299,10 @@ def judge_one(src, pdir, num, meta, st, tl, show_diff, stop):
             f"Limits   {tl:.1f} s · {MEM_LIMIT[0]} MB per test"]
     box(st, head, st.dim)
     print()
+    if is_empty_source(src):        # g++ would only say "undefined reference to main"
+        print("  " + st.yellow(f"{os.path.basename(src)} is empty. Write your program in it, save it, and judge again."))
+        print()
+        return 0
     print("  " + st.dim("Compiling ..."), end="" if st.tty else "\n", flush=True)
     tmp = tempfile.mkdtemp(prefix="judge_")
     try:
@@ -1380,7 +1398,10 @@ TEMPLATE_WORDS = ("#include <bits/stdc++.h> using namespace std; int32_t main() 
 
 
 def is_template(src):
-    """True if src is still the untouched 1.cpp ... 6.cpp template (whitespace ignored)."""
+    """True if src is still the untouched 1.cpp ... 6.cpp starter: empty, or the main() template of versions
+    before 6.0.2 (whitespace ignored)."""
+    if is_empty_source(src):
+        return True
     try:
         with open(src, "rb") as f:
             data = f.read(4096)
@@ -1427,7 +1448,7 @@ def cmd_set(k, folder, meta, sets, st, tl, show_diff):
             scores.append(0)
             continue
         if is_template(src):
-            print("  " + st.dim(f"{i}.cpp is still the empty template - skipped (0 points)"))
+            print("  " + st.dim(f"{i}.cpp is still empty - skipped (0 points)"))
             scores.append(0)
             continue
         pdir, _ = find_problem(str(n), meta)
@@ -1701,7 +1722,7 @@ def main():
     if not pdir:
         sets = load_sets()
         print(st.red(f"Problem not found: {parg}"))
-        print(st.dim(f"  Use K-P with set K = 1-{len(sets)} and problem P = 1-8 (e.g. 3-5); see --list."))
+        print(st.dim(f"  Use K-P with set K = 1-{len(sets)} and problem P = 1-6 (e.g. 3-5); see --list."))
         return 1
     if not shutil.which("g++"):
         print(st.red("g++ not found. Please install a C++ compiler and add it to PATH."))
