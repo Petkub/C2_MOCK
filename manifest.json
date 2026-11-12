@@ -352,7 +352,7 @@
 },
 "files": {
 "CHANGELOG.txt": "82f791eda8fd318e49f02fe66eddd7072292fe612eca969d731a43d5e6d55436",
-"README.txt": "bab019688025e4bacd0bff996b399caca6836e5d88294d3d7c382a1beff02e66",
+"README.txt": "5d4b2ac0d7cf32c93386cb55108199a025f0d924648c847bba4984a2e966f144",
 "include/bits/stdc++.h": "1545f1f4b55b3acb866effca73203f3a9131773f147331cbf4e983ebf36d6cc9",
 "judge.py": "e3b85ed5bf0634b15125b169c11ef42c3eacb47e43f2d2eac6df445b22611cf5",
 "problems/batch/Mock_1/1/01.in": "867315b6e3a1b1d99cd9075bbdc30c3a67a630e233a9a980d24c2b5d81cb9892",

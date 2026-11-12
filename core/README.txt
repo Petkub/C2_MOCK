@@ -2,25 +2,32 @@
 ====================================================================
 
   Mock_K/Mock_K.pdf        โจทย์ชุดที่ K (หน้าปก + 6 ข้อ ข้อละ 1 หน้า)
-  Mock_K/1.cpp ... 6.cpp   ไฟล์คำตอบ เขียน code ลงไฟล์เหล่านี้
+  Mock_K/1.cpp ... 6.cpp   ไฟล์คำตอบ (เริ่มต้นเป็นไฟล์ว่าง) เขียน code ลงไฟล์เหล่านี้
   Judge/                   ตัวตรวจและชุดทดสอบ (ไม่ต้องแก้)
 
 การให้คะแนน: ไม่มี subtask — ข้อละ 100 หรือ 0 คะแนนเหมือนข้อสอบจริง (ได้ 100 เมื่อผ่านทุกชุดทดสอบ),
              time limit 1 วินาทีต่อชุด · judge บอกจำนวนชุดทดสอบที่ผ่านด้วย
+การรัน: compile ด้วย g++ -O2 -std=c++17 · หน่วยความจำ 256 MB ต่อชุด (เกินแล้วได้ MLE)
+        stack 256 MB ทุกระบบ (recursion ลึก 10^6 ชั้นก็ได้)
 ชุดทดสอบ 5 ชุดแรกของทุกข้อคือตัวอย่างในโจทย์
+
+ชุดที่ 1–12 เรียงจากง่ายไปยาก: ชุดที่ 1–4 ยากกว่าข้อสอบจริงเล็กน้อย · ชุดที่ 5–12 ยากกว่าข้อสอบจริง
+และในแต่ละชุด ข้อ 1–6 ก็เรียงจากง่ายไปยาก · เป้าหมายทุกชุด ≥ 300/600
 
 ชุดทดสอบขนาดใหญ่: เพื่อให้ไฟล์ zip เล็ก judge จะสร้างชุดทดสอบใหญ่ของแต่ละข้อในเครื่องตอนตรวจข้อนั้นครั้งแรก
 (รอไม่กี่วินาที ครั้งเดียว) และตรวจด้วย checksum ว่าตรงกับต้นฉบับ ถ้าขึ้นข้อความว่าสร้างไม่ได้ ให้แจ้งผู้สอน
 
 วิธีตรวจ (ต้องมี Python 3.7+ และ g++)
   ก) VS Code (ง่ายที่สุด): File > Open Folder... เลือกโฟลเดอร์ C2_Mock_Test (ไม่ใช่ Mock_K)
+     ต้องเป็นโฟลเดอร์ที่มี Judge อยู่ข้างในทันที (ถ้ามี C2_Mock_Test ซ้อนอยู่ใน C2_Mock_Test ให้เลือกอันข้างใน)
+     ถ้ากด Ctrl+Shift+B แล้วขึ้นรายการ g++ / gcc ให้เลือกแทนการตรวจ แปลว่าเปิดผิดโฟลเดอร์
      เปิดไฟล์ที่ทำ เช่น Mock_2/3.cpp แล้วกด Ctrl+Shift+B (Mac: Cmd+Shift+B) = ตรวจข้อนั้น
      ตรวจทั้งชุด: Terminal > Run Task... > Judge whole set
   ข) terminal ในโฟลเดอร์ Mock_K:
   Linux / macOS   make (ทั้งชุด)  ·  make 3 (เฉพาะข้อ 3)
   Windows         judge (ทั้งชุด) ·  judge 3   หรือดับเบิลคลิก judge.bat
   ทุกระบบ         python3 ../Judge/judge.py   ·   python3 ../Judge/judge.py 3.cpp
-  ตัวเลือก: --tl 2 (เพิ่ม time limit ถ้าเครื่องช้า)  --diff 5  --stop
+  ตัวเลือก: --tl 2 (เพิ่ม time limit ถ้าเครื่องช้า)  --ml 512 (หน่วยความจำ MB, ปกติ 256)  --diff 5  --stop
 
 ติดตามความคืบหน้า (ข้อที่ผ่านเต็ม 100)
   ทุกครั้งที่ตรวจ judge จะบันทึกคะแนนที่ดีที่สุดของแต่ละข้อไว้ใน Judge/progress.json
@@ -32,5 +39,6 @@
   ไฟล์ starter ที่ยังไม่ได้แก้จะไม่ถูกนับ
   (ถ้าอยากได้ปุ่มลัดแยก เช่น Ctrl+Alt+P: Ctrl+Shift+P > "Preferences: Open Keyboard Shortcuts (JSON)" แล้วเพิ่ม
    {"key": "ctrl+alt+p", "command": "workbench.action.tasks.runTask", "args": "Show progress"} )
-Updates: the judge updates itself from GitHub when online (checked at most once every 10 minutes; your .cpp files
-are never touched). Force a check: python3 ../Judge/judge.py --update   (version shown in the header box)
+
+การอัปเดต: เมื่อต่ออินเทอร์เน็ต judge จะอัปเดตตัวเองจาก GitHub อัตโนมัติ (ตรวจสอบไม่เกินทุก 10 นาที ไฟล์ .cpp ของคุณ
+จะไม่ถูกแก้) บังคับตรวจสอบทันที: python3 ../Judge/judge.py --update  (เลขเวอร์ชันแสดงในกรอบหัวเรื่อง)
