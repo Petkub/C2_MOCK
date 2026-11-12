@@ -1,182 +1,180 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
 import os, random
 
-random.seed(850505)
-MAXN, MAXR, MAXK, MAXV, MAXLEN = 50000, 50000, 250000, 10 ** 9, 3000000
+random.seed(550521)
+MAXN, MAXQ, MAXH = 100000, 100000, 10 ** 9
 tests = []
+rnd = random.random
 
 
-def add(price, recipes):
-    """price[1..n] (price[0] unused); recipes: list of (target, fee, [ingredients])"""
-    n, r = len(price) - 1, len(recipes)
-    assert 1 <= n <= MAXN and 1 <= r <= MAXR
-    assert all(1 <= p <= MAXV for p in price[1:])
-    assert sum(len(x[2]) for x in recipes) <= MAXK
-    lines = [f"{n} {r}", " ".join(map(str, price[1:]))]
-    for t, f, ing in recipes:
-        assert 1 <= t <= n and 0 <= f <= MAXV and len(ing) >= 1
-        assert len(set(ing)) == len(ing) and all(1 <= x <= n for x in ing)
-        lines.append(f"{t} {f} {len(ing)} " + " ".join(map(str, ing)))
-    text = "\n".join(lines) + "\n"
-    assert len(text) <= MAXLEN, len(text)
-    tests.append(text)
+def ri(a, b):
+    """random integer in [a, b] (faster than randint, still deterministic)"""
+    return a + int(rnd() * (b - a + 1))
 
 
-def ri(lo, hi):
-    """uniform integer in [lo, hi] (faster than randint, still deterministic)"""
-    return lo + int(random.random() * (hi - lo + 1))
+def add(h, qs):
+    n, q = len(h), len(qs)
+    assert 1 <= n <= MAXN and 1 <= q <= MAXQ
+    assert 1 <= min(h) and max(h) <= MAXH
+    ls, rs = zip(*qs)
+    assert min(ls) >= 1 and max(rs) <= n and all(map(int.__le__, ls, rs))
+    lines = [f"{n} {q}", " ".join(map(str, h))] + [f"{l} {r}" for l, r in qs]
+    tests.append("\n".join(lines) + "\n")
 
 
-def pick(pool, k):
-    """k distinct elements of pool (k small: retry on repeats)"""
-    out = set()
-    res = []
-    while len(res) < k:
-        x = pool[ri(0, len(pool) - 1)]
-        if x not in out:
-            out.add(x)
-            res.append(x)
-    return res
+# ---------------------------------------------------------------- heights
+def h_random(n, lo, hi):
+    return [ri(lo, hi) for _ in range(n)]
 
 
-class Shop:
-    def __init__(self, n):
-        self.n = n
-        self.price = [0] + [MAXV] * n
-        self.rec = []
-        self.ids = list(range(1, n + 1))
-        random.shuffle(self.ids)
-        self.next = 0
+def h_runs(n, hmax, decreasing, maxrun):
+    """monotone with runs of equal heights"""
+    h = []
+    cur = hmax if decreasing else 1
+    step = max(1, (hmax - 1) // n)
+    while len(h) < n:
+        h += [cur] * ri(1, maxrun)
+        cur += -ri(1, step) if decreasing else ri(1, step)
+        cur = max(1, min(hmax, cur))
+    return h[:n]
 
-    def take(self, k):
-        """k fresh item numbers (random)"""
-        s = self.ids[self.next:self.next + k]
-        assert len(s) == k
-        self.next += k
-        return s
 
-    def chain(self, L, order, base):
-        """items u_1..u_L, u_(j+1) is made from u_j for 1 coin, price of u_j = base + 2j: crafting along the
-        chain always wins, the cost of u_j is base + j + 1. Item numbers fall along the chain. Returns the items
-        in chain order."""
-        u = sorted(self.take(L), reverse=True)
-        for j in range(L):
-            self.price[u[j]] = base + 2 * (j + 1)
-        rs = [(u[j + 1], 1, [u[j]]) for j in range(L - 1)]
-        if order == "rev":
-            rs.reverse()
+def h_ruler(n, scale=1, noise=0):
+    """h_i = (number of trailing zero digits of i in base 3) + 1: a nested pattern with many equal heights"""
+    h = []
+    for i in range(1, n + 1):
+        t = 1
+        while i % 3 == 0:
+            i //= 3
+            t += 1
+        h.append(t * scale + (ri(0, noise) if noise else 0))
+    return h
+
+
+def h_walk(n, step, hmax):
+    """random walk with small steps (many equal neighbours and plateaus)"""
+    h = [ri(1, hmax)]
+    for _ in range(n - 1):
+        h.append(max(1, min(hmax, h[-1] + ri(-step, step))))
+    return h
+
+
+def h_mountain(n, hmax, maxrun, valley=False):
+    """non-decreasing up to a peak, then non-increasing (or the other way round: a valley)"""
+    a = h_runs(n // 2, hmax, False, maxrun)
+    b = h_runs(n - n // 2, hmax, True, maxrun)
+    if valley:
+        return b + a
+    return a + b
+
+
+def h_walls(n, hmax):
+    """equal walls of decreasing height with equal pairs inside each gap (the 9 5 5 pattern)"""
+    h = []
+    top = hmax
+    while len(h) < n:
+        h.append(top)
+        v = ri(1, max(1, top - 1))
+        k = ri(1, 4)
+        h += [v] * k
+        if rnd() < 0.3:
+            h.append(ri(1, v))
+        if rnd() < 0.2:
+            top = max(2, top - ri(0, 3))
+    return h[:n]
+
+
+def h_zigzag(n, peak_levels, low):
+    """peaks of a few equal heights separated by low hills"""
+    h = []
+    for i in range(n):
+        h.append(random.choice(peak_levels) if i % 2 == 0 else ri(1, low))
+    return h
+
+
+# ---------------------------------------------------------------- queries
+def q_long(n, q):
+    a, b = max(1, n // 10), n - n // 10
+    return [(1 + int(rnd() * a), b + int(rnd() * (n - b + 1))) for _ in range(q)]
+
+
+def q_random(n, q):
+    out = []
+    for _ in range(q):
+        l, r = 1 + int(rnd() * n), 1 + int(rnd() * n)
+        out.append((l, r) if l <= r else (r, l))
+    return out
+
+
+def q_prefix_suffix(n, q):
+    """long ranges with many different left ends"""
+    out = []
+    for _ in range(q):
+        if rnd() < 0.5:
+            out.append((ri(1, n // 2), ri(n // 2, n)))
         else:
-            random.shuffle(rs)
-        self.rec += rs
-        return u
-
-    def mesh(self, items, R, kmin, kmax, pool, fee_hi, self_p=0.03, budget=MAXK):
-        """R recipes for targets among items (several per item), ingredients from pool (+ maybe the target);
-        stops early when the ingredient lists would exceed `budget` entries"""
-        for _ in range(R):
-            t = items[ri(0, len(items) - 1)]
-            k = ri(kmin, kmax)
-            if k > budget:
-                break
-            budget -= k
-            ing = pick(pool, k)
-            if t not in ing and random.random() < self_p:
-                ing[ri(0, len(ing) - 1)] = t
-            self.rec.append((t, ri(0, fee_hi), ing))
+            l = ri(1, n)
+            out.append((l, ri(max(l, n - n // 20), n)))
+    return out
 
 
-def shuffled(xs):
-    xs = xs[:]
-    random.shuffle(xs)
-    return xs
+def q_mixed(n, q):
+    out = []
+    for _ in range(q):
+        t = rnd()
+        if t < 0.15:
+            l = ri(1, n)
+            out.append((l, min(n, l + ri(0, 30))))
+        elif t < 0.2:
+            out.append((1, n))
+        else:
+            l, r = ri(1, n), ri(1, n)
+            out.append((min(l, r), max(l, r)))
+    return out
 
 
-def big_all(L, nbig, kbig, order, R_mesh, kmesh, fee_hi):
-    """a long chain, `nbig` recipes that use the first kbig chain items (cheapest first), a random cyclic mesh"""
-    sh = Shop(MAXN)
-    base = ri(10 ** 7, 10 ** 8)
-    u = sh.chain(L, order, base)
-    rest = sh.take(MAXN - L)
-    leaves, craft = rest[:len(rest) // 3], rest[len(rest) // 3:]
-    for x in leaves:
-        sh.price[x] = ri(1, 10 ** 6)
-    for x in craft:
-        sh.price[x] = ri(10 ** 8, MAXV)
-    for _ in range(nbig):
-        t = craft[ri(0, len(craft) - 1)]
-        sh.price[t] = MAXV
-        sh.rec.append((t, ri(0, 10 ** 6), u[:kbig]))
-    budget = MAXK - (L - 1) - nbig * kbig
-    R = min(MAXR - len(sh.rec), R_mesh)
-    sh.mesh(craft, R, 1, kmesh, craft + leaves + u[-200:], fee_hi, budget=budget)
-    recs = sh.rec
-    if order == "rand":
-        recs = shuffled(recs)
-    return sh.price, recs
-
-
-def mesh_only(n, R, kmin, kmax, leaf_frac, leaf_hi, craft_lo, fee_hi, self_p=0.03):
-    sh = Shop(n)
-    ids = sh.take(n)
-    nl = max(1, int(n * leaf_frac))
-    leaves, craft = ids[:nl], ids[nl:]
-    for x in leaves:
-        sh.price[x] = ri(1, leaf_hi)
-    for x in craft:
-        sh.price[x] = ri(craft_lo, MAXV)
-    sh.mesh(craft, R, kmin, kmax, ids, fee_hi, self_p)
-    return sh.price, sh.rec
+def q_all(n):
+    return [(l, r) for l in range(1, n + 1) for r in range(l, n + 1)]
 
 
 # samples
-add([0, 5, 3, 20, 15], [(3, 2, [1, 2]), (4, 1, [3]), (3, 10, [4])])
-add([0, 100, 4, 7], [(1, 0, [2, 3]), (2, 1, [1]), (3, 5, [3, 2])])
-add([0, 1000000000, 1000000000, 1000000000, 1], [(1, 0, [2, 3, 4]), (2, 0, [4]), (3, 999999999, [4])])
-add([0, 8], [(1, 0, [1])])
-add([0, 50, 6, 6, 40, 30, 2],
-    [(1, 5, [4, 5]), (4, 1, [2, 3, 6]), (5, 3, [4]), (2, 0, [6, 3]), (1, 20, [2, 3, 6]), (6, 4, [1])])
+add([3, 1, 3, 2, 2, 5, 4, 4], [(1, 8), (2, 5), (3, 6), (7, 7)])
+add([4, 2, 3, 1, 5], [(1, 5), (2, 4), (3, 3)])
+add([7], [(1, 1)])
+add([5, 1, 5, 1, 5, 6], [(1, 6), (1, 5), (2, 4), (3, 6), (5, 6)])
+add([9, 5, 5, 8, 2, 3, 2, 9, 1], [(1, 9), (2, 7), (4, 8), (1, 4), (5, 9)])
 # hidden: small (brute checks these)
-add([0, 7], [(1, 3, [1])])
-add([0, 10, 1], [(1, 0, [2]), (2, 0, [1])])
-add([0] + [1000000000] * 6, [(1, 1000000000, [2, 3, 4, 5, 6]), (2, 0, [3]), (6, 0, [1])])
-add(*mesh_only(10, 15, 1, 3, 0.3, 50, 30, 10))
-add(*mesh_only(60, 120, 1, 4, 0.2, 1000, 500, 100, 0.1))
-add(*mesh_only(300, 900, 1, 5, 0.1, 10 ** 6, 10 ** 8, 10 ** 4))
-add(*mesh_only(3000, 6000, 1, 3, 0.05, 10 ** 9, 10 ** 9, 0, 0.05))       # prices near 10^9, free recipes
-sh = Shop(3000)                                                   # a chain, a big recipe, a mesh
-u = sh.chain(1500, "rand", 1000)
-rest = sh.take(1500)
-for x in rest:
-    sh.price[x] = ri(10 ** 6, MAXV)
-sh.mesh(rest, 3000, 1, 4, rest + u, 1000)
-sh.rec.append((rest[0], 0, u[:1500]))
-add(sh.price, shuffled(sh.rec))
+add([1], [(1, 1)])
+add(h_random(10, 1, 3), q_all(10))
+add(h_random(14, 1, 2), q_all(14))
+add(h_random(200, 1, 5), q_random(200, 2000))
+add(h_random(300, 1, MAXH), q_mixed(300, 300))
+add(h_walls(400, 30), q_all(30) + q_random(400, 600))
+add(h_ruler(729), q_random(729, 800))
+add(h_mountain(2000, 60, 5), q_long(2000, 60))
+add(h_walk(12000, 2, 40), q_mixed(12000, 12000))
 # hidden: big
-N = MAXN
-add(*big_all(46000, 4, 46000, "rev", 3000, 6, 10 ** 6))
-add(*big_all(46000, 4, 46000, "rand", 3000, 6, 10 ** 6))
-add(*big_all(45000, 4, 45000, "rev", 4000, 6, 10 ** 4))
-add(*big_all(45000, 4, 45000, "rand", 4000, 6, 10 ** 9))
-add(*big_all(40000, 5, 40000, "rev", 7000, 3, 10 ** 6))
-add(*big_all(40000, 5, 40000, "rand", 7000, 3, 100))
-add(*big_all(48000, 4, 48000, "rand", 2000, 6, 1000))
-add(*big_all(35000, 6, 35000, "rand", 10000, 4, 10 ** 6))
-add(*big_all(30000, 7, 30000, "rev", 15000, 3, 10 ** 6))
-add(*big_all(44000, 4, 44000, "rand", 5000, 4, 0))
-add(*big_all(47000, 4, 47000, "rev", 2500, 6, 10 ** 7))
-add(*big_all(49000, 4, 49000, "rev", 0, 1, 0))                     # only the chain and the big recipes
-add(*big_all(49000, 4, 49000, "rand", 0, 1, 0))
-add(*mesh_only(N, MAXR, 2, 6, 0.3, MAXV, 9 * 10 ** 8, 10 ** 9))     # sums above 2^31
-add(*mesh_only(N, MAXR, 1, 3, 0.1, MAXV, 1, 0, 0.2))              # free recipes, many use their own target
-sh = Shop(N)                                                      # a chain plus big recipes in random order
-u = sh.chain(40000, "rev", 10 ** 6)
-rest = sh.take(N - 40000)
-for x in rest:
-    sh.price[x] = MAXV
-for t in rest[:4]:
-    sh.rec.append((t, 0, shuffled(u)))
-sh.mesh(rest, 9000, 1, 4, rest + u[-100:], 10 ** 6, budget=MAXK - 5 * 40000)
-add(sh.price, shuffled(sh.rec))
+N, Q = MAXN, MAXQ
+add(h_random(N, 1, MAXH), q_long(N, Q))
+add(h_random(N, 1, 3), q_random(N, Q))
+add(h_random(N, 1, 10), q_long(N, Q))
+add(h_random(N, 1, 100), q_prefix_suffix(N, Q))
+add([MAXH] * N, q_mixed(N, Q))
+add(list(range(1, N + 1)), q_long(N, Q))
+add([MAXH - i for i in range(N)], q_prefix_suffix(N, Q))
+add(h_runs(N, MAXH, True, 4), q_long(N, Q))
+add(h_runs(N, 3000, True, 60), q_random(N, Q))
+add(h_runs(N, MAXH, False, 3), q_prefix_suffix(N, Q))
+add(h_walls(N, MAXH), q_long(N, Q))
+add(h_walls(N, 20), q_mixed(N, Q))
+add(h_zigzag(N, [50, 50, 50, 49], 48), q_prefix_suffix(N, Q))
+add(h_ruler(N), q_long(N, Q))
+add(h_ruler(N, 3, 1), q_random(N, Q))
+add(h_mountain(N, 5000, 6), q_prefix_suffix(N, Q))
+add(h_mountain(N, MAXH, 2, valley=True), q_long(N, Q))
+add(h_walk(N, 1, 20), q_mixed(N, Q))
+add(h_walk(N, 3, MAXH), [(1, N)] * Q)
+add([2, 2, 2, 2, 2], [(1, 5), (2, 4), (3, 3)])                  # all equal (was sample 2)
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

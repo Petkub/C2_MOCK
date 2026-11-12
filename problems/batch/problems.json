@@ -176,16 +176,16 @@
   "scoring": "all"
  },
  "23": {
-  "title": "เนินเขาที่มองเห็นกัน",
-  "en": "Hills in View",
+  "title": "นับคำตอบ nonogram",
+  "en": "Nonogram Count",
   "tier": 0,
   "dir": "Mock_4/5",
   "samples": 5,
   "scoring": "all"
  },
  "24": {
-  "title": "โรงช่างสร้าง item",
-  "en": "Crafting Workshop",
+  "title": "เนินเขาที่มองเห็นกัน",
+  "en": "Hills in View",
   "tier": 0,
   "dir": "Mock_4/6",
   "samples": 5,
@@ -368,8 +368,8 @@
   "scoring": "all"
  },
  "47": {
-  "title": "วิ่งรอบจากบ้าน",
-  "en": "Round Trip From Home",
+  "title": "ดันลังในโกดัง",
+  "en": "One-Box Sokoban",
   "tier": 0,
   "dir": "Mock_8/5",
   "samples": 5,
@@ -380,6 +380,198 @@
   "en": "Cables Across Companies",
   "tier": 0,
   "dir": "Mock_8/6",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "49": {
+  "title": "เกาะใหญ่ที่สุดหลังถมทะเล",
+  "en": "Biggest Island After One Fill",
+  "tier": 0,
+  "dir": "Mock_9/1",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "50": {
+  "title": "ทุกวันที่ k ฟรี",
+  "en": "Every K-th Day Free",
+  "tier": 0,
+  "dir": "Mock_9/2",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "51": {
+  "title": "ลืมรหัสผ่าน",
+  "en": "Forgotten Password",
+  "tier": 0,
+  "dir": "Mock_9/3",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "52": {
+  "title": "แนวต้นไม้ฟันปลา",
+  "en": "Weighted Zigzag",
+  "tier": 0,
+  "dir": "Mock_9/4",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "53": {
+  "title": "วางกองเรือ",
+  "en": "Battleship Fleet",
+  "tier": 0,
+  "dir": "Mock_9/5",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "54": {
+  "title": "งานกับชื่อเสียง",
+  "en": "Projects and Reputation",
+  "tier": 0,
+  "dir": "Mock_9/6",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "55": {
+  "title": "จัดรูปตาราง Markdown",
+  "en": "Markdown Table Formatter",
+  "tier": 0,
+  "dir": "Mock_10/1",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "56": {
+  "title": "ไม้บรรทัดขีดน้อย",
+  "en": "Ruler With Few Marks",
+  "tier": 0,
+  "dir": "Mock_10/2",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "57": {
+  "title": "หุ่นยนต์ส่งของกับ battery",
+  "en": "Delivery Robot With a Battery",
+  "tier": 0,
+  "dir": "Mock_10/3",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "58": {
+  "title": "ร้านข้าวสารที่คุ้มที่สุด",
+  "en": "Nearest Shop With Updates",
+  "tier": 0,
+  "dir": "Mock_10/4",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "59": {
+  "title": "พอดี x ครั้ง",
+  "en": "Exactly x Times",
+  "tier": 0,
+  "dir": "Mock_10/5",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "60": {
+  "title": "เสริมทางเดิน",
+  "en": "Raising the Walkway",
+  "tier": 0,
+  "dir": "Mock_10/6",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "61": {
+  "title": "ปาเป้านับถอยหลัง",
+  "en": "Darts Countdown",
+  "tier": 0,
+  "dir": "Mock_11/1",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "62": {
+  "title": "จัดแถว robot บนราง",
+  "en": "Robots Into Order",
+  "tier": 0,
+  "dir": "Mock_11/2",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "63": {
+  "title": "ย่านหลากสี",
+  "en": "Colourful Districts",
+  "tier": 0,
+  "dir": "Mock_11/3",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "64": {
+  "title": "ย้ายรถก่อนทาสี",
+  "en": "Moving the Parked Cars",
+  "tier": 0,
+  "dir": "Mock_11/4",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "65": {
+  "title": "กำไรสูงสุดในช่วงวัน",
+  "en": "Best Trade in a Range",
+  "tier": 0,
+  "dir": "Mock_11/5",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "66": {
+  "title": "กลิ้งกล่องยาว",
+  "en": "Rolling Block",
+  "tier": 0,
+  "dir": "Mock_11/6",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "67": {
+  "title": "ลงเขากับการกระโดดไกลหนึ่งครั้ง",
+  "en": "Mountain Descent With One Long Jump",
+  "tier": 0,
+  "dir": "Mock_12/1",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "68": {
+  "title": "คำบรรยายใต้ภาพ",
+  "en": "Subtitles",
+  "tier": 0,
+  "dir": "Mock_12/2",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "69": {
+  "title": "สปริงเกอร์รดน้ำ",
+  "en": "Diamond Sprinklers",
+  "tier": 0,
+  "dir": "Mock_12/3",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "70": {
+  "title": "รวมไฟล์รายงาน",
+  "en": "Merging Reports",
+  "tier": 0,
+  "dir": "Mock_12/4",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "71": {
+  "title": "เส้นทางเดียวผ่านทุกคน",
+  "en": "One Road Past Everyone",
+  "tier": 0,
+  "dir": "Mock_12/5",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "72": {
+  "title": "เช่าแผงในช่วง",
+  "en": "Picking Stalls in a Range",
+  "tier": 0,
+  "dir": "Mock_12/6",
   "samples": 5,
   "scoring": "all"
  }
