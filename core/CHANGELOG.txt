@@ -1,9 +1,10 @@
 POSN Practice Judge - changes
 
 6.1  Mock sets 9-12, a little harder than set 8, with Fenwick tree, segment tree and tree problems (and more
-     grid BFS and backtracking). Set 4 problem 5 and set 8 problem 5 are new problems; in set 4 the old problem 5
-     (Hills in View) is now problem 6. Your .cpp files are never changed: a file that held your solution for a
-     replaced or moved problem keeps your code.
+     grid BFS, backtracking and interval DP). Set 4 problem 5 and set 8 problem 5 are new problems; in set 4 the
+     old problem 5 (Hills in View) is now problem 6. Set 9 problem 3, set 11 problem 4 and set 12 problem 6 are
+     new. Your .cpp files are never changed: a file that held your solution for a replaced or moved problem keeps
+     your code.
 6.0.2  Judge stack/memory, stronger tests, clearer time limits, sample and editorial fixes.
        Stack 256 MB on every system, also macOS (recursion 10^6 deep runs); memory limit 256 MB as before.
        Sets 1 and 2: problems 4 and 5 swapped (ordered by difficulty), so Mock_1/4.cpp is now Print Shop

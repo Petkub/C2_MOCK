@@ -400,8 +400,8 @@
   "scoring": "all"
  },
  "51": {
-  "title": "ลืมรหัสผ่าน",
-  "en": "Forgotten Password",
+  "title": "ธงราวงานกีฬาสี",
+  "en": "Sports Day Bunting",
   "tier": 0,
   "dir": "Mock_9/3",
   "samples": 5,
@@ -504,8 +504,8 @@
   "scoring": "all"
  },
  "64": {
-  "title": "ย้ายรถก่อนทาสี",
-  "en": "Moving the Parked Cars",
+  "title": "รถแจกถุงยังชีพ",
+  "en": "Relief Truck",
   "tier": 0,
   "dir": "Mock_11/4",
   "samples": 5,
@@ -568,8 +568,8 @@
   "scoring": "all"
  },
  "72": {
-  "title": "เช่าแผงในช่วง",
-  "en": "Picking Stalls in a Range",
+  "title": "พลิกเหรียญ",
+  "en": "Turning Coins Over",
   "tier": 0,
   "dir": "Mock_12/6",
   "samples": 5,
