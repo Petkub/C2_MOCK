@@ -1,134 +1,260 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-import os, random
+import os, random, re
 
-random.seed(350501)
-MAXN, MAXK, MAXS, MAXP, MAXT, MAXW = 100000, 100000, 100000, 10000, 10 ** 9, 10 ** 9
+random.seed(920202)
+MAXN, MAXLEN = 100000, 3000000
+NM = r"[A-Z]{1,3}[1-9][0-9]{0,4}"
+TM = r"(?:" + NM + r"|0|[1-9][0-9]{0,9})"
+NAME = re.compile(NM + "$")
+LINE = re.compile(NM + "=-?" + TM + "(?:[+-]" + TM + ")*$")
+SPLIT = re.compile(r"[=+\n-]")
 tests = []
-rnd = random.random
 
 
-def ri(a, b):
-    """random integer in [a, b] (faster than randint, still deterministic)"""
-    return a + int(rnd() * (b - a + 1))
+def add(lines):
+    """lines: the cells as strings NAME=EXPR. Small tests are checked fully here; big ones are built only by
+    Sheet, whose names are distinct (checked in Sheet) with the right format (checked in names()), whose
+    references are names of its own cells and whose constants come from const() (checked there)"""
+    n = len(lines)
+    assert 1 <= n <= MAXN
+    body = "".join(s + "\n" for s in lines)
+    if n <= 5000:
+        assert all(map(LINE.match, lines))
+        defined = set(s[:s.index("=")] for s in lines)
+        toks = set(SPLIT.split(body))
+        assert len(defined) == n and set(t for t in toks if t[:1].isalpha()) == defined
+        assert all(int(t) <= 10 ** 9 for t in toks if t[:1].isdigit())
+    text = f"{n}\n" + body
+    assert len(text) <= MAXLEN, len(text)
+    tests.append(text)
 
 
-def add(speeds, jobs):
-    n, k = len(jobs), len(speeds)
-    assert 1 <= n <= MAXN and 1 <= k <= MAXK
-    assert all(1 <= s <= MAXS for s in speeds)
-    for a, p, w, c in jobs:
-        assert 0 <= a <= MAXT and 1 <= p <= MAXP and 1 <= w <= MAXW
-        assert c == -1 or a <= c <= MAXT
-    lines = [f"{n} {k}", " ".join(map(str, speeds))] + [f"{a} {p} {w} {c}" for a, p, w, c in jobs]
-    tests.append("\n".join(lines) + "\n")
+def ri(lo, hi):
+    """uniform integer in [lo, hi] (faster than randint, still deterministic)"""
+    return lo + int(random.random() * (hi - lo + 1))
 
 
-def make(n, k, smax, pmax, tmax, wmax, cfrac, cdelay, smin=1, pmin=1):
-    """random jobs: arrivals in [0, tmax], a share cfrac of them asks to cancel at most cdelay after arriving
-    (a third of those at the very moment they arrive)"""
-    speeds = [ri(smin, smax) for _ in range(k)]
-    jobs = []
-    for _ in range(n):
-        a = ri(0, tmax)
-        c = -1
-        if rnd() < cfrac:
-            c = a if rnd() < 1 / 3 else min(MAXT, a + ri(0, cdelay))
-        jobs.append((a, ri(pmin, pmax), ri(1, wmax), c))
-    return speeds, jobs
+LET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
-def busy_low(n, k, hold, smax, pmax, tmax, wmax, cfrac, cdelay):
-    """the first `hold` jobs arrive at 0 with the most pages and keep the low-numbered printers busy
-    for the whole test; the rest are short jobs served by the high-numbered printers"""
-    speeds = [MAXS] * hold + [ri(1, smax) for _ in range(k - hold)]
-    jobs = [(0, MAXP, 1, -1) for _ in range(hold)]
-    for _ in range(n - hold):
-        a = ri(1, tmax)
-        c = min(MAXT, a + ri(0, cdelay)) if rnd() < cfrac else -1
-        jobs.append((a, ri(1, pmax), ri(1, wmax), c))
-    return speeds, jobs
+_pool = {}
 
 
-def two_phase(n1, n2, k, t1, burst, wmax, cfrac):
-    """a quiet phase (n1 short jobs over [0, t1]: printers are often idle and free up in every order),
-    then a burst of n2 long jobs arriving in [t1 + 1, t1 + burst] that queue far beyond 2^31"""
-    speeds = [ri(1, MAXS) for _ in range(k)]
-    jobs = []
-    for _ in range(n1):
-        a = ri(0, t1)
-        c = min(MAXT, a + ri(0, 3 * MAXS)) if rnd() < cfrac else -1
-        jobs.append((a, ri(1, 3), ri(1, wmax), c))
-    for _ in range(n2):
-        a = ri(t1 + 1, t1 + burst)
-        c = min(MAXT, a + ri(0, 10 ** 9)) if rnd() < cfrac else -1
-        jobs.append((a, ri(1, MAXP), ri(1, wmax), c))
-    random.shuffle(jobs)
-    return speeds, jobs
+def name_of(x, num):
+    """x in [0, 26 + 26^2 + 26^3): the x-th string of 1-3 capital letters, then the number"""
+    k = 1
+    while x >= 26 ** k:
+        x -= 26 ** k
+        k += 1
+    s = ""
+    for _ in range(k):
+        s += LET[x % 26]
+        x //= 26
+    return s + str(num)
 
 
-def held(h, made):
-    """h extra printers numbered first, each taking at second 0 one extra job that lasts 10^9 seconds (the extra
-    jobs have the smallest ids and the highest priority used), so the later jobs go to printers numbered above h"""
-    speeds, jobs = made
-    top = max(w for _, _, w, _ in jobs)
-    return [MAXS] * h + speeds, [(0, MAXP, top, -1)] * h + jobs
+def names(n, short=False):
+    """n distinct random names (short: numbers below 1000): a window of one random pool per kind (fast)"""
+    if short not in _pool:
+        seen, out = set(), []
+        top = 999 if short else 99999
+        while len(out) < MAXN + 5000:
+            k = ri(1, 3)
+            s = name_of(sum(26 ** j for j in range(1, k)) + ri(0, 26 ** k - 1), ri(1, top))
+            if s not in seen:
+                seen.add(s)
+                out.append(s)
+        assert all(map(NAME.match, out))
+        _pool[short] = out
+    s = ri(0, 5000)
+    return _pool[short][s:s + n]
+
+
+def const():
+    r = random.random()
+    if r < 0.15:
+        x = ri(0, 9)
+    elif r < 0.3:
+        x = ri(10 ** 9 - 1000, 10 ** 9)
+    else:
+        x = ri(0, 10 ** 9)
+    assert 0 <= x <= 10 ** 9
+    return str(x)
+
+
+def sgn(p_minus=0.4):
+    return -1 if random.random() < p_minus else 1
+
+
+class Sheet:
+    """cells 0..n-1 with names; terms[i] = the terms of cell i as strings with their sign (`+X1`, `-5`)"""
+
+    def __init__(self, n, short=False):
+        self.n = n
+        self.nm = names(n, short)
+        assert len(set(self.nm)) == n
+        self.terms = [[] for _ in range(n)]
+
+    def ref(self, i, j, sg=1):
+        self.terms[i].append(("-" if sg < 0 else "+") + self.nm[j])
+
+    def num(self, i, sg=1):
+        self.terms[i].append(("-" if sg < 0 else "+") + const())
+
+    def lines(self, order):
+        out = []
+        for i in order:
+            if not self.terms[i]:
+                self.num(i)
+            e = "".join(self.terms[i])
+            out.append(self.nm[i] + "=" + (e[1:] if e[0] == "+" else e))
+        return out
+
+
+def chain_step(sh, i, j):
+    """cell i is built from cell j (the previous cell of a chain), often using it twice"""
+    r = random.random()
+    if r < 0.45:
+        g = sgn(0.3)                    # 2x or -2x: the values soon leave 64 bits
+        sh.ref(i, j, g), sh.ref(i, j, g)
+    elif r < 0.6:
+        sh.ref(i, j), sh.ref(i, j), sh.ref(i, j, -1)
+    elif r < 0.8:
+        sh.ref(i, j, sgn()), sh.num(i, sgn())
+    else:
+        sh.ref(i, j, sgn())
+    if random.random() < 0.2:
+        sh.num(i, sgn())
+
+
+def dag(sh, lo, hi, kmin, kmax, pick=None):
+    """cells lo..hi-1 refer to kmin..kmax random earlier cells (pick(i) chooses one), maybe a cancelling pair
+    and a constant too"""
+    for i in range(lo, hi):
+        for _ in range(ri(kmin, kmax)):
+            j = pick(i) if pick else ri(0, i - 1)
+            sh.ref(i, j, sgn())
+        if random.random() < 0.1:       # +X-X: adds nothing, but cell i still depends on X
+            j = pick(i) if pick else ri(0, i - 1)
+            sh.ref(i, j), sh.ref(i, j, -1)
+        if random.random() < 0.3:
+            sh.num(i, sgn())
+
+
+_perm = []
+
+
+def order_of(n, kind):
+    if kind == "rev":
+        return list(range(n - 1, -1, -1))
+    if kind == "fwd":
+        return list(range(n))
+    if n < MAXN:
+        o = list(range(n))
+        random.shuffle(o)
+        return o
+    if not _perm:                   # every big test uses the same random line order (fast)
+        _perm.extend(range(MAXN))
+        random.shuffle(_perm)
+    return _perm
+
+
+def mixed(n, L, kind, cycles=0, selfs=0, kmax=3, short=False):
+    """a chain of L cells (cell k uses cell k-1), then a random DAG over everything before it, then `cycles`
+    back references (a cell refers to a later cell) and `selfs` self references, all in the upper half of the
+    chain (everything built on them later breaks too)"""
+    sh = Sheet(n, short)
+    sh.num(0)
+    for k in range(1, L):
+        chain_step(sh, k, k - 1)
+    dag(sh, L, n, 1, kmax)
+    for _ in range(cycles):
+        i = ri(L // 2, min(L, n - 2))
+        sh.ref(i, ri(i + 1, min(n - 1, i + 1 + ri(0, n // 50 + 1))), sgn())
+    for _ in range(selfs):
+        i = ri(L // 2, L - 1)
+        sh.ref(i, i, sgn())
+    return sh.lines(order_of(n, kind))
 
 
 # samples
-add([1, 2], [(0, 3, 1, -1), (0, 2, 5, -1), (1, 1, 2, 3), (1, 2, 3, -1), (2, 1, 3, -1)])
-add([3, 1, 2], [(0, 2, 2, 1), (0, 1, 2, -1), (1, 4, 7, -1), (1, 1, 1, -1)])
-add([2], [(5, 1, 1, -1), (0, 2, 4, -1), (3, 1, 9, -1)])
-add([5, 1, 1, 3], [(2, 3, 1, -1), (2, 2, 6, -1), (0, 1, 1, -1)])
-add([2, 1], [(0, 2, 3, -1), (1, 3, 5, -1), (1, 1, 3, 2), (2, 2, 1, -1)])
-
-# hidden: small (brute checks these); small time ranges so that many events share a moment
-add([7], [(MAXT, MAXP, MAXW, MAXT)])
-add([1, 1, 1], [(4, 1, 1, -1)])
-for n, k, smax, pmax, tmax, wmax, cfrac, cdelay in [
-        (10, 2, 3, 3, 6, 3, 0.3, 3), (40, 3, 2, 4, 15, 4, 0.3, 5), (120, 5, 3, 3, 40, 3, 0.25, 6),
-        (200, 1, 2, 3, 100, 5, 0.3, 50), (250, 20, 4, 5, 30, 2, 0.4, 3), (300, 8, 1, 6, 60, 10, 0.2, 20)]:
-    add(*make(n, k, smax, pmax, tmax, wmax, cfrac, cdelay))
-
-# hidden: big (each with its own seed, so changing one test does not change the others)
-N, K = MAXN, MAXK
-BIG = [
-    # one printer, everything waits: a long queue and finish times far beyond 2^31
-    (350601, lambda: make(N, 1, MAXS, MAXP, 1000, MAXW, 0.3, 10 ** 6, smin=MAXS // 2, pmin=MAXP // 2)),
-    # many printers and still more work than they can do: a long queue, long varied jobs, few priority values
-    (350602, lambda: make(N, 20000, MAXS, MAXP, 1000, 5, 0.3, 10 ** 9, smin=50000, pmin=5000)),
-    (350603, lambda: make(N, 12000, MAXS, MAXP, 100, 50, 0.25, 10 ** 9, smin=10000, pmin=3000)),
-    (350604, lambda: make(N, 25000, MAXS, MAXP, 10 ** 5, 3, 0.35, 10 ** 9, smin=60000, pmin=5000)),
-    (350605, lambda: make(N, 30000, MAXS, MAXP, 0, 3, 0.3, 10 ** 9, smin=60000, pmin=6000)),
-    (350606, lambda: make(N, 25000, MAXS, MAXP, 10 ** 5, 1, 0.3, 10 ** 9, smin=40000, pmin=4000)),
-    (350607, lambda: make(N, 1000, MAXS, MAXP, 3000, 1000, 0.3, 10 ** 9, smin=2000, pmin=2000)),
-    (350621, lambda: make(N, 10000, MAXS, MAXP, 10 ** 4, 7, 0.3, 10 ** 9, smin=8000, pmin=8000)),
-    (350608, lambda: make(N, 5000, MAXS, MAXP, 10 ** 6, 10, 0.9, 10 ** 9, smin=50000, pmin=5000)),
-    (350609, lambda: make(N, 35000, MAXS, MAXP, 50, MAXW, 0.3, 10 ** 9, smin=80000, pmin=8000)),
-    # short jobs arriving in a burst: many printers finish, jobs arrive and requests come at the same moments
-    # (held(h, ...): printers 1..h stay busy for the whole test)
-    (350610, lambda: held(50000, make(N - 50000, 10000, 2, 2, 10, 3, 0.3, 3))),
-    # a quiet phase, then a burst that queues
-    (350624, lambda: two_phase(20000, 80000, 400, 10 ** 8, 1000, 5, 0.3)),
-    # short jobs, a few arriving every second, very many printers
-    (350613, lambda: make(N, K, 3, 3, 10 ** 5, 3, 0.3, 3)),
-    (350611, lambda: held(50000, make(N - 50000, 40000, 2, 4, 50000, 2, 0.4, 2))),
-    # the low-numbered printers are busy all the time
-    (350614, lambda: busy_low(N, K, 60000, 5, 5, 200000, 10, 0.2, 20)),
-    (350615, lambda: busy_low(N, K, 90000, 3, 4, 50000, 3, 0.3, 10)),
-    # light load: printers often wait, several of them free at the same moment
-    (350622, lambda: held(50000, make(N - 50000, 200, 3, 3, 30000, 3, 0.3, 5))),
-    (350623, lambda: held(50000, make(N - 50000, 1000, 5, 5, 20000, 2, 0.3, 10))),
-    (350616, lambda: make(N, 30000, MAXS, MAXP, MAXT, 100, 0.3, 1000)),
-    # a small shop with a huge queue
-    (350618, lambda: make(N, 50, MAXS, MAXP, 10 ** 6, 10 ** 6, 0.3, 10 ** 9, smin=1000, pmin=1000)),
-    (350625, lambda: two_phase(50000, 50000, 2000, 5 * 10 ** 8, 50, 3, 0.3)),
-]
-for seed, mk in BIG:
-    random.seed(seed)
-    add(*mk())
+add(["A1=B2+B2-3", "C7=A1+X1", "B2=10", "X1=Y2", "Y2=-X1+1"])
+add(["AB1=AB1", "Y1=45", "Z2=Y1+Y1-8", "CAT3=Z2-Z2+Z2", "D1=0"])
+add(["A1=A2+A2", "A2=A3+A3-1", "A3=A4+A4", "A4=-1000000000"])
+add(["X99999=-5"])
+add(["K1=K2+M3-7", "K2=5+P10", "M3=M3+2", "P10=-4", "T6=-P10-P10+K2"])
+# hidden: small (brute checks these)
+add(["A1=0"])
+add(["Z1=-0"])
+add(["ZZZ99999=ZZZ99999+ZZZ99999"])
+add(["A1=B1", "B1=C1", "C1=A1", "D1=C1-C1", "E1=7-3+0"])
+add(mixed(30, 10, "rand", cycles=2, selfs=1, short=True))
+add(mixed(200, 60, "rev", cycles=0))
+add(mixed(500, 300, "rand", cycles=3, selfs=0))
+add(mixed(2000, 1200, "rev", cycles=1))
+add(mixed(4000, 3000, "rand", cycles=0))
+add(mixed(4000, 2000, "fwd", cycles=3, selfs=2))
+# hidden: big (N = 100000)
+N = MAXN
+add(mixed(N, N, "rev"))                                           # one long chain, lines in reverse order
+add(mixed(N, N, "rand"))                                          # the same in random order
+add(mixed(N, 60000, "rev", kmax=2, selfs=1))
+add(mixed(N, 50000, "rand", kmax=2, cycles=2))
+add(mixed(N, 40000, "rand", cycles=3))                            # a few cycles, everything after them breaks
+add(mixed(N, 40000, "rev", cycles=1, selfs=1))
+add(mixed(N, 70000, "rand", selfs=1))
+add(mixed(N, 30000, "rand", cycles=30, kmax=2, short=True))
+sh = Sheet(N)                                                     # one cycle through every cell
+for i in range(N):
+    sh.ref(i, (i + 1) % N, sgn())
+add(sh.lines(order_of(N, "rand")))
+sh = Sheet(N)                                                     # two interleaved long chains,
+sh.num(0)                                                         # one starts at a self reference
+sh.ref(1, 1, -1), sh.num(1)
+for i in range(2, N):
+    chain_step(sh, i, i - 2)
+add(sh.lines(order_of(N, "rev")))
+sh = Sheet(N)                                                     # a cycle in the middle of a long chain
+sh.num(0)
+for i in range(1, N):
+    chain_step(sh, i, i - 1)
+mid = N // 2
+sh.ref(mid, mid + 1000, -1)
+add(sh.lines(order_of(N, "rand")))
+sh = Sheet(N)                                                     # every cell uses the last one many times,
+sh.num(N - 1)                                                     # half of them also use a cell on a cycle
+sh.ref(N - 2, N - 3), sh.ref(N - 3, N - 2, -1)
+for i in range(N - 3):
+    for _ in range(ri(1, 3)):
+        sh.ref(i, N - 1, sgn(0.5))
+    if i % 2:
+        sh.ref(i, N - 2 - i % 4 // 2, sgn(0.5))
+add(sh.lines(order_of(N, "rand")))
+sh = Sheet(N, short=True)                                         # two long chains, one huge sum of all cells
+sh.num(0)
+for i in range(1, N - 1):
+    chain_step(sh, i, i - 1 if i != N // 2 else 0)
+for i in range(N - 1):
+    sh.ref(N - 1, i, sgn(0.5))
+add(sh.lines(order_of(N, "rev")))
+sh = Sheet(N)                                                     # chain where each cell also uses the cell two back
+sh.num(0)
+sh.ref(1, 0)
+for i in range(2, N):
+    sh.ref(i, i - 1, sgn()), sh.ref(i, i - 2, sgn())
+add(sh.lines(order_of(N, "rand")))
+sh = Sheet(N)                                                     # many small cycles and self references
+dag(sh, 1, N, 1, 2)
+sh.num(0)
+for _ in range(2000):
+    i = ri(0, N - 1)
+    sh.ref(i, i if random.random() < 0.5 else ri(i, min(N - 1, i + 5)), sgn())
+add(sh.lines(order_of(N, "rand")))
+add(mixed(N, 80000, "rand", cycles=1, kmax=2))
+add(["AB1=AB1", "Y1=900000000", "Z2=Y1+Y1", "CAT3=Z2-Z2+Z2", "D1=0"])         # sum above 2^31 (was sample 2)
 
 for t in tests:
-    assert t.endswith("\n") and "  " not in t and " \n" not in t
+    assert t.endswith("\n") and " " not in t
 os.makedirs("tests", exist_ok=True)
 for i, t in enumerate(tests, 1):
     with open(f"tests/{i:02d}.in", "w") as f:

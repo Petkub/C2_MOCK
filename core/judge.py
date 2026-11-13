@@ -228,6 +228,13 @@ def load_sets():
     return []
 
 
+def set_name(s, short=False):
+    """'Set 3', or the supplementary set (problems beyond the Camp 2 syllabus, not counted with the main sets)."""
+    if s.get("supplementary"):
+        return "Extra" if short else "Supplementary set"
+    return f"Set {s['set']}"
+
+
 def student_layout():
     """True when the test data is in Mock_K/P folders (student package or repo), not the source tree's work/."""
     return any(os.path.isdir(d) for d in DATA_DIRS)
@@ -383,7 +390,7 @@ def set_of_problem(num):
 def where_in_sets(num):
     for s in load_sets():
         if num in s["problems"]:
-            return f"Set {s['set']} · #{s['problems'].index(num) + 1}"
+            return f"{set_name(s)} · #{s['problems'].index(num) + 1}"
     return f"{num:02d}" if num is not None else "?"
 
 
@@ -568,8 +575,9 @@ def trend(st, e, n=8):
     return "".join(out) + " " * (n - len(hist))
 
 
-def totals(data):
-    sets = available_sets()
+def totals(data, extra=False):
+    """(solved, problems, best points) over the main sets, or over the supplementary set with extra=True."""
+    sets = [s for s in available_sets() if bool(s.get("supplementary")) == extra]
     probs = [n for s in sets for n in s["problems"]]
     solved = sum(1 for n in probs if data["problems"].get(str(n), {}).get("best", 0) == 100)
     best = sum(data["problems"].get(str(n), {}).get("best", 0) for n in probs)
@@ -582,11 +590,18 @@ def progress_line(st, set_no):
     sets = load_sets()
     if not (1 <= set_no <= len(sets)):
         return
-    cells = " ".join(score_cell(st, data["problems"].get(str(n), {}), 3) for n in sets[set_no - 1]["problems"])
-    solved, total, _ = totals(data)
-    print("  " + st.bold("Progress") + f"  Set {set_no} " + cells + st.dim("   ·   ") +
+    s = sets[set_no - 1]
+    cells = " ".join(score_cell(st, data["problems"].get(str(n), {}), 3) for n in s["problems"])
+    solved, total, _ = totals(data, extra=bool(s.get("supplementary")))
+    print("  " + st.bold("Progress") + f"  {set_name(s, short=True)} " + cells + st.dim("   ·   ") +
           f"solved {st.bold(str(solved))} / {total}")
     print("  " + st.dim(f"full view: {PY} ../Judge/judge.py --progress"))
+
+
+def extra_line(st, data):
+    """The supplementary set's count, shown apart from the main sets (empty when the package has none)."""
+    solved, total, _ = totals(data, extra=True)
+    return [f"Extra       {st.bold(f'{solved:>3}')} / {total:<3}" + st.dim("  supplementary set, counted apart")] if total else []
 
 
 def cmd_progress(meta, st, only=None):
@@ -598,7 +613,8 @@ def cmd_progress(meta, st, only=None):
     box(st, [st.bold(st.cyan("POSN Camp 2 · Progress")) + " " * 14 + st.dim(datetime.now().strftime("%Y-%m-%d %H:%M")),
              "",
              f"Solved      {st.bold(f'{solved:>3}')} / {total:<3}  " + bar(st, frac, 20) + f"  {round(100 * frac):>3}%",
-             f"Best total  {st.bold(f'{best:>4}')} / {100 * total}" + st.dim(f"     {runs} judged runs")], st.dim)
+             f"Best total  {st.bold(f'{best:>4}')} / {100 * total}" + st.dim(f"     {runs} judged runs")]
+        + extra_line(st, data), st.dim)
     recent = []
     for s in available_sets():
         k = s["set"]
@@ -606,7 +622,7 @@ def cmd_progress(meta, st, only=None):
             continue
         pts = sum(data["problems"].get(str(n), {}).get("best", 0) for n in s["problems"])
         print()
-        rule(st, f"Set {k}")
+        rule(st, set_name(s))
         done = st.green(st.bold("  complete!")) if pts == 100 * len(s["problems"]) else ""
         print(f"  {bar(st, pts / (100 * len(s['problems'])), 30)}  {st.bold(str(pts))}" + st.dim(f" / {100 * len(s['problems'])}") + done)
         for i, n in enumerate(s["problems"], 1):
@@ -620,7 +636,7 @@ def cmd_progress(meta, st, only=None):
                 info = st.dim(f"last {e.get('last_score', 0):>3}  · {e['attempts']} run" + ("s" if e["attempts"] != 1 else ""))
             print(f"  {st.bold(str(i))}  {name}{' ' * (22 - visible_len(name))} {score_cell(st, e)}  {trend(st, e)}  {info}")
             for t, sc in e.get("history", []):
-                recent.append((t, k, i, n, sc))
+                recent.append((t, set_name(s, short=True), i, n, sc))
     if not available_sets():
         print()
         print("  " + st.dim("No mock sets found next to the Judge folder."))
@@ -629,7 +645,7 @@ def cmd_progress(meta, st, only=None):
         rule(st, "Recent runs")
         for t, k, i, n, sc in sorted(recent, reverse=True)[:6]:
             col = st.green if sc == 100 else (st.yellow if sc > 0 else st.red)
-            print(f"  {st.dim(t[5:16])}   Set {k} · {i}  {clip(meta.get(n, {}).get('en', '?'), 24):<24} {col(f'{sc:>3}')}")
+            print(f"  {st.dim(t[5:16])}   {k:<6} · {i}  {clip(meta.get(n, {}).get('en', '?'), 24):<24} {col(f'{sc:>3}')}")
     print()
     print("  " + st.dim(f"{ch['ok']} = 100   number = best score so far   {ch['dot']} = not tried yet"))
     rule(st)
@@ -1387,7 +1403,7 @@ def cmd_list(meta, st):
              f"{len(sets)} sets · {sum(len(s['problems']) for s in sets)} problems"], st.dim)
     for s in sets:
         print()
-        print("  " + st.bold(f"Set {s['set']}") + st.dim(f"  {s.get('level_en', '')}"))
+        print("  " + st.bold(set_name(s)) + st.dim(f"  {s.get('level_en', '')}"))
         for i, n in enumerate(s["problems"], 1):
             m = meta.get(n, {})
             print(f"    {s['set']}-{i:<3} " + (stars(st, m['tier']) + "  " if m.get('tier') else "") + m.get('en', '?'))
@@ -1419,7 +1435,7 @@ def cmd_set(k, folder, meta, sets, st, tl, show_diff):
         return 1
     s = sets[k - 1]
     probs = s["problems"]
-    head = [title(st, f"POSN Camp 2 · Mock Exam Set {k}"),
+    head = [title(st, "POSN Camp 2 · Supplementary Set" if s.get("supplementary") else f"POSN Camp 2 · Mock Exam Set {k}"),
             f"{s.get('level_en', '')}",
             f"{len(probs)} problems · 3 hours · {100 * len(probs)} points"]
     box(st, head, st.dim)
@@ -1577,6 +1593,19 @@ def self_update(st, argv):
         return None
 
 
+def show_moves(st):
+    """After an update that reorganised the sets, the student's files follow their problems (once)."""
+    if updater is None or not hasattr(updater, "follow_moves") or not student_layout():
+        return
+    moved = updater.follow_moves(ROOT)
+    if not moved:
+        return
+    print("  " + st.yellow(st.bold("The sets were reorganised: your files moved with their problems")))
+    for src, dst in moved:
+        print("    " + f"{src:<14} -> {dst}")
+    print("  " + st.dim("(an empty file now stands in each old place; nothing was deleted)"))
+
+
 def main():
     argv = sys.argv[1:]
     original_argv = list(argv)
@@ -1623,6 +1652,7 @@ def main():
     code = self_update(st, original_argv)
     if code is not None:
         return code
+    show_moves(st)
     meta = load_meta()
     if os.name != "nt":
         raise_stack_limit()     # Windows: the stack size is set when linking (compile_source)
@@ -1722,7 +1752,8 @@ def main():
     if not pdir:
         sets = load_sets()
         print(st.red(f"Problem not found: {parg}"))
-        print(st.dim(f"  Use K-P with set K = 1-{len(sets)} and problem P = 1-6 (e.g. 3-5); see --list."))
+        most = max((len(s["problems"]) for s in sets), default=6)
+        print(st.dim(f"  Use K-P with set K = 1-{len(sets)} and problem P = 1-{most} (e.g. 3-5); see --list."))
         return 1
     if not shutil.which("g++"):
         print(st.red("g++ not found. Please install a C++ compiler and add it to PATH."))

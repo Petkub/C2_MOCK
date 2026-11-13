@@ -29,7 +29,7 @@
     },
     {
       "label": "Judge whole set",
-      "detail": "judge 1.cpp ... 5.cpp of the set you are editing",
+      "detail": "judge every problem (1.cpp, 2.cpp, ...) of the set you are editing",
       "type": "process",
       "command": "python3",
       "windows": {

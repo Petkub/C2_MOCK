@@ -4,8 +4,15 @@ POSN Practice Judge - changes
      grid BFS, backtracking and interval DP). Set 4 problem 5 and set 8 problem 5 are new problems; in set 4 the
      old problem 5 (Hills in View) is now problem 6. Set 9 problem 3, set 11 problem 4 and set 12 problem 6 are
      new. Set 9 problem 6, set 10 problem 5 and set 12 problem 4 are new (adapted from Singapore NOI).
-     Makefile: `make 6` now judges problem 6. Your .cpp files are never changed: a file that held your solution
-     for a replaced or moved problem keeps your code.
+     Makefile: `make 6` now judges problem 6.
+     ชุดเสริม (Mock 13): 7 ข้อที่ใช้เทคนิคเกินหลักสูตรค่าย 2 ย้ายมาจากชุด 1, 3, 6, 8 (ไฟล์ของนักเรียนย้ายตามไปด้วย)
+     ข้อใหม่ในชุดหลัก: 1/6, 3/4, 5/2, 8/2, 8/3, 8/4 (ดัดแปลงจาก NOI Singapore); 3/6, 6/5, 7/3 (จากคลังโจทย์)
+     ตัดออก: Quoted Records (5/2) และ LCM of Every Prefix (7/3); ไฟล์ของนักเรียนอยู่ในโฟลเดอร์ old/
+     หน้าปก: เกณฑ์คะแนน 3 ระดับ, README: ลำดับชุดที่แนะนำ
+     ชุด 1 เรียงใหม่: ข้อใหม่ (Playable Stage Ranges) เป็นข้อ 3; Spreadsheet With Loops, Print Shop และ Dishes That
+     Cool Down เลื่อนเป็นข้อ 4, 5, 6. ชุด 7 ข้อ 1 มีตัวอย่างใหม่หนึ่งชุด.
+     Your written .cpp files are never overwritten or deleted: when a problem moves, your file moves with it once
+     (the judge lists every move); the file of a dropped problem goes to Mock_K/old/; empty starters stay.
 6.0.2  Judge stack/memory, stronger tests, clearer time limits, sample and editorial fixes.
        Stack 256 MB on every system, also macOS (recursion 10^6 deep runs); memory limit 256 MB as before.
        Sets 1 and 2: problems 4 and 5 swapped (ordered by difficulty), so Mock_1/4.cpp is now Print Shop

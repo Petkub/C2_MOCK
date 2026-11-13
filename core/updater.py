@@ -10,7 +10,7 @@ an odd path) means: keep the current version and say nothing. A failed update ne
 
 Rules
   - writes only inside Judge/ and only the files listed in the manifest; never deletes anything
-  - never reads or writes student files (Mock_K/N.cpp, progress.json). Outside Judge/ it only handles
+  - never reads or writes student files (Mock_K/N.cpp, progress.json), except the one-time moves below. Outside Judge/ it only handles
     "managed" files the students do not edit (Mock_K.pdf, Makefile, judge.bat, README.txt, Guide.pdf,
     Progress.md, .vscode/) and "create-only" files (Mock_K/N.cpp templates of a new set, added only when
     missing). The old copy of every replaced file goes to Judge/.backup/ (package files under _package/)
@@ -19,6 +19,14 @@ Rules
 Speed: files are downloaded in parallel (each one retried), and a whole problem folder comes as one zip ("bundle")
 when many of its files are needed, so a new set of problems takes a few requests instead of thousands. Every file
 taken from a bundle is still checked against its own hash in the manifest.
+
+Moves (v6.1, the one exception to "never touches student files", approved by the teacher 2026-11-13): when a set
+is reorganised, a student's Mock_K/N.cpp follows its problem. The manifest lists "moves": {sha256 of an older
+release's problems.json: [[from, to], ...]}. An old updater installs the new release and keeps the old
+problems.json in Judge/.backup/; follow_moves() (called by judge.py at every start) recognises it by its hash and
+moves the files once (Judge/.moves_done remembers it). A file moves only when the student wrote something in it
+(an empty or untouched starter stays); a written file is never overwritten (a clash goes to Mock_K/old/ under a
+free name) and nothing is deleted.
 
 Manifest format 2: the top level is what judges older than 2.3 read (their updater downloads one file at a time).
 For them it lists only the new judge.py / updater.py and the files that did not change since the last format-1
@@ -56,6 +64,9 @@ BACKUP = ".backup"
 TMP = ".update_tmp"
 NEVER_UPDATE = {"manifest.json", "progress.json", "progress.json.tmp"}
 SET_FILE = re.compile(r"^Mock_[0-9]+/[0-9]+\.cpp$")                 # create-only: a student's own files
+OLD_FILE = re.compile(r"^Mock_[0-9]+/old/[0-9]+_[A-Za-z0-9]+\.cpp$")  # where the file of a dropped problem goes
+MOVES_DONE = ".moves_done"          # Judge/.moves_done: hashes of the old problems.json whose moves were applied
+STARTER_BODY = "cin.tie(0);ios::sync_with_stdio(0);return0;}"
 MANAGED_FILE = re.compile(r"^(Mock_[0-9]+/(Makefile|judge\.bat|Mock_[0-9]+\.pdf)|Guide\.pdf|README\.txt"
                           r"|Progress\.md|\.vscode/(tasks|settings)\.json)$")   # replaced when they change
 
@@ -331,6 +342,96 @@ def checked_recently(judge_dir):
         return time.time() - os.path.getmtime(os.path.join(judge_dir, STAMP)) < CHECK_INTERVAL
     except OSError:
         return False
+
+
+# ----------------------------------------------------------------------------- moves (student files follow problems)
+def is_starter(path):
+    """True for an empty file or the untouched main() template of versions before 6.0.2 (same test as judge.py)."""
+    try:
+        with open(path, "rb") as f:
+            data = f.read(65537)
+    except OSError:
+        return False
+    if len(data) > 65536:
+        return False
+    text = "".join(data.decode("utf-8", "replace").lstrip("\ufeff").split())
+    return not text or text.endswith("intmain(){" + STARTER_BODY) or text.endswith("int32_tmain(){" + STARTER_BODY)
+
+
+def good_moves(pairs):
+    return (isinstance(pairs, list) and all(isinstance(m, list) and len(m) == 2 and isinstance(m[0], str)
+            and isinstance(m[1], str) and SET_FILE.match(m[0]) and (SET_FILE.match(m[1]) or OLD_FILE.match(m[1]))
+            for m in pairs))
+
+
+def free_name(path):
+    """path, or path with -2, -3 ... before .cpp when it is taken."""
+    stem, i = path[:-4], 2
+    while os.path.exists(path):
+        path, i = f"{stem}-{i}.cpp", i + 1
+    return path
+
+
+def apply_moves(base, pairs):
+    """Move each written source file to its destination; returns [(from, to)] as package paths (to may differ
+    from the plan when the destination holds written code: then Mock_K/old/)."""
+    held = []
+    for src, dst in pairs:                       # 1. every file that moves goes to a hidden name first (swaps)
+        s = os.path.join(base, *src.split("/"))
+        t = os.path.join(os.path.dirname(s), ".moving_" + os.path.basename(s))
+        if os.path.exists(t):                    # an earlier run stopped half-way
+            held.append((src, dst, t))
+        elif os.path.isfile(s) and not is_starter(s):
+            os.replace(s, t)
+            held.append((src, dst, t))
+    done = []
+    for src, dst, t in held:                     # 2. into place; never over written code
+        d = os.path.join(base, *dst.split("/"))
+        if os.path.exists(d) and not (os.path.isfile(d) and is_starter(d)):
+            k, n = dst.split("/")[0], src.split("/")[-1][:-4]
+            d = free_name(os.path.join(base, k, "old", f"{n}_moved.cpp"))
+        os.makedirs(os.path.dirname(d), exist_ok=True)
+        os.replace(t, d)
+        done.append((src, os.path.relpath(d, base).replace(os.sep, "/")))
+    return done
+
+
+def refill_starters(base, manifest, vacated):
+    """Put an empty starter back where a file moved away (the slot now holds another problem)."""
+    empty = sha256(b"")
+    for rel in vacated:
+        spec = (manifest.get("create_only") or {}).get(rel)
+        p = os.path.join(base, *rel.split("/"))
+        if good_spec(spec) and spec[0] == empty and not os.path.exists(p):
+            open(p, "wb").close()
+
+
+def follow_moves(judge_dir=ROOT):
+    """Once after an update that reorganised the sets: move the student's files to their problems' new places.
+    Returns [(from, to)]; never raises (a failure leaves the files where they are)."""
+    try:
+        old = file_sha(os.path.join(judge_dir, BACKUP, "problems", "batch", "problems.json"))
+        if old is None:
+            return []
+        marker = os.path.join(judge_dir, MOVES_DONE)
+        try:
+            with open(marker, encoding="utf-8") as f:
+                if old in f.read().split():
+                    return []
+        except OSError:
+            pass
+        manifest = load_json(os.path.join(judge_dir, "manifest.json"))
+        pairs = ((manifest or {}).get("moves") or {}).get(old)
+        done = []
+        if good_moves(pairs):
+            base = os.path.dirname(judge_dir)
+            done = apply_moves(base, pairs)
+            refill_starters(base, manifest, [src for src, _ in done])
+        with open(marker, "a", encoding="utf-8") as f:
+            f.write(old + "\n")
+        return done
+    except Exception:
+        return []
 
 
 # ----------------------------------------------------------------------------- main entry

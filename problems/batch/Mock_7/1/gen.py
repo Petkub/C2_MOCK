@@ -135,7 +135,7 @@ def stream(n, u, gaps, pin=0.55, seed=None):
 # samples
 add_raw(["09:00:00 b IN", "09:05:30 a IN", "09:12:00 b OUT", "09:20:00 a OUT"])
 add_raw(["23:55:00 n IN", "23:58:00 t IN", "00:05:00 n OUT", "00:10:00 t OUT"])
-add_raw(["08:30:00 m IN", "08:32:10 p IN", "08:40:00 m OUT", "08:41:00 m IN", "08:44:30 p OUT", "08:46:00 m OUT"])
+add_raw(["08:30:00 m IN", "08:32:10 p IN", "08:35:00 m IN", "08:40:00 m OUT", "08:41:00 q OUT", "08:44:30 p OUT"])
 add_raw(["17:50:00 t IN", "17:52:00 a IN", "17:58:00 a OUT", "18:02:00 t OUT", "09:05:00 a IN", "09:12:00 a OUT"])
 add_raw(["23:55:00 k IN", "23:56:00 b IN", "23:59:00 k OUT", "00:04:00 b OUT", "23:58:00 k IN", "00:03:00 k OUT"])
 
@@ -144,6 +144,7 @@ add_raw(["10:00:00 a IN", "10:05:00 a IN", "10:10:00 a OUT", "10:12:00 a IN", "1
 add_raw(["09:00:00 k IN", "09:05:00 k OUT", "08:00:00 k IN", "08:05:00 k OUT"])                    # equal longest stays
 add_raw(["00:00:00 a IN"])
 add_raw(["23:59:59 zz OUT", "00:00:00 zz OUT", "00:00:00 z OUT"])
+add_raw(["08:30:00 m IN", "08:32:10 p IN", "08:40:00 m OUT", "08:41:00 m IN", "08:44:30 p OUT", "08:46:00 m OUT"])  # old sample 3
 planned(40, 5, 5 * DAY, grid=600, dmax=7200)
 planned(300, 30, 40 * DAY, grid=60, dmax=30000)
 stream(2000, 20, [(3, 0, 0), (5, 1, 3600), (2, 40000, DAY - 1)])

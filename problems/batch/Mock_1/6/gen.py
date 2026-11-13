@@ -1,121 +1,127 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
 import os, random
 
-random.seed(1204)
-MAXN, MAXV = 100000, 1000000
+random.seed(930503)
+MAXN, MAXA, MAXB = 5000, 10 ** 9, 10 ** 6
 tests = []
-rnd = random.random
 
 
-def ri(a, b):
-    """random integer in [a, b] (faster than randint, still deterministic)"""
-    return a + int(rnd() * (b - a + 1))
+def add(d):
+    n = len(d)
+    assert 1 <= n <= MAXN
+    assert all(0 <= a <= MAXA and 0 <= b <= MAXB for a, b in d)
+    tests.append(f"{n}\n" + "".join(f"{a} {b}\n" for a, b in d))
 
 
-def add(ds):
-    assert 1 <= len(ds) <= MAXN
-    for a, b in ds:
-        assert 1 <= a <= MAXV and 1 <= b <= MAXV
-    tests.append(str(len(ds)) + "\n" + "".join(f"{a} {b}\n" for a, b in ds))
+def ri(lo, hi):
+    return random.randint(lo, hi)
 
 
-def flip(ds):
-    """turn a random half of the dominoes around"""
-    return [(b, a) if rnd() < 0.5 else (a, b) for a, b in ds]
+def uniform(n, alo=0, ahi=MAXA, blo=0, bhi=MAXB):
+    return [(ri(alo, ahi), ri(blo, bhi)) for _ in range(n)]
 
 
-def shuffled(ds):
-    ds = list(ds)
-    random.shuffle(ds)
-    return ds
-
-
-def relabel(ds, lo=1, hi=MAXV):
-    """map the values used to distinct random values in [lo, hi]"""
-    vals = sorted({v for d in ds for v in d})
-    new = random.sample(range(lo, hi + 1), len(vals))
-    m = dict(zip(vals, new))
-    return [(m[a], m[b]) for a, b in ds]
-
-
-def rand_edges(n, vmax, loops=0.0):
-    out = []
+def anti(n):
+    """dishes with a large a also cool down fast (a and b grow together, with noise)"""
+    d = []
     for _ in range(n):
-        a = ri(1, vmax)
-        out.append((a, a) if rnd() < loops else (a, ri(1, vmax)))
-    return out
+        t = random.random()
+        a = int(t * MAXA * random.uniform(0.6, 1.0))
+        b = int(t * MAXB * random.uniform(0.2, 1.0))
+        d.append((min(MAXA, a), min(MAXB, b)))
+    return d
 
 
-def cycles(n, lmin, lmax, start=1):
-    """disjoint cycles (every vertex even) with about n edges in total"""
-    out, v = [], start
-    while len(out) < n:
-        ln = min(ri(lmin, lmax), n - len(out))
-        if ln == 1:
-            out.append((v, v))
+def ratio_ties(n):
+    """a = q * b for a few rates q (many equal ratios a / b), plus noise dishes"""
+    qs = [ri(50, 3000) for _ in range(6)]
+    d = []
+    for _ in range(n):
+        if random.random() < 0.8:
+            b = ri(1, MAXB // 3)
+            q = random.choice(qs)
+            d.append((min(MAXA, q * b), b))
         else:
-            for i in range(ln):
-                out.append((v + i, v + (i + 1) % ln))
-        v += ln
-    return out
+            d.append((ri(0, MAXA), ri(0, MAXB)))
+    return d
 
 
-def paths(n, lmin, lmax, start=1):
-    """disjoint paths (two odd ends each) with about n edges in total"""
-    out, v = [], start
-    while len(out) < n:
-        ln = min(ri(lmin, lmax), n - len(out))
-        for i in range(ln):
-            out.append((v + i, v + i + 1))
-        v += ln + 1
-    return out
+def levels(n, bs):
+    """few distinct b values, random a"""
+    return [(ri(0, MAXA), random.choice(bs)) for _ in range(n)]
+
+
+def traps(n):
+    """pairs: a fast-cooling dish with a small positive first gain and a slow dish with a large a"""
+    d = []
+    for _ in range(n // 2):
+        b = ri(MAXB // 2, MAXB)
+        d.append((b * ri(1, 4) + ri(0, b), b))
+        b2 = ri(0, MAXB // 20)
+        d.append((ri(MAXA // 2, MAXA), b2))
+    while len(d) < n:
+        d.append((ri(0, MAXA), ri(0, MAXB)))
+    random.shuffle(d)
+    return d
+
+
+def mixed_scale(n):
+    """dishes of very different sizes: some big a/big b, some small a/tiny b"""
+    d = []
+    for _ in range(n):
+        r = random.random()
+        if r < 0.3:
+            d.append((ri(MAXA // 2, MAXA), ri(MAXB // 2, MAXB)))
+        elif r < 0.6:
+            d.append((ri(0, MAXA // 1000), ri(0, MAXB // 10000)))
+        else:
+            d.append((ri(0, MAXA // 10), ri(0, MAXB // 50)))
+    return d
 
 
 # samples
-add([(1, 2), (3, 4), (2, 3), (2, 5), (5, 5), (6, 6)])
-add([(7, 7), (7, 7), (1, 1), (1, 7)])
-add([(1, 2), (1, 3), (1, 4), (1, 5)])
-add([(5, 9)])
-add([(4, 8), (8, 4), (2, 6), (6, 6), (6, 4), (3, 3), (2, 3)])
-# hidden: small (brute checks these)
-add([(1000000, 1000000)])
-add([(3, 3)] * 5 + [(1, 2)] + [(2, 2)] * 3)
-add(flip(rand_edges(30, 8, 0.2)))
-add(flip(rand_edges(200, 60, 0.1)))
-add(flip(shuffled(cycles(150, 1, 6) + paths(150, 1, 5, 1000))))
-add(relabel(flip(rand_edges(400, 300, 0.3))))
-add(flip(rand_edges(600, 25)))
-add(relabel(flip(shuffled(paths(500, 1, 3) + [(v, v) for v in range(2000, 2100)]))))
-# hidden: tiny (N <= 16, the brute searches every order of the dominoes)
-add(flip(rand_edges(16, 5, 0.2)))
-add(flip(rand_edges(15, 12, 0.1)))
-add(relabel(flip(shuffled(cycles(8, 1, 4) + paths(8, 1, 3, 100)))))
-add(flip(shuffled([(1, 2)] * 5 + [(2, 3)] * 4 + [(4, 4)] * 3 + [(5, 6)] * 4)))
-# hidden: big
-BIG = [
-    (12040, lambda: flip(rand_edges(MAXN, MAXV))),
-    (12041, lambda: flip(rand_edges(MAXN, 1000))),
-    (12042, lambda: flip(rand_edges(MAXN, 115000))),
-    (12043, lambda: flip(rand_edges(MAXN, 100000, 0.5))),
-    (12044, lambda: relabel([(v, v) for v in range(1, MAXN + 1)])),
-    (12045, lambda: relabel(flip(shuffled(paths(MAXN, MAXN, MAXN))))),
-    (12046, lambda: relabel(flip(shuffled(cycles(MAXN, 2, 40))))),
-    (12047, lambda: relabel(flip(shuffled([(h, 1000 + 100 * h + j) for h in range(1, 1001) for j in range(100)])))),
-    (12048, lambda: relabel(flip(shuffled(rand_edges(MAXN // 2, 60000) * 2)))),
-    (12049, lambda: relabel(flip(shuffled(paths(MAXN, 1, 4))))),
-    (12050, lambda: relabel(flip(shuffled(cycles(MAXN - 15000, 3, 30) + paths(15000, 1, 2, 500000))))),
-    (12051, lambda: relabel(flip(shuffled(cycles(MAXN // 2, 1, 3) + rand_edges(MAXN // 2, 50000, 0.0))))),
-    (12052, lambda: [(MAXV - ri(0, 99), MAXV - ri(0, 99)) for _ in range(MAXN)]),
-    (12053, lambda: relabel(flip(shuffled(cycles(MAXN, MAXN, MAXN))))),
-    (12054, lambda: relabel(flip(shuffled(paths(MAXN // 2, 50, 300) + cycles(MAXN // 2, 2, 2, 600000))))),
-    (12055, lambda: flip(rand_edges(MAXN, 200000, 0.25))),
-    (12056, lambda: relabel(flip(shuffled(cycles(MAXN, 1000, 20000))))),
-    (12057, lambda: relabel(flip(shuffled([(1, 2)] * (MAXN // 2) + paths(MAXN // 2, 1, 1, 3))))),
-]
-for seed, make in BIG:
-    random.seed(seed)
-    add(make())
+add([(10, 3), (8, 1), (9, 4), (1, 5)])
+add([(2, 5), (3, 3), (0, 1)])
+add([(20, 6), (9, 1), (14, 4), (3, 3), (15, 5), (6, 0)])
+add([(7, 2)])
+add([(12, 4), (7, 1), (9, 3), (5, 2), (11, 4), (30, 10), (4, 1), (8, 3)])
+# hidden: small (the subset DP of brute.cpp checks these)
+add([(0, 0)])
+add([(5, 6)])
+add(uniform(8, 0, 100, 0, 30))
+add(uniform(12, 0, 1000, 0, 200))
+add([(ri(0, 50), ri(0, 10)) for _ in range(15)])
+add(levels(16, [3, 3, 7, 0]))
+add(uniform(18, 0, MAXA, 0, MAXB))
+add(traps(20))
+# hidden: medium (the assignment method of brute.cpp checks these)
+add(uniform(300))
+add(anti(400))
+add(ratio_ties(500))
+# hidden: big, N = 5000
+add(uniform(MAXN))
+add(uniform(MAXN))
+add(uniform(MAXN, MAXA // 2, MAXA))
+add(uniform(MAXN, 0, MAXA, 0, MAXB // 10))
+add(uniform(MAXN, 0, MAXA // 10, 0, MAXB // 100))
+add(anti(MAXN))
+add(anti(MAXN))
+add(ratio_ties(MAXN))
+add(levels(MAXN, [MAXB, MAXB // 2, MAXB // 5, MAXB // 20, 1000, 0]))
+add(levels(MAXN, [ri(0, MAXB) for _ in range(40)]))
+add(traps(MAXN))
+add(traps(MAXN))
+add(mixed_scale(MAXN))
+add(mixed_scale(MAXN))
+add(uniform(MAXN // 2) + [(ri(0, MAXA), 0) for _ in range(MAXN // 2)])
+add([(ri(MAXA - MAXA // 10, MAXA), MAXB) for _ in range(MAXN)])        # equal b, all near the maximum
+add([(MAXA, MAXB)] * MAXN)                                              # everything equal
+add([(MAXA, 0)] * MAXN)                                                 # nothing cools down
+add([(ri(0, 999), ri(1000, MAXB)) for _ in range(MAXN)])                # every dish loses
+add([(ri(0, MAXA), ri(MAXB - 100, MAXB)) for _ in range(MAXN)])         # b nearly equal
 
+for t in tests:
+    assert t.endswith("\n") and "  " not in t and " \n" not in t
 os.makedirs("tests", exist_ok=True)
 for i, t in enumerate(tests, 1):
     with open(f"tests/{i:02d}.in", "w") as f:

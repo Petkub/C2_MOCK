@@ -23,6 +23,11 @@ Format 2 (when tools/legacy_manifest.json exists, the last release that old upda
 goes under "full", and the top level is the legacy view for old updaters: the legacy release's entries that did
 not change, plus the new judge.py and updater.py. An old judge (one file per request) therefore downloads just
 those two files, and the new updater then installs "full".
+
+"moves" (in "full"): {sha256 of an older release's problems.json: [[from, to], ...]}. tools/moves/problems_<v>.json
+are those files (exact bytes of the releases 6.0 and 6.0.2); a problem is the same problem when its English title
+is the same, so its student file goes from its old Mock_K/N.cpp to the new one; a problem no longer in the sets
+goes to Mock_K/old/N_<Title>.cpp. Judge/updater.py follow_moves() applies them once (see there).
 """
 import hashlib
 import json
@@ -99,7 +104,8 @@ def managed_files():
             out.append((name, "student/" + name))
     for s in load_sets():
         k = s["set"]
-        out.append((f"Mock_{k}/Makefile", "student/set_files/Makefile"))
+        n = len(s["problems"])
+        out.append((f"Mock_{k}/Makefile", "student/set_files/Makefile" + ("" if n == 6 else f"_{n}")))
         out.append((f"Mock_{k}/judge.bat", "student/set_files/judge.bat"))
         if os.path.exists(os.path.join(REPO, "student", f"Mock_{k}", f"Mock_{k}.pdf")):
             out.append((f"Mock_{k}/Mock_{k}.pdf", f"student/Mock_{k}/Mock_{k}.pdf"))
@@ -153,6 +159,36 @@ def bundles(pairs, files, write):
     return out
 
 
+MOVES = os.path.join(REPO, "tools", "moves")
+RENAMED = {}                        # old English title -> new title, if a problem is renamed between releases
+
+
+def slug(title):
+    return "".join(w[:1].upper() + w[1:] for w in "".join(c if c.isalnum() else " " for c in title).split())
+
+
+def moves():
+    """{sha256 of an old problems.json: [[from, to], ...]} for every file in tools/moves/."""
+    with open(os.path.join(REPO, "problems", "batch", "problems.json"), encoding="utf-8") as f:
+        now = {e["en"]: e["dir"] for e in json.load(f).values()}
+    out = {}
+    for name in sorted(os.listdir(MOVES)) if os.path.isdir(MOVES) else []:
+        path = os.path.join(MOVES, name)
+        with open(path, encoding="utf-8") as f:
+            old = json.load(f)
+        pairs = []
+        for e in sorted(old.values(), key=lambda e: e["dir"]):
+            src, title = e["dir"] + ".cpp", RENAMED.get(e["en"], e["en"])
+            if title in now:
+                if now[title] != e["dir"]:
+                    pairs.append([src, now[title] + ".cpp"])
+            else:
+                k, n = e["dir"].split("/")
+                pairs.append([src, f"{k}/old/{n}_{slug(e['en'])}.cpp"])
+        out[sha256_file(path)] = pairs
+    return out
+
+
 def legacy_view(full):
     """The top level of a format-2 manifest: what old updaters (one file per request) act on."""
     with open(LEGACY, encoding="utf-8") as f:
@@ -172,7 +208,7 @@ def build(write=True):
     pairs = judge_files()
     files = {rel: sha256_file(os.path.join(REPO, src)) for rel, src in pairs}
     full = {"version": version(), "sources": SOURCES, "files": files, "managed": with_hashes(managed_files()),
-            "create_only": with_hashes(set_files()), "bundles": bundles(pairs, files, write)}
+            "create_only": with_hashes(set_files()), "bundles": bundles(pairs, files, write), "moves": moves()}
     if not os.path.exists(LEGACY):
         return full
     return dict(legacy_view(full), full=full)

@@ -1,242 +1,171 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
+# A stack = an order of ranks 0..n-1 (top first, 0 = smallest number) + n distinct numbers.
 import os, random
+from collections import deque
+from itertools import permutations
 
-random.seed(1401)
-MAXN, MAXC, MAXLINE, MAXTOTAL = 200000, 20, 1000, 2000000
-tests = []
+random.seed(1205002)
 rnd = random.random
+MAXT, MAXN, MAXV = 15000, 8, 10 ** 9
+tests = []
 
 
 def ri(a, b):
-    """random integer in [a, b] (only random.random(), so every Python version gives the same tests)"""
     return a + int(rnd() * (b - a + 1))
 
 
-def pick(seq):
-    return seq[int(rnd() * len(seq))]
+def add(stacks):
+    assert 1 <= len(stacks) <= MAXT
+    lines = [str(len(stacks))]
+    for s in stacks:
+        assert 1 <= len(s) <= MAXN and len(set(s)) == len(s)
+        assert 1 <= min(s) and max(s) <= MAXV
+        lines.append(f"{len(s)} " + " ".join(map(str, s)))
+    tests.append("\n".join(lines) + "\n")
 
 
-def add(C, K, V, lines):
-    assert 1 <= len(lines) <= MAXN and 2 <= C <= MAXC and 1 <= K <= C and 1 <= V <= C and K != V
-    assert max(len(ln) for ln in lines) <= MAXLINE
-    body = "".join(ln + "\n" for ln in lines)
-    assert len(body) - len(lines) <= MAXTOTAL
-    assert set(body) <= PRINTABLE
-    tests.append(f"{len(lines)} {C} {K} {V}\n" + body)
+# fewest flips of every order of 8 ranks (only used to pick hard stacks for the big tests)
+start = tuple(range(MAXN))
+dist = {start: 0}
+q = deque([start])
+while q:
+    u = q.popleft()
+    for k in range(2, MAXN + 1):
+        v = u[k - 1::-1] + u[k:]
+        if v not in dist:
+            dist[v] = dist[u] + 1
+            q.append(v)
+by_dist = [[] for _ in range(10)]
+for p, d in dist.items():
+    by_dist[d].append(p)
+for lst in by_dist:
+    lst.sort()
 
 
-PLAIN = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .-_'/()&:;!?+*=<>#@$%[]{}|~^`\\"
-ANY = PLAIN + ',,""'
-PRINTABLE = set(chr(c) for c in range(32, 127)) | {"\n"}
-# long random strings; a random text is a slice of one of them (much faster than letter by letter)
-SOURCE = {a: "".join(pick(a) for _ in range(200000)) for a in (PLAIN, ANY)}
+def pick(lst):
+    return lst[int(rnd() * len(lst))]
 
 
-def text(alphabet, lo, hi):
-    n = ri(lo, hi)
-    src = SOURCE[alphabet]
-    i = ri(0, len(src) - n)
-    return src[i:i + n]
+# ---- orders of ranks ----
+def shuffled(a):
+    a = list(a)
+    key = [rnd() for _ in a]
+    return [a[i] for i in sorted(range(len(a)), key=key.__getitem__)]
 
 
-def quote(s):
-    return '"' + s.replace('"', '""') + '"'
+def far8(lo):
+    """an order of 8 ranks that needs at least lo flips (lo = 7 or 8); 9 flips only now and then"""
+    x = rnd()
+    if x < 0.06:
+        return pick(by_dist[9])
+    return pick(by_dist[8] if lo == 8 or x < 0.55 else by_dist[7])
 
 
-def enc(s, pq=0.3):
-    """a field holding the value s: quoted when it must be, otherwise quoted with probability pq"""
-    if ',' in s or '"' in s or (s and rnd() < pq):
-        return quote(s)
-    return s
+def near(n, k):
+    """k random flips from the sorted stack"""
+    a = list(range(n))
+    for _ in range(k):
+        j = ri(2, n) if n >= 2 else 1
+        a[:j] = a[:j][::-1]
+    return a
 
 
-AMOUNT_LO = [0, 0] + [10 ** (d - 1) for d in range(2, 10)]
-AMOUNT_SPAN = [0] + [10 ** d - AMOUNT_LO[d] for d in range(1, 10)]
+# ---- numbers (sorted, distinct) ----
+def v_uniform(n):
+    s = set()
+    while len(s) < n:
+        s.add(ri(1, MAXV))
+    return sorted(s)
 
 
-def amount(big):
-    """same draws as ri(...) calls, written inline because gen.py calls it about 1.5 million times"""
-    d = 1 + int(rnd() * 9) if not big else 8 + int(rnd() * 2)
-    s = str(AMOUNT_LO[d] + int(rnd() * AMOUNT_SPAN[d]))
-    if rnd() < 0.08 and len(s) <= 7:
-        s = "0" * (1 + int(rnd() * 2)) + s
-    if rnd() < 0.35:
-        s = "-" + s
-    return s
+def v_small(n):
+    s = set()
+    while len(s) < n:
+        s.add(ri(1, 2 * n + 4))
+    return sorted(s)
 
 
-BAD_AMOUNTS = ["+5", "1 2", " 5", "5 ", "1234567890", "-", "", "--5", "5-", "1e3", "0x1", "12a", "- 3",
-               "0000000000", "-1234567890", "\t"[:0] + "3.5", "1,000", '2"']
+def v_mixed(n):
+    """numbers of very different sizes: 1 digit up to 10 digits"""
+    s = set()
+    while len(s) < n:
+        e = ri(0, 9)
+        s.add(min(MAXV, ri(10 ** e, 10 ** (e + 1) - 1)))
+    return sorted(s)
 
 
-def make_keys(n, maxlen):
-    """n distinct non-empty keys with commas, quotes, spaces, shared prefixes and case differences
-    (the hot draws are written inline: same random sequence as text() / pick() / ri(), but faster)"""
-    keys = set()
-    base = []
-    plain, anys = SOURCE[PLAIN], SOURCE[ANY]
-    lim = len(plain) + 1                                # both sources have the same length
-    draw = rnd
-    while len(base) < n:
-        r = draw()
-        if r < 0.55 or not base:                        # text(PLAIN or ANY, 1, maxlen)
-            m = 1 + int(draw() * maxlen)
-            i = int(draw() * (lim - m))
-            k = (plain if r < 0.35 or not base else anys)[i:i + m]
-        elif r < 0.75:                                  # a variant of an earlier key
-            b = base[int(rnd() * len(base))]
-            v = int(rnd() * 8)
-            if v == 0:
-                k = b + text(ANY, 1, 2)
-            elif v == 1:
-                k = b[:-1] if len(b) > 1 else b + "a"
-            elif v == 2:
-                k = b.swapcase()
-            elif v == 3:
-                k = " " + b
-            elif v == 4:
-                k = b + " "
-            elif v == 5:
-                k = b.replace(" ", ",")
-            else:
-                k = '"' + b if v == 6 else b + '"'
-        else:
-            k = pick(["Ann", "Bob", "ann", "A", "a", " ", "  ", ",", '"', '""', "Ann, B", "Ann,B", "Ann ,B",
-                      "x" * ri(1, 5), '"q"', "B" * ri(1, 3)]) + (str(ri(0, 99)) if rnd() < 0.5 else "")
-        k = k[:maxlen].rstrip(" ")                      # no name ends with a space (output lines never end with one)
-        if k and k not in keys:
-            keys.add(k)
-            base.append(k)
-    return base
+def v_top(n):
+    """numbers close to 10^9"""
+    s = set()
+    while len(s) < n:
+        s.add(MAXV - ri(0, 40))
+    return sorted(s)
 
 
-POOL = {}
+def v_perm(n):
+    return list(range(1, n + 1))
 
 
-def other(maxlen):
-    """a random field value of length <= maxlen, taken from a pool of pre-made texts (keeps gen.py fast)"""
-    if maxlen not in POOL:
-        POOL[maxlen] = [text(PLAIN if i % 2 else ANY, 0, maxlen) for i in range(3000)]
-    return pick(POOL[maxlen])
+VALS = [v_uniform, v_small, v_mixed, v_top, v_perm]
 
 
-def broken(C, K, V, key, maxlen, row):
-    """a record that breaks exactly one chosen rule (fields are well formed otherwise);
-    row = (values, encoded values) of the other fields, pre-made"""
-    vals, f = row[0][:], row[1][:]
-    vals[K - 1] = key
-    f[K - 1] = enc(key)
-    vals[V - 1] = amount(False)
-    f[V - 1] = enc(vals[V - 1])
-    kind = ri(0, 11)
-    j = ri(0, C - 1)
-    if kind == 0:            # quote inside a plain field
-        s = text(PLAIN, 0, 4)
-        f[j] = s + '"' + text(PLAIN, 0, 4)
-    elif kind == 1:          # a plain field that starts with a space and then holds a quoted text
-        f[j] = " " + quote(vals[j])
-    elif kind == 2:          # unclosed quoted field at the end
-        f[-1] = '"' + vals[-1].replace('"', '""') + pick(["", '""', ",x", '"",'])
-    elif kind == 3:          # something after the closing quote
-        f[j] = quote(vals[j]) + pick([" ", "x", '"x"', "a b", " ,"[:1]])
-    elif kind == 4:          # one field too many
-        f.insert(ri(0, C), enc(other(maxlen)))
-    elif kind == 5:          # one field too few (C >= 2)
-        f.pop(ri(0, C - 1))
-    elif kind == 6:          # a trailing comma (an extra empty field)
-        f.append("")
-    elif kind == 7:          # empty key
-        f[K - 1] = pick(["", '""'])
-    elif kind == 8:          # bad amount
-        f[V - 1] = enc(pick(BAD_AMOUNTS), 0.5)
-    elif kind == 9:          # empty line or a single field
-        return pick(["", enc(key), quote(",".join(vals))])
-    elif kind == 10:         # the whole record put inside quotes: one field
-        return quote(",".join(f))
-    else:                    # quoted key whose comma a naive split would cut
-        f[K - 1] = quote(key + "," + text(PLAIN, 0, 3))
-        f.pop(ri(0, C - 1) if C > 2 else 0)
-    return ",".join(f)
+def make(order, vals):
+    return [vals[r] for r in order]
 
 
-def records(n, C, K, V, nkeys, pbad, big=False, maxlen=8, keylen=10, total=1900000):
-    keys = make_keys(nkeys, keylen)
-    # well-formed records are built from pre-made pieces (a few random draws per line keep gen.py fast):
-    # rows of encoded other fields, a pool of encoded amounts, and each key both as it must be written and quoted
-    other(maxlen)
-    vals = POOL[maxlen]
-    rows = []
-    for _ in range(3000):
-        row = [pick(vals) for _ in range(C)]
-        rows.append((row, [enc(v) for v in row]))
-    amounts = [enc(amount(big)) for _ in range(5000)]
-    quoted = [quote(k) for k in keys]
-    written = [q if (',' in k or '"' in k) else k for k, q in zip(keys, quoted)]
-    out, used, nxt = [], 0, 0
-    walk = nkeys >= 10000                       # mostly walk through all keys, so most of them really occur
-    draw = rnd
-    for _ in range(n):
-        if walk and draw() < 0.8:
-            j = nxt % nkeys
-            nxt += 1
-        else:
-            j = int(draw() * nkeys)
-        if draw() < pbad:
-            ln = broken(C, K, V, keys[j], maxlen, rows[int(draw() * 3000)])[:MAXLINE]
-        else:
-            f = rows[int(draw() * 3000)][1][:]
-            f[K - 1] = quoted[j] if draw() < 0.3 else written[j]
-            f[V - 1] = amounts[int(draw() * 5000)]
-            ln = ",".join(f)[:MAXLINE]
-        if used + len(ln) > total:
-            break
-        used += len(ln)
-        out.append(ln)
-    return out
+def hard_or_random(n, lo, p):
+    """with 8 boxes: a hard order with probability p, otherwise a random order"""
+    return list(far8(lo)) if n == 8 and rnd() < p else shuffled(range(n))
+
+
+def rand_n():
+    """mostly 8 boxes, sometimes fewer"""
+    return 8 if rnd() < 0.7 else ri(1, 7)
 
 
 # samples
-add(3, 1, 3, ['"Ann, B",x,10', 'Bob,y,"-5"', '"Ann, B",z,7', 'Bob,"q"x,1', '"He said ""hi""",,3'])
-add(2, 2, 1, ['5,apple', '12', '-3,pear', '7,ap"ple', '8,apple'])
-add(3, 2, 1, ['300,Nok,lunch', '-120,Nok,"bus, taxi"', '50,"Lee, K.",', '75,Ploy,snack,extra', '200,Ploy,books'])
-add(3, 3, 1, ['250,x,"Lee, K."', '"-40",y,Ploy', '90,,"Lee, K."', '0,x,ploy'])
-add(4, 2, 4, ['2024-01-03,"Smith, J.",food,120', '2024-01-03,Mary,"rent, May",-4500',
-              '2024-01-04,"Smith, J.",travel,"35"', '2024-01-05,Tom,"6"" pipe",80', '2024-01-05,Mary,food,12.50',
-              '2024-01-06,Tom,gift'])
-# hidden: small (brute checks these)
-add(3, 2, 1, ['-007,  x,a', '', '3,"  x",', ',y,z', '"4",x,'])
-add(2, 1, 2, ['"abc,5', ' "a",5', '"a""b",5', '"",5', 'x,"5"'])
-add(2, 2, 1, ['5,apple', '12', '1234567890,pear', '7,ap"ple', '-999999999,pear', '"-0000000001",apple'])
-add(2, 2, 1, ['0,a'])
-add(2, 1, 2, [''])
-for C, K, V, n, nk, pb in [(2, 1, 2, 30, 4, 0.5), (3, 3, 1, 60, 8, 0.4), (5, 2, 4, 200, 20, 0.3),
-                           (4, 1, 4, 500, 60, 0.6)]:
-    add(C, K, V, records(n, C, K, V, nk, pb, maxlen=5, keylen=6))
-add(3, 1, 2, records(3000, 3, 1, 2, 5, 0.1, big=True))
-# hidden: big
-BIG = [
-    (14100, lambda: (2, 1, 2, records(MAXN, 2, 1, 2, 60000, 0.25, big=True, maxlen=6, keylen=8))),
-    (14101, lambda: (2, 2, 1, records(MAXN, 2, 2, 1, 90000, 0.1, big=True, maxlen=6, keylen=7))),
-    (14102, lambda: (3, 1, 3, records(MAXN, 3, 1, 3, 50000, 0.3, big=True, maxlen=3, keylen=6))),
-    (14103, lambda: (4, 3, 1, records(MAXN, 4, 3, 1, 70000, 0.2, big=True, maxlen=2, keylen=6))),
-    (14104, lambda: (5, 2, 5, records(MAXN, 5, 2, 5, 50000, 0.4, big=True, maxlen=2, keylen=5))),
-    (14105, lambda: (8, 7, 4, records(MAXN, 8, 7, 4, 100000, 0.2, big=True, maxlen=1, keylen=8))),
-    (14106, lambda: (3, 2, 3, records(MAXN, 3, 2, 3, 3, 0.05, big=True, maxlen=2, keylen=4))),
-    (14107, lambda: (2, 1, 2, records(MAXN, 2, 1, 2, 120000, 0.02, big=True, maxlen=3, keylen=9))),
-    (14108, lambda: (6, 6, 1, records(MAXN, 6, 6, 1, 100000, 0.35, big=True, maxlen=3, keylen=8))),
-    (14109, lambda: (3, 1, 2, records(MAXN, 3, 1, 2, 100000, 0.1, big=True, maxlen=8, keylen=24))),
-    (14110, lambda: (2, 1, 2, records(MAXN, 2, 1, 2, 1000, 0.15, maxlen=4, keylen=2, total=MAXTOTAL))),
-    (14111, lambda: (10, 1, 10, records(MAXN, 10, 1, 10, 100000, 0.2, big=True, maxlen=1, keylen=12))),
-    (14112, lambda: (2, 2, 1, records(MAXN, 2, 2, 1, 80000, 0.5, big=True, maxlen=5, keylen=8))),
-    (14113, lambda: (3, 3, 2, records(5000, 3, 3, 2, 3000, 0.3, big=True, maxlen=400, keylen=400))),
-    (14114, lambda: (4, 1, 2, records(MAXN, 4, 1, 2, 60000, 0.25, big=True, maxlen=3, keylen=7))),
-    (14115, lambda: (2, 1, 2, records(MAXN, 2, 1, 2, 100000, 0.2, maxlen=5, keylen=20))),
-    (14116, lambda: (7, 4, 3, records(MAXN, 7, 4, 3, 60000, 0.2, big=True, maxlen=2, keylen=6))),
-]
-for seed, make in BIG:
-    random.seed(seed)
-    add(*make())
+add([[30, 10, 20, 40], [7, 5, 2], [15, 60, 45, 30, 90]])
+add([[12, 5, 8, 3, 20, 15], [2, 4, 6, 8, 10]])
+add([[3, 9, 6, 1, 8, 2, 7, 5], [44, 11, 33, 22, 66, 55], [8, 7, 6, 5, 4, 3, 2, 1], [25, 5, 35, 15]])
+add([[9], [8, 6], [6, 8], [40, 10, 30, 20, 60, 50], [17, 4, 12, 9, 2, 20, 6]])
+add([[70, 999999999, 5, 300], [1000000000, 1, 2], [8, 600000, 40, 2, 9000]])
 
+# hidden: small (brute checks these)
+st = []
+for n in range(1, 6):
+    st += [make(list(p), v_mixed(n)) for p in permutations(range(n))]
+add(shuffled(st))   # every order of 1..5 boxes
+add(shuffled(make(list(p), v_uniform(6)) for p in permutations(range(6))))   # every order of 6 boxes
+add([make(shuffled(range(8)), v_uniform(8)) for _ in range(60)])
+add([make(shuffled(range(n)), VALS[ri(0, 4)](n)) for n in (rand_n() for _ in range(120))])
+add([make(list(pick(by_dist[9])), v_uniform(8))])                       # one stack, 9 flips
+add([make(list(pick(by_dist[9])), v_top(8)) for _ in range(40)])
+add([make(near(n, ri(0, 3)), v_small(n)) for n in (ri(1, 8) for _ in range(150))])
+add([make(list(pick(by_dist[d])), v_mixed(8)) for d in range(10) for _ in range(6)])
+
+# hidden: big (T = 15000)
+T = MAXT
+add([make(shuffled(range(8)), v_uniform(8)) for _ in range(T)])
+add([make(shuffled(range(8)), v_uniform(8)) for _ in range(T)])
+add([make(shuffled(range(8)), v_mixed(8)) for _ in range(T)])
+add([make(shuffled(range(8)), v_top(8)) for _ in range(T)])
+add([make(shuffled(range(n)), v_uniform(n)) for n in (rand_n() for _ in range(T))])
+add([make(shuffled(range(n)), VALS[ri(0, 4)](n)) for n in (rand_n() for _ in range(T))])
+add([make(shuffled(range(n)), v_mixed(n)) for n in (ri(1, 8) for _ in range(T))])
+add([make(list(far8(7)), v_uniform(8)) for _ in range(T)])
+add([make(list(far8(7)), v_mixed(8)) for _ in range(T)])
+add([make(list(far8(8)), v_uniform(8)) for _ in range(T)])
+add([make(list(far8(8)), v_small(8)) for _ in range(T)])
+add([make(hard_or_random(n, 8, 0.9), v_uniform(n)) for n in (rand_n() for _ in range(T))])
+add([make(list(pick(by_dist[9]) if rnd() < 0.25 else far8(8)), VALS[ri(0, 4)](8)) for _ in range(T)])
+add([make(list(p), v_mixed(8)) for p in shuffled(by_dist[7] + by_dist[8])[:T]])   # distinct orders
+add([make(hard_or_random(n, 7, 0.9), v_perm(n)) for n in (rand_n() for _ in range(T))])
+add([make(near(8, ri(6, 12)), v_uniform(8)) for _ in range(T)])
+add([make(list(far8(8)), v_top(8)) for _ in range(T)])
+add([make(shuffled(range(8)) if rnd() < 0.5 else list(far8(8)), v_mixed(8)) for _ in range(T)])
+add([make(hard_or_random(n, 7, 0.8), VALS[ri(0, 4)](n)) for n in (rand_n() for _ in range(T))])
+for t in tests:
+    assert t.endswith("\n") and "  " not in t and " \n" not in t
 os.makedirs("tests", exist_ok=True)
 for i, t in enumerate(tests, 1):
     with open(f"tests/{i:02d}.in", "w") as f:

@@ -1,91 +1,143 @@
-import random, os
-random.seed(2612)
+# Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
+# Most big tests are built from the levels Q_1..Q_N of one day measured from its start without the floor
+# (p_i = Q_i - Q_(i-1)); Q_N is the net change of a day.
+import os, random
+
+random.seed(802018)
+rnd = random.random
+MAXN, MAXH, MAXP = 10000, 10 ** 12, 10 ** 12
+tests = []
+
+
+def ri(a, b):
+    return a + int(rnd() * (b - a + 1))
+
+
+def add(h, p):
+    n = len(p)
+    assert 1 <= n <= MAXN and 1 <= h <= MAXH
+    assert all(-MAXP <= x <= MAXP for x in p)
+    tests.append(f"{n} {h}\n" + " ".join(map(str, p)) + "\n")
+
+
+def from_levels(q):
+    p, prev = [], 0
+    for x in q:
+        p.append(x - prev)
+        prev = x
+    return p
+
+
+def band(n, lo, hi):
+    return [ri(lo, hi) for _ in range(n)]
+
+
+def walk(n, lo, hi, step, start=0):
+    out, x = [], start
+    for _ in range(n):
+        x += ri(-step, step)
+        if x < lo:
+            x = 2 * lo - x
+        if x > hi:
+            x = 2 * hi - x
+        out.append(x)
+    return out
+
+
+def peaks(p):
+    """the highest level on day 1 and on day 2"""
+    w, best = 0, []
+    for _ in range(2):
+        m = 0
+        for x in p:
+            w = max(0, w + x)
+            m = max(m, w)
+        best.append(m)
+    return best
+
+
+def big_h():
+    return MAXH - ri(0, 10 ** 9)
+
+
+N = MAXN
+# samples
+add(12, [6, -3, 2])
+add(5, [3, -4])
+add(7, [2])
+add(25, [3, 4, -6, 2])
+add(1020, [120, -50, 80, -100, 90, -30])
+# hidden: small and medium (brute checks these)
+add(5, [-3])
+add(11, [8, -12, 9, -6])                                            # day 2, net change < 0
+add(9, [5, -2, 6, -20])                                             # day 1, net change < 0
+add(1, [0, 0, 1])
+add(ri(200, 400), [ri(-30, 30) for _ in range(ri(5, 12))] + [40])  # small, many days
+q = walk(2000, -5000, 5000, 400)
+q[-1] = 37
+add(ri(5 * 10 ** 6, 10 ** 7), from_levels(q))                       # medium, the floor on day 1
+q = walk(1500, -3000, 3000, 300) + [-1]
+add(max(peaks(from_levels(q))) + 1, from_levels(q))                 # net change < 0, never
+q = [ri(1, 9000) for _ in range(1200)] + [-ri(1, 50)]
+add(max(q) + ri(1, 40), from_levels(q))                             # net change < 0, never (only by a little)
+q = [-ri(0, 10 ** 6)] + walk(800, -10 ** 6, 10 ** 6, 10 ** 5)
+q[-1] = 0
+add(ri(10 ** 6, 3 * 10 ** 6), from_levels(q))                       # net change 0
+# hidden: H up to 10^12 with tiny N
+add(MAXH, [1])
+add(MAXH - 1, [MAXP, -MAXP, 3])
+add(MAXH, [-MAXP, MAXP - 1])                                       # never
+# hidden: big (N = 10000)
+add(big_h(), from_levels(band(N - 1, 0, 5 * 10 ** 11) + [1]))
+add(big_h(), from_levels(band(N - 1, -4 * 10 ** 11, 4 * 10 ** 11) + [7]))
+add(big_h(), from_levels(walk(N - 1, -3 * 10 ** 11, 3 * 10 ** 11, 10 ** 9) + [3]))
+q = [-6 * 10 ** 11] + band(N - 2, -6 * 10 ** 11, 3 * 10 ** 11) + [5]
+add(big_h(), from_levels(q))                                        # deep dip in step 1
+q = walk(N - 1, -10 ** 5, 10 ** 5, 1000) + [2]
+add(big_h(), from_levels(q))                                        # small moves, about 5 * 10^11 days
+q = [0] * (N - 1) + [1]
+for _ in range(30):
+    q[ri(0, N - 2)] = ri(-10 ** 11, 10 ** 11)
+add(big_h(), from_levels(q))                                        # mostly zeros
+q = band(N - 1, -4 * 10 ** 11, 0) + [9]
+add(big_h(), from_levels(q))                                        # highest level at the end of the day
+q = band(N - 1, -10 ** 11, 10 ** 11)
+q[0] = 2 * 10 ** 11
+q.append(ri(10 ** 9, 10 ** 10))
+add(big_h(), from_levels(q))                                        # a few hundred days
+q = band(N - 1, -5 * 10 ** 11, 5 * 10 ** 11) + [ri(10 ** 11, 3 * 10 ** 11)]
+add(big_h(), from_levels(q))                                        # a few days, net change large
+q = walk(N - 1, -2 * 10 ** 11, 2 * 10 ** 11, 5 * 10 ** 10) + [ri(10 ** 7, 10 ** 8)]
+add(big_h(), from_levels(q))                                        # thousands of days
+q = band(N - 1, -10 ** 8, 10 ** 8) + [ri(10 ** 5, 10 ** 6)]
+add(big_h(), from_levels(q))                                        # about 10^6 days
+q = band(N - 1, -10 ** 11, 4 * 10 ** 11) + [ri(1000, 10000)]
+add(big_h(), from_levels(q))                                        # about 10^8 days
+# net change <= 0
+a, h = N // 3, big_h()
+q = band(a - 1, 0, 5 * 10 ** 11) + [6 * 10 ** 11]                  # day 1 reaches 6 * 10^11
+q += band(a, -4 * 10 ** 11, 0) + [-6 * 10 ** 11]                    # empties the tank
+q += band(N - 2 * a - 2, -6 * 10 ** 11, -2 * 10 ** 11) + [-ri(1, 10 ** 9)]
+add(h, from_levels(q))                                              # day 2
+q = walk(N - 101, 0, 3 * 10 ** 11, 2 * 10 ** 8) + band(99, -5 * 10 ** 11, -10 ** 11) + [-5 * 10 ** 11, -10 ** 11]
+a, b = peaks(from_levels(q))
+assert a < b
+add(ri(a + 1, b), from_levels(q))                                   # day 2
+q = band(N - 1, 10 ** 11, 9 * 10 ** 11) + [-ri(1, 10 ** 11)]
+q[ri(1000, 8000)] = MAXH
+add(big_h(), from_levels(q))                                        # day 1
+q = walk(N - 1, -4 * 10 ** 11, 4 * 10 ** 11, 2 * 10 ** 11) + [0]
+add(max(peaks(from_levels(q))) + ri(1, 10), from_levels(q))         # net change 0, never
+q = band(N - 1, -3 * 10 ** 11, 4 * 10 ** 11) + [-ri(1, 10 ** 11)]
+add(max(peaks(from_levels(q))) + 1, from_levels(q))                # never
+q = walk(N - 2001, 0, 4 * 10 ** 11, 10 ** 9) + band(1999, -3 * 10 ** 11, 0) + [-4 * 10 ** 11, 0]
+a, b = peaks(from_levels(q))
+assert a < b
+add(ri(a + 1, b), from_levels(q))                                   # net change 0, day 2
+
+for t in tests:
+    assert t.endswith("\n") and "  " not in t and " \n" not in t
 os.makedirs("tests", exist_ok=True)
-cases = []
-cases.append(([(0, 0), (3, 4), (-2, 1)], [(2, 1, 1), (2, -5, 0), (1, 10, -10), (2, 1, 1)]))
-cases.append(([(5, 5)], [(2, 5, 5), (2, 0, 0)]))
-cases.append(([(1, 1), (1, 1)], [(1, -1, -1), (2, 0, 0), (2, 1, -1)]))
-cases.append(([(4, -2), (-1, 3)], [(2, 1, 1), (1, 0, -5), (2, 1, 1), (2, -3, 4)]))
-cases.append(([(2, 3), (-4, 1), (0, -6)], [(2, 0, 0), (2, -4, 1), (1, 7, 7), (2, -4, 1)]))
-def rnd(n, q, c, padd=0.5):
-    P = [(random.randint(-c, c), random.randint(-c, c)) for _ in range(n)]
-    Q = [(1 if random.random() < padd else 2, random.randint(-c, c), random.randint(-c, c)) for _ in range(q)]
-    if all(t == 1 for t, _, _ in Q): Q[-1] = (2, 0, 0)
-    return (P, Q)
-for _ in range(6):
-    cases.append(rnd(random.randint(1, 6), random.randint(1, 8), 10))
-N, Q, B = 50000, 50000, 10**9
-cases.append(rnd(2000, 2000, B))
-cases.append(rnd(N, Q, B, 0.0))
-cases.append(rnd(1, Q, B, 0.5))                        # start with one point, grow online
-cases.append(rnd(N, Q, B, 0.9))
-cases.append(rnd(N, Q, 1000))
-cases.append(([(B, B)] * 10, [(2, -B, -B)] * Q))      # 4 * 10^9: needs 64-bit
-cases.append(([(random.choice([-B, B]), random.choice([-B, B])) for _ in range(N)], [(2, random.randint(-B, B), random.randint(-B, B)) for _ in range(Q)]))
-cases.append(([(0, 0)], [(1, i, -i) if i % 2 else (2, -i, i) for i in range(1, Q + 1)]))
-cases.append(rnd(N, Q, 5))
-for c, padd in ((B, 0.3), (10**6, 0.6), (B, 0.05), (100, 0.5)):
-    cases.append(rnd(random.randint(20000, 40000), random.randint(20000, 40000), c, padd))
-cases.append(rnd(100000, 100000, B, 0.3))
-cases.append(rnd(1, 100000, B, 0.5))
-cases.append(([(-10**9, 10**9)], [(2, 10**9, -10**9)]))
-# ---- legacy strengthening (2026-10): the O(stores x questions) brute force scored 74% because many big tests had
-# few stores or few questions. The new big tests have >= 6 * 10^4 stores and mostly questions (brute: >= 4 * 10^9
-# distance computations). Small coordinates keep the files small where the size of the values does not matter.
-# The cases above are still generated so the unchanged tests keep their bytes; `override` replaces some of them,
-# `extra` adds tests at the end. All new data comes from R, not from `random`.
-R = random.Random(26122)
-rr = R.random
-def ri(a, b): return a + int(rr() * (b - a + 1))
-def rnd2(n, q, c, padd):
-    P = [(ri(-c, c), ri(-c, c)) for _ in range(n)]
-    Q = [(1 if rr() < padd else 2, ri(-c, c), ri(-c, c)) for _ in range(q)]
-    return (P, Q)
-def square(n, q, c, padd):
-    """stores on the boundary of a square: the farthest store is a corner, not just any store with extreme x or y"""
-    def pt():
-        v = ri(-c, c); k = ri(0, 3)
-        return [(c, v), (-c, v), (v, c), (v, -c)][k]
-    P = [pt() for _ in range(n)]
-    Q = [(1,) + pt() if rr() < padd else (2, ri(-c, c), ri(-c, c)) for _ in range(q)]
-    return (P, Q)
-def cluster(n, q, cx, cy, r, c, padd):
-    """stores packed near (cx, cy), questions from anywhere: all stores almost tie"""
-    P = [(cx + ri(-r, r), cy + ri(-r, r)) for _ in range(n)]
-    Q = [(1, cx + ri(-r, r), cy + ri(-r, r)) if rr() < padd else (2, ri(-c, c), ri(-c, c)) for _ in range(q)]
-    return (P, Q)
-override = {
-    13: rnd2(65000, 65000, B, 0.0),
-    16: rnd2(70000, 70000, 1000, 0.1),
-    18: ([(R.choice([-B, B]), R.choice([-B, B])) for _ in range(65000)], [(2, ri(-B, B), ri(-B, B)) for _ in range(65000)]),
-    20: rnd2(70000, 70000, 5, 0.1),
-    21: rnd2(65000, 65000, B, 0.3),
-    22: rnd2(70000, 70000, 10**6, 0.2),
-    23: rnd2(65000, 65000, B, 0.05),
-    24: rnd2(70000, 70000, 100, 0.15),
-}
-extra = [
-    square(70000, 70000, 10**4, 0.1),
-    square(65000, 65000, B, 0.2),
-    cluster(65000, 65000, 5 * 10**8, -5 * 10**8, 1000, B, 0.1),
-    cluster(70000, 70000, 0, 0, 3, 10**4, 0.2),
-    # stores spread outward over time: each new store is the farthest so far
-    ([(ri(-1000, 1000), ri(-1000, 1000)) for _ in range(65000)],
-     [(1, 1000 + 7 * i, -1000 - 3 * i) if i % 10 == 0 else (2, ri(-1000, 1000), ri(-1000, 1000)) for i in range(70000)]),
-    # the same question again and again
-    rnd2(70000, 0, 10**5, 0)[:1] + ([(1, ri(-10**5, 10**5), ri(-10**5, 10**5)) if i % 8 == 0 else (2, 12345, -6789) for i in range(70000)],),
-    rnd2(70000, 70000, 10**4, 0.0),
-    rnd2(65000, 65000, 10**5, 0.1),
-    # diamond |x| + |y| = c: many stores at the same largest distance
-    ([(lambda x: (x, R.choice([-1, 1]) * (10**5 - abs(x))))(ri(-10**5, 10**5)) for _ in range(70000)],
-     [(2, ri(-10**5, 10**5), ri(-10**5, 10**5)) for _ in range(70000)]),
-    rnd2(70000, 70000, 50, 0.25),
-]
-for i, (P, Qs) in enumerate(cases + extra, 1):
-    if i in override:
-        P, Qs = override[i]
-    assert 1 <= len(P) <= 100000 and 1 <= len(Qs) <= 100000 and any(t == 2 for t, _, _ in Qs)
-    assert all(abs(x) <= B and abs(y) <= B for x, y in P) and all(abs(a) <= B and abs(b) <= B for _, a, b in Qs)
-    open(f"tests/{i:02d}.in", "w").write(f"{len(P)} {len(Qs)}\n" + "".join(f"{x} {y}\n" for x, y in P) + "".join(f"{t} {a} {b}\n" for t, a, b in Qs))
-assert len(cases) + len(extra) <= 40
-print(len(cases) + len(extra), "tests")
+for i, t in enumerate(tests, 1):
+    with open(f"tests/{i:02d}.in", "w") as f:
+        f.write(t)

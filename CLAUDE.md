@@ -1,6 +1,6 @@
 # C2_MOCK: POSN Camp 2 Practice Judge
 
-A terminal judge that students run on their own machines to practice for the POSN Computer Olympiad (Camp 2: 12 sets x 6 problems ordered easy to hard, no subtasks).
+A terminal judge that students run on their own machines to practice for the POSN Computer Olympiad (Camp 2: 12 sets x 6 problems, no subtasks, plus a supplementary set Mock_13 of 7 problems beyond the syllabus).
 Sibling repo `C1_MOCK` is the Camp 1 judge (same structure); fix shared bugs in both.
 Today it judges batch problems (`judge.py`). We are adding interactive and communication problems,
 and it updates itself from this GitHub repo so bugs can be fixed without re-sending zip files.
@@ -13,7 +13,9 @@ and it updates itself from this GitHub repo so bugs can be fixed without re-send
 3. **Never touch student code.** The updater writes only files listed in `manifest.json`: inside `Judge/`,
    plus the managed package files students do not edit (PDFs, Makefile, judge.bat, READMEs, `.vscode/`) and
    missing `Mock_K/N.cpp` templates. It must never read, move, delete or overwrite an existing `Mock_*/*.cpp`
-   or `progress.json`.
+   or `progress.json`. One exception (approved by the teacher 2026-11-13, v6.1): when sets are reorganised, the
+   manifest's `moves` let a student's written `Mock_K/N.cpp` follow its problem once (`follow_moves` in
+   `updater.py`): never over written code (a clash goes to `Mock_K/old/`), empty starters stay, nothing deleted.
 4. **Never delete files the updater does not own.** No "wipe and reinstall" step, ever.
 5. **Fail safe.** If the network is down, slow (>2 s), or a hash does not match, keep the current
    version and continue silently. A broken update must never stop a student from judging.
@@ -35,12 +37,13 @@ C2_MOCK/
   problems/
     batch/Mock_K/N/*.in|out, gen.py, manifest.json   # see "Compact test data" below
     batch/problems.json         # problem bank: id -> title, tier, dir (Mock_K/N), samples, subtasks, optional ml (MB)
-    batch/sets.json             # set K -> list of 5 problem ids
+    batch/sets.json             # set K -> list of problem ids (6; 7 in the supplementary set, "supplementary": true)
     interactive/<name>/{problem.json, interactor.cpp, tests/NN.in}
     communication/<name>/{problem.json, manager.cpp, stub/, tests/}
   student/                      # student-side files outside Judge/ (copied by build_dist.py)
     README.txt, Progress.md, .vscode/, Mock_K/Mock_K.pdf
-    set_files/{Makefile, judge.bat, template.cpp}   # put in every Mock_K; template.cpp (empty) -> 1.cpp ... 6.cpp
+    set_files/{Makefile, Makefile_7, judge.bat, template.cpp}   # every Mock_K (Makefile_<n> for a set of n != 6
+                                                    # problems); template.cpp (empty) -> 1.cpp ... n.cpp
   samples/                      # known-verdict programs used as regression tests
     batch/towers_ok.cpp, towers_smallhi.cpp, towers_slow.cpp, towers_crash.cpp, towers_syntax.cpp
     interactive/guess_ok.cpp, guess_noflush.cpp, guess_linear.cpp, guess_crash.cpp
@@ -137,7 +140,11 @@ Propose the design and wait for approval before writing it.
 - `--update` forces a check and prints the result; `--no-update` skips it; the header box shows `Judge vX.Y`
   (from `Judge/manifest.json`). Recovery when `judge.py` itself is broken: `python3 ../Judge/updater.py`.
 - Manifest format (version in `tools/build_manifest.py`): `version`, `sources` (Judge/ prefix -> repo folder),
-  `files` (Judge/ path -> sha256), `managed` and `create_only` (package path -> [sha256, repo path]).
+  `files` (Judge/ path -> sha256), `managed` and `create_only` (package path -> [sha256, repo path]), `moves`
+  ({sha256 of an older release's problems.json: [[from, to], ...]}, made from `tools/moves/problems_<v>.json`:
+  same English title = same problem). An old updater installs the release and keeps the old problems.json in
+  `Judge/.backup/`; the new `judge.py` calls `updater.follow_moves()` at start-up, which recognises it by hash and
+  moves the files once (`Judge/.moves_done`). Ids in `problems.json` stay with their problems (progress follows).
 - Speed: GitHub raw answers one file in about 0.3 s, so an updater that fetches files one
   by one needs minutes for a new set of problems (v3.0 of C1_PRACTICE: ~1,950 files, ~11 minutes, and one slow
   request aborted all of it). The updater therefore downloads in parallel (`WORKERS`), retries each file (`TRIES`),

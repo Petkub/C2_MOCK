@@ -89,6 +89,113 @@ def test_package(root):
     os.remove(old)
 
 
+def test_supplementary(root):
+    """Mock 13 (v6.1): 7 problems beyond the syllabus, counted apart from the main sets."""
+    print("Supplementary set")
+    with open(os.path.join(REPO, "problems", "batch", "sets.json"), encoding="utf-8") as f:
+        sets = json.load(f)
+    extra = [s for s in sets if s.get("supplementary")]
+    check(len(extra) == 1 and len(extra[0]["problems"]) == 7, "sets.json has one supplementary set of 7 problems")
+    if not extra:
+        return
+    k = extra[0]["set"]
+    folder = os.path.join(root, f"Mock_{k}")
+    check(len(glob.glob(os.path.join(folder, "[0-9].cpp"))) == 7, f"Mock_{k} has 1.cpp ... 7.cpp")
+    if shutil.which("make"):
+        p = subprocess.run(["make", "-n", "7"], cwd=folder, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        check(p.returncode == 0 and "judge.py 7.cpp" in p.stdout.decode("utf-8", "replace"),
+              f"make -n 7 in Mock_{k} calls judge.py 7.cpp")
+        p = subprocess.run(["make", "-n", "7"], cwd=os.path.join(root, "Mock_1"), stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT)
+        check("judge.py" not in p.stdout.decode("utf-8", "replace"), "make -n 7 in Mock_1 judges nothing")
+    code, out, _ = run_judge(["--set", str(k), "--no-color"], folder)
+    check(code == 0 and "Problem 7" in out and "Problem 8" not in out and "700 points" in out,
+          f"--set {k} lists 7 problems (700 points)", f"exit {code}\n{out[-1500:]}")
+    code, out, _ = run_judge(["--no-color"], folder)
+    check(code == 0 and "/ 700" in out and "Problem 7" in out, f"judging Mock_{k} gives a total / 700",
+          f"exit {code}\n{out[-1500:]}")
+    code, out, _ = run_judge(["--progress", "--no-color", "--ascii"], folder)
+    main_total = sum(len(s["problems"]) for s in sets if not s.get("supplementary"))
+    check(code == 0 and f"/ {main_total}" in out and "Extra" in out and "/ 7" in out and "Supplementary set" in out,
+          f"--progress counts the main sets (/ {main_total}) and the supplementary set apart", out[:1500])
+
+
+def write(path, text):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(text)
+
+
+def read(path):
+    try:
+        with open(path, encoding="utf-8") as f:
+            return f.read()
+    except OSError:
+        return None
+
+
+def test_moves(root, tmp, release="6.0.2"):
+    """v6.1: after an update from an older release the student's files follow their problems, once, never over
+    written code (6.0 also has a swap: 2/4 <-> 2/5)."""
+    print(f"Moves ({release} -> now)")
+    base = os.path.join(tmp, "moves_pkg_" + release)
+    shutil.copytree(root, base)
+    jd = os.path.join(base, "Judge")
+    with open(os.path.join(jd, "manifest.json"), encoding="utf-8") as f:
+        manifest = json.load(f)
+    old = os.path.join(REPO, "tools", "moves", f"problems_{release}.json")
+    pairs = manifest.get("moves", {}).get(sha(old))
+    check(bool(pairs), f"the manifest lists moves for a {release} install", str(list(manifest.get("moves", {}))))
+    if not pairs:
+        return
+    os.makedirs(os.path.join(jd, ".backup", "problems", "batch"), exist_ok=True)     # what the old updater kept
+    shutil.copy(old, os.path.join(jd, ".backup", "problems", "batch", "problems.json"))
+    written = {src: f"// student code for {src}\nint main(){{}}\n" for src, _ in pairs}
+    first = pairs[0][0]
+    for src, text in written.items():
+        if src != first:
+            write(os.path.join(base, *src.split("/")), text)
+    write(os.path.join(base, *first.split("/")), "")             # an untouched (empty) starter stays where it is
+    write(os.path.join(base, "Mock_2", "1.cpp"), "// stays\n")    # a file that does not move
+    sources = {src for src, _ in pairs}
+    clash = next((dst for src, dst in pairs[1:] if dst.split("/")[1] != "old" and dst not in sources), None)
+    if clash:                                                    # written code already at a destination
+        write(os.path.join(base, *clash.split("/")), "// written before the update\n")
+    code, out, _ = run_judge(["--list", "--no-color"], os.path.join(base, "Mock_1"))
+    check(code == 0 and "moved with their problems" in out, "the judge says the files moved", out[:800])
+    bad = []
+    for src, dst in pairs[1:]:
+        if dst == clash:
+            continue
+        if read(os.path.join(base, *dst.split("/"))) != written[src]:
+            bad.append(f"{src} -> {dst}")
+    check(not bad, "every written file is at its problem's new place (or in Mock_K/old/)", ", ".join(bad[:5]))
+    if clash:
+        src = next(s for s, d in pairs if d == clash)
+        kept = read(os.path.join(base, *clash.split("/"))) == "// written before the update\n"
+        parked = glob.glob(os.path.join(base, clash.split("/")[0], "old", "*_moved*.cpp"))
+        check(kept and any(read(p) == written[src] for p in parked), "a clash never overwrites: the moved file goes to old/",
+              f"{clash}: kept={kept}, parked={parked}")
+    vacated = [src for src, _ in pairs[1:] if not any(d == src for _, d in pairs)]
+    check(all(read(os.path.join(base, *v.split("/"))) == "" for v in vacated), "an empty starter stands where a file left")
+    check(read(os.path.join(base, *first.split("/"))) == "", "an untouched starter is not moved")
+    check(read(os.path.join(base, "Mock_2", "1.cpp")) == "// stays\n", "files that do not move are untouched")
+    snapshot = {p: read(p) for p in glob.glob(os.path.join(base, "Mock_*", "**", "*.cpp"), recursive=True)}
+    code, out, _ = run_judge(["--list", "--no-color"], os.path.join(base, "Mock_1"))
+    again = {p: read(p) for p in glob.glob(os.path.join(base, "Mock_*", "**", "*.cpp"), recursive=True)}
+    check("moved" not in out and again == snapshot, "the moves happen once")
+    if release != "6.0.2":
+        return
+    other = os.path.join(tmp, "moves_32")
+    shutil.copytree(root, other)
+    os.makedirs(os.path.join(other, "Judge", ".backup", "problems", "batch"))
+    write(os.path.join(other, "Judge", ".backup", "problems", "batch", "problems.json"), '{"1": {"en": "Signal Towers", "dir": "Mock_1/1"}}')
+    write(os.path.join(other, "Mock_1", "6.cpp"), "// 3.2 code\n")
+    code, out, _ = run_judge(["--list", "--no-color"], os.path.join(other, "Mock_1"))
+    check("moved" not in out and read(os.path.join(other, "Mock_1", "6.cpp")) == "// 3.2 code\n",
+          "an unknown older release (e.g. 3.2) gets no moves")
+
+
 def test_crlf_generator():
     """On Windows gen.py (text mode) writes CRLF; the sha256 in manifest.json is of the LF file."""
     tmp = tempfile.mkdtemp(prefix="judge_gen_test_")
@@ -562,6 +669,9 @@ def main():
             test_exited_peak()
             test_missed_last_reading()
             test_cli(root)
+            test_supplementary(root)
+            test_moves(root, tmp)
+            test_moves(root, tmp, "6.0")
             test_updater()
             test_fast_update()
             test_data()
