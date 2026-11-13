@@ -74,6 +74,13 @@ def test_package(root):
     check(len(starters) == expected and all(judge.is_untouched_starter(s) for s in starters),
           "Mock_K/1.cpp ... 6.cpp are untouched starters", f"{len(starters)} files")
     check(all(os.path.getsize(s) == 0 for s in starters), "Mock_K/1.cpp ... 6.cpp are empty files")
+    if shutil.which("make"):      # `make 6` once fell back to make's built-in rule (compiled 6.cpp, no judging)
+        bad = []
+        for d in sorted(glob.glob(os.path.join(root, "Mock_*"))):
+            p = subprocess.run(["make", "-n", "6"], cwd=d, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            if p.returncode != 0 or "judge.py 6.cpp" not in p.stdout.decode("utf-8", "replace"):
+                bad.append(os.path.basename(d))
+        check(not bad, "make -n 6 calls judge.py 6.cpp in every Mock folder", ", ".join(bad))
     old = os.path.join(root, "old_template.cpp")          # the starter of versions before 6.0.2
     with open(old, "w") as f:
         f.write("#include <bits/stdc++.h>\nusing namespace std;\n\nint32_t main() {\n"

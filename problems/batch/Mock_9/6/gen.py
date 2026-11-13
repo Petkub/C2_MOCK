@@ -1,9 +1,9 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
 import os, random
 
-random.seed(960602)
+random.seed(960622)
 rnd = random.random
-MAXN, MAXA, MAXB = 100000, 10 ** 9, 10 ** 9
+MAXN, MAXV = 100000, 10 ** 9
 tests = []
 
 
@@ -11,98 +11,142 @@ def ri(a, b):
     return a + int(rnd() * (b - a + 1))
 
 
-def add(jobs, shuffle=True):
-    n = len(jobs)
-    assert 1 <= n <= MAXN
-    for a, b in jobs:
-        assert 0 <= a <= MAXA and -MAXB <= b <= MAXB
-    jobs = list(jobs)
-    if shuffle:
-        random.shuffle(jobs)
-    tests.append(f"{n}\n" + "".join(f"{a} {b}\n" for a, b in jobs))
+def add(r, ts):
+    n = len(ts)
+    assert 1 <= n <= MAXN and 0 <= r <= MAXV
+    assert all(1 <= a <= MAXV and 1 <= b <= MAXV for a, b in ts)
+    tests.append(f"{n} {r}\n" + "".join(f"{a} {b}\n" for a, b in ts))
 
 
-def uniform(n, amax, bmax, pgain=0.5, bmin=None):
-    """needs in [0, amax], changes of size up to bmax; a gain with probability pgain"""
-    lo = 0 if bmin is None else bmin
-    out = []
+def shuffled(ts):
+    ts = list(ts)
+    random.shuffle(ts)
+    return ts
+
+
+def uniform(n, amax, bmax, amin=1, bmin=1):
+    return [(ri(amin, amax), ri(bmin, bmax)) for _ in range(n)]
+
+
+def correlated(n, amax, ratio, noise):
+    """a high cap usually comes with many points: b about a * ratio, times a random factor in [1 - noise, 1 + noise]"""
+    ts = []
     for _ in range(n):
-        b = ri(lo, bmax)
-        if rnd() >= pgain:
-            b = -max(b, 1)
-        out.append((ri(0, amax), b))
-    return out
+        a = ri(1, amax)
+        b = int(a * ratio * (1 - noise + 2 * noise * rnd()))
+        ts.append((a, min(MAXV, max(1, b))))
+    return ts
 
 
-def chain(n, pgain, step, slack, start):
-    """a schedule that works from `start`: every job's need is at most `slack` below the reputation it is
-    done with (in the generated order), changes up to `step`; the input is shuffled"""
-    out, r = [], start
-    ng = int(n * pgain)
-    for i in range(n):
-        if i < ng:
-            b = ri(0, step)
-        else:
-            b = -ri(1, min(step, r)) if r > 0 else 0
-        a = max(0, r - ri(0, slack))
-        out.append((min(a, MAXA), b))
-        r += b
-    return out
-
-
-def mixed_losses(n, big):
-    """losses whose need and size are unrelated: a + b differs from a and from b in order"""
-    out = []
+def anti(n, amax, bmax, noise):
+    """a low cap usually comes with many points"""
+    ts = []
     for _ in range(n):
-        b = -ri(1, big)
-        out.append((ri(0, MAXA), b))
-    return out
+        u = rnd()
+        a = ri(1, max(1, int(amax * u)))
+        b = int(bmax * (1 - u) * (1 - noise + 2 * noise * rnd()))
+        ts.append((a, min(MAXV, max(1, b))))
+    return ts
+
+
+def levels(n, caps, bmax):
+    """only a few different caps"""
+    return [(caps[int(rnd() * len(caps))], ri(1, bmax)) for _ in range(n)]
+
+
+def same_sum(n, d, bmax):
+    """every tournament has the same a + b"""
+    ts = []
+    for _ in range(n):
+        b = ri(1, min(bmax, d - 1))
+        ts.append((d - b, b))
+    return ts
+
+
+def mixed(n, parts):
+    """parts: list of (share, generator of one pair)"""
+    ts = []
+    for share, f in parts:
+        ts += [f() for _ in range(int(n * share))]
+    while len(ts) < n:
+        ts.append(parts[0][1]())
+    return shuffled(ts[:n])
+
+
+def heavy(n, p, frac, bmax):
+    """most tournaments give at most bmax points; a share p of them gives up to frac * a"""
+    ts = []
+    for _ in range(n):
+        a = ri(1, MAXV)
+        ts.append((a, max(1, int(a * frac * rnd())) if rnd() < p else ri(1, bmax)))
+    return ts
+
+
+def logv(hi):
+    """a value whose number of digits is spread evenly up to hi"""
+    return min(MAXV, max(1, int(hi ** rnd())))
+
+
+def logu(n, amax, bmax, below=False):
+    """caps and points of every size; below: points at most the cap"""
+    ts = []
+    for _ in range(n):
+        a = logv(amax)
+        ts.append((a, logv(min(bmax, a)) if below else logv(bmax)))
+    return ts
+
+
+def all_fit(n, r, bmax):
+    """every tournament can be joined: caps follow a staircase that exactly allows one order"""
+    order, cur = [], r
+    for _ in range(n):
+        b = ri(1, bmax)
+        order.append((cur + ri(0, bmax // 3), b))
+        cur += b
+    return shuffled(order)
 
 
 # samples
-add([(3, 2), (0, 1), (6, -4), (4, -3)], False)
-add([(2, -3), (0, 2), (5, -1)], False)
-add([(10, 5), (0, 3), (8, -7), (12, -2), (1, 4)], False)
-add([(0, 0), (7, -7)], False)
-add([(4, 1), (9, -2), (2, -2), (0, 6), (6, -3), (3, 2)], False)
-# hidden: small (brute checks these)
-add([(0, 5)])
-add([(1000000000, -1000000000)])
-add([(0, -1000000000), (0, 1000000000)])
-add(uniform(8, 20, 15))
-add(uniform(12, 50, 40, 0.3))
-add(uniform(15, 1000, 1000, 0.5))
-add(chain(16, 0.4, 30, 10, 25))
-add(uniform(18, 10 ** 9, 10 ** 9, 0.5))
-add(mixed_losses(17, 10 ** 9))
+add(0, [(6, 8), (11, 2), (10, 1), (15, 8), (5, 4)])
+add(3, [(15, 8), (8, 1), (14, 1), (7, 4), (10, 5)])
+add(3, [(9, 2), (12, 5), (6, 4), (9, 5), (1, 2), (10, 2), (7, 2)])
+add(3, [(10, 4), (15, 6), (11, 1), (14, 5), (10, 3), (12, 6), (9, 2)])
+add(5, [(1, 1), (6, 6), (7, 7), (8, 2), (4, 8), (7, 3)])
+# hidden: small (the subset brute force checks these)
+add(0, [(13, 1), (8, 3), (4, 7), (1, 2), (10, 2), (11, 7), (3, 1)])  # sorting by a or by b alone fails here
+add(7, [(6, 3)])                                                   # cap below the start: 0
+add(MAXV, [(MAXV, MAXV)] * 3)                                      # only the first one fits
+add(2, uniform(16, 60, 15))
+add(0, correlated(18, 200, 0.4, 0.5))
+add(0, anti(20, 300, 120, 0.3))
+add(MAXV // 2, [(ri(MAXV // 2, MAXV), ri(MAXV // 10, MAXV)) for _ in range(20)])
+# hidden: medium (O(N^2) brute)
+add(0, logu(3000, 10 ** 7, 10 ** 7))
+add(37, heavy(3000, 0.3, 0.05, 2000))
+add(100, mixed(3000, [(0.5, lambda: (ri(1, 40000), ri(1, 300))), (0.5, lambda: (ri(40000, 10 ** 6), ri(500, 3000)))]))
 # hidden: big (N = 100000)
 N = MAXN
-add(uniform(N, MAXA, MAXB))
-add(uniform(N, MAXA, 10 ** 4))
-add(uniform(N, 1000, MAXB))
-add(uniform(N, MAXA, MAXB, 0.1))
-add(uniform(N, MAXA, MAXB, 0.9))
-add(mixed_losses(N, MAXB))
-add(mixed_losses(N, 10 ** 5))
-add(uniform(N // 2, MAXA, MAXB, 1.0) + mixed_losses(N // 2, MAXB))
-add(chain(N, 0.3, 10 ** 4, 10 ** 4, 10 ** 8))
-add(chain(N, 0.5, 10 ** 6, 10 ** 5, 10 ** 9))
-add(chain(N, 0.1, 10 ** 3, 10 ** 3, 10 ** 7))
-add(chain(N, 0.6, 10 ** 9, 10 ** 9, 10 ** 9))
-add([(MAXA, MAXB)] * N)                                  # all gains at the largest values
-add([(MAXA, -MAXB)] * N)                                 # all losses at the largest values
-add([(ri(0, MAXA), MAXB) for _ in range(N - 1)] + [(MAXA, -MAXB)])
-add([(ri(0, 10), -ri(1, MAXB)) for _ in range(N)])       # needs tiny: only "never below 0" matters
-add([(ri(0, MAXA), 0) for _ in range(N)])                # no change at all
-add(uniform(N, MAXA, MAXB, 0.5, MAXB // 2))
-add(uniform(N, MAXA, 10 ** 6, 0.2))
-add(chain(N, 0.0, 10 ** 4, 10 ** 9, 10 ** 9))
-# losses whose need is about the size of the loss (a = -b + d, d small): a + b, a and b give three different orders
-# (kills "losses by a", "smallest loss first" and a "best available now" check that forgets a job can stop being
-# available after the reputation drops)
-add([(ri(0, MAXA), ri(0, MAXB)) if rnd() < 0.3 else (lambda b: (-b + ri(0, 10 ** 6), b))(-ri(1, MAXB - 10 ** 6))
-     for _ in range(N)])
-
+add(0, uniform(N, MAXV, 30000))
+add(ri(1, 10 ** 6), uniform(N, MAXV, 100000))
+add(0, heavy(N, 0.2, 0.1, 10000))
+add(ri(1, 10 ** 5), heavy(N, 0.5, 0.01, 10000))
+add(0, heavy(N, 0.05, 0.3, 30000))
+add(0, logu(N, MAXV, 10 ** 5))
+add(0, logu(N, MAXV, MAXV))
+add(ri(1, 1000), logu(N, MAXV, MAXV, True))
+add(ri(10 ** 6, 10 ** 7), logu(N, MAXV, 10 ** 6))
+add(0, logu(N, MAXV, MAXV // 10))
+add(0, correlated(N, MAXV, 0.0001, 0.99))
+add(0, correlated(N, MAXV, 0.01, 0.9))
+add(0, anti(N, MAXV, 200000, 0.5))
+add(0, levels(N, [ri(1, MAXV) for _ in range(5)], 60000))
+add(0, same_sum(N, MAXV, 50000))
+add(0, mixed(N, [(0.6, lambda: (ri(1, 2 * 10 ** 8), ri(1, 20000))),
+                 (0.4, lambda: (logv(MAXV), logv(10 ** 6)))]))
+add(0, all_fit(N, 0, 9000))                                        # every tournament fits
+add(ri(1, MAXV), uniform(N, MAXV, MAXV))                           # big values, a small answer
+add(0, [(ri(MAXV - 1000, MAXV), ri(MAXV - 1000, MAXV)) for _ in range(N)])
+add(5 * 10 ** 8, [(7 * 10 ** 8, 4000)] * N)                        # all the same
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t
 os.makedirs("tests", exist_ok=True)

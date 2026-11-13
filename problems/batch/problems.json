@@ -424,8 +424,8 @@
   "scoring": "all"
  },
  "54": {
-  "title": "งานกับชื่อเสียง",
-  "en": "Projects and Reputation",
+  "title": "รายการแข่งขันสำหรับมือใหม่",
+  "en": "Beginners' Tournaments",
   "tier": 0,
   "dir": "Mock_9/6",
   "samples": 5,
@@ -464,8 +464,8 @@
   "scoring": "all"
  },
  "59": {
-  "title": "พอดี x ครั้ง",
-  "en": "Exactly x Times",
+  "title": "หมายเลขการแขวนภาพ",
+  "en": "Gallery Arrangement Number",
   "tier": 0,
   "dir": "Mock_10/5",
   "samples": 5,
@@ -552,8 +552,8 @@
   "scoring": "all"
  },
  "70": {
-  "title": "รวมไฟล์รายงาน",
-  "en": "Merging Reports",
+  "title": "กระดานภารกิจ",
+  "en": "Quest Board",
   "tier": 0,
   "dir": "Mock_12/4",
   "samples": 5,
