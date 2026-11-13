@@ -63,11 +63,11 @@ STAMP = ".update_check"             # Judge/.update_check: time of the last chec
 BACKUP = ".backup"
 TMP = ".update_tmp"
 NEVER_UPDATE = {"manifest.json", "progress.json", "progress.json.tmp"}
-SET_FILE = re.compile(r"^Mock_[0-9]+/[0-9]+\.cpp$")                 # create-only: a student's own files
-OLD_FILE = re.compile(r"^Mock_[0-9]+/old/[0-9]+_[A-Za-z0-9]+\.cpp$")  # where the file of a dropped problem goes
+SET_FILE = re.compile(r"^Mock_[AB]?[0-9]+/[0-9]+\.cpp$")             # create-only: a student's own files
+OLD_FILE = re.compile(r"^Mock_[AB]?[0-9]+/old/[0-9]+_[A-Za-z0-9]+\.cpp$")  # where the file of a dropped problem goes
 MOVES_DONE = ".moves_done"          # Judge/.moves_done: hashes of the old problems.json whose moves were applied
 STARTER_BODY = "cin.tie(0);ios::sync_with_stdio(0);return0;}"
-MANAGED_FILE = re.compile(r"^(Mock_[0-9]+/(Makefile|judge\.bat|Mock_[0-9]+\.pdf)|Guide\.pdf|README\.txt"
+MANAGED_FILE = re.compile(r"^(Mock_[AB]?[0-9]+/(Makefile|judge\.bat|Mock_[AB]?[0-9]+\.pdf)|Guide\.pdf|README\.txt"
                           r"|Progress\.md|\.vscode/(tasks|settings)\.json)$")   # replaced when they change
 
 
@@ -174,9 +174,21 @@ def is_hash(s):
 
 
 def view(manifest):
-    """The part of a manifest this updater acts on: "full" in format 2, else the manifest itself."""
-    full = manifest.get("full") if isinstance(manifest, dict) else None
-    return full if isinstance(full, dict) else manifest
+    """The part of a manifest this updater acts on: "full_v7" (v7 layout), else "full" (format 2), else the manifest
+    itself. Updaters before 7.0 read "full": for them it is a bootstrap view without the Mock_A01 ... set files
+    (their path rules reject those), so they install this updater, which then reads "full_v7"."""
+    if not isinstance(manifest, dict):
+        return manifest
+    for key in ("full_v7", "full"):
+        if isinstance(manifest.get(key), dict):
+            return manifest[key]
+    return manifest
+
+
+def bootstrapped(judge_dir=ROOT):
+    """True when an updater before 7.0 installed the bootstrap view: the set files are still to come."""
+    local = load_json(os.path.join(judge_dir, "manifest.json"))
+    return isinstance(local, dict) and bool(local.get("bootstrap"))
 
 
 def plan_bundles(remote):
@@ -406,6 +418,42 @@ def refill_starters(base, manifest, vacated):
             open(p, "wb").close()
 
 
+OLD_SET_FILES = re.compile(r"^(Makefile|judge\.bat|Mock_[0-9]+\.pdf)$")
+
+
+def current_set_folders(judge_dir):
+    """Mock_A01 ... of the installed sets.json."""
+    sets = load_json(os.path.join(judge_dir, "problems", "batch", "sets.json")) or []
+    return {f"Mock_{s['set']}" for s in sets if isinstance(s, dict) and "set" in s}
+
+
+def tidy_old_folders(base, judge_dir, pairs, done):
+    """A set folder of the old layout that is no longer a set: removed when nothing the student wrote is left in it
+    (only its Makefile, judge.bat, PDF and empty starters), else it gets README_MOVED.txt saying where things went."""
+    keep = current_set_folders(judge_dir)
+    if not keep:
+        return
+    for folder in sorted({src.split("/")[0] for src, _ in pairs} - keep):
+        d = os.path.join(base, folder)
+        if not os.path.isdir(d):
+            continue
+        names = os.listdir(d)
+        ours = [n for n in names if OLD_SET_FILES.match(n) or (re.match(r"^[0-9]+\.cpp$", n)
+                                                                and is_starter(os.path.join(d, n)))]
+        if len(ours) == len(names):
+            for n in ours:
+                os.remove(os.path.join(d, n))
+            os.rmdir(d)
+            continue
+        note = os.path.join(d, "README_MOVED.txt")
+        if not os.path.exists(note):
+            lines = [f"{src} -> {dst}" for src, dst in done if src.startswith(folder + "/")]
+            with open(note, "w", encoding="utf-8") as f:
+                f.write("ชุดโจทย์ถูกจัดใหม่ (v7): โฟลเดอร์นี้ไม่ใช่ชุดโจทย์แล้ว ไฟล์ที่เขียนไว้ย้ายไปอยู่กับโจทย์ของมัน\n"
+                        "The sets were reorganised (v7): this folder is no longer a set. Written files moved with\n"
+                        "their problems; anything left here is yours and was not touched.\n\n" + "\n".join(lines) + "\n")
+
+
 def follow_moves(judge_dir=ROOT):
     """Once after an update that reorganised the sets: move the student's files to their problems' new places.
     Returns [(from, to)]; never raises (a failure leaves the files where they are)."""
@@ -427,6 +475,7 @@ def follow_moves(judge_dir=ROOT):
             base = os.path.dirname(judge_dir)
             done = apply_moves(base, pairs)
             refill_starters(base, manifest, [src for src, _ in done])
+            tidy_old_folders(base, judge_dir, pairs, done)
         with open(marker, "a", encoding="utf-8") as f:
             f.write(old + "\n")
         return done
@@ -441,7 +490,7 @@ def check(judge_dir=ROOT, force=False, notify=None):
     local = load_json(os.path.join(judge_dir, "manifest.json"))
     if not os.path.isfile(os.path.join(judge_dir, "judge.py")) or local is None:
         return Result("skipped", "not an installed Judge package (no manifest.json next to judge.py)")
-    if not force and checked_recently(judge_dir):
+    if not force and checked_recently(judge_dir) and not local.get("bootstrap"):
         return Result("skipped", "checked recently")
     version = str(local.get("version", "?"))
     tmp = os.path.join(judge_dir, TMP)

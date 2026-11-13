@@ -37,8 +37,14 @@ NAME = "C2_Mock_Test"
 FAILED = []
 os.environ["JUDGE_NO_UPDATE"] = "1"       # the judge never contacts GitHub during the tests
 judge = None        # the package's judge.py, imported by main()
-# the towers_*.cpp samples solve Signal Towers: set 3, problem 2 (id 14); TOWERS_SET/TOWERS_CPP is its student file
-TOWERS, TOWERS_ID, TOWERS_SET, TOWERS_CPP = "3-2", "14", "Mock_3", "2.cpp"
+# the towers_*.cpp samples solve Signal Towers (id 14): judged by its id; TOWERS_SET/TOWERS_CPP (its student file) come
+# from problems.json, so the tests follow the problem when the sets are reorganised
+TOWERS_ID = "14"
+with open(os.path.join(REPO, "problems", "batch", "problems.json"), encoding="utf-8") as _f:
+    TOWERS_SET, _n = json.load(_f)[TOWERS_ID]["dir"].split("/")
+TOWERS_CPP = _n + ".cpp"
+_k = TOWERS_SET[len("Mock_"):]
+TOWERS = (f"{_k[0]}{int(_k[1:])}-{_n}" if _k[:1] in "AB" else f"{_k}-{_n}")    # e.g. A6-3
 
 
 def check(ok, name, detail=""):
@@ -89,35 +95,43 @@ def test_package(root):
     os.remove(old)
 
 
-def test_supplementary(root):
-    """Mock 13 (v6.1): 7 problems beyond the syllabus, counted apart from the main sets."""
-    print("Supplementary set")
+def test_tracks(root):
+    """v7: sets named by track (Mock_A01 ...), --set A3, progress counted per track."""
+    print("Tracks")
     with open(os.path.join(REPO, "problems", "batch", "sets.json"), encoding="utf-8") as f:
         sets = json.load(f)
-    extra = [s for s in sets if s.get("supplementary")]
-    check(len(extra) == 1 and len(extra[0]["problems"]) == 7, "sets.json has one supplementary set of 7 problems")
-    if not extra:
-        return
-    k = extra[0]["set"]
-    folder = os.path.join(root, f"Mock_{k}")
-    check(len(glob.glob(os.path.join(folder, "[0-9].cpp"))) == 7, f"Mock_{k} has 1.cpp ... 7.cpp")
-    if shutil.which("make"):
-        p = subprocess.run(["make", "-n", "7"], cwd=folder, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        check(p.returncode == 0 and "judge.py 7.cpp" in p.stdout.decode("utf-8", "replace"),
-              f"make -n 7 in Mock_{k} calls judge.py 7.cpp")
-        p = subprocess.run(["make", "-n", "7"], cwd=os.path.join(root, "Mock_1"), stdout=subprocess.PIPE,
-                           stderr=subprocess.STDOUT)
-        check("judge.py" not in p.stdout.decode("utf-8", "replace"), "make -n 7 in Mock_1 judges nothing")
-    code, out, _ = run_judge(["--set", str(k), "--no-color"], folder)
-    check(code == 0 and "Problem 7" in out and "Problem 8" not in out and "700 points" in out,
-          f"--set {k} lists 7 problems (700 points)", f"exit {code}\n{out[-1500:]}")
-    code, out, _ = run_judge(["--no-color"], folder)
-    check(code == 0 and "/ 700" in out and "Problem 7" in out, f"judging Mock_{k} gives a total / 700",
-          f"exit {code}\n{out[-1500:]}")
+    names = [str(s["set"]) for s in sets]
+    check(all(n[:1] in "AB" for n in names) and all(len(s["problems"]) == 6 for s in sets),
+          "every set is a Track A/B set of 6 problems", ", ".join(names))
+    first = sets[2]
+    label = first["set"][0] + str(int(first["set"][1:]))
+    folder = os.path.join(root, f"Mock_{first['set']}")
+    check(os.path.isdir(folder), f"folder Mock_{first['set']} exists")
+    for token in (label, label.lower(), first["set"]):
+        code, out, _ = run_judge(["--set", token, "--no-color"], folder)
+        check(code == 0 and "Problem 6" in out and "600 points" in out, f"--set {token} lists set {label}",
+              f"exit {code}\n{out[-800:]}")
+    code, out, _ = run_judge(["--set", "Z9", "--no-color"], folder)
+    check(code != 0, "--set Z9 is rejected")
     code, out, _ = run_judge(["--progress", "--no-color", "--ascii"], folder)
-    main_total = sum(len(s["problems"]) for s in sets if not s.get("supplementary"))
-    check(code == 0 and f"/ {main_total}" in out and "Extra" in out and "/ 7" in out and "Supplementary set" in out,
-          f"--progress counts the main sets (/ {main_total}) and the supplementary set apart", out[:1500])
+    total_a = sum(len(s["problems"]) for s in sets if str(s["set"]).startswith("A"))
+    check(code == 0 and "Track A" in out and f"/ {total_a}" in out, f"--progress shows Track A x / {total_a}", out[:800])
+
+
+def test_bootstrap_view():
+    """Updaters before 7.0 reject Mock_A01 paths: they read "full", which must only hold entries they accept."""
+    print("Bootstrap view")
+    import re as _re
+    old_set = _re.compile(r"^Mock_[0-9]+/[0-9]+\.cpp$")
+    old_managed = _re.compile(r"^(Mock_[0-9]+/(Makefile|judge\.bat|Mock_[0-9]+\.pdf)|Guide\.pdf|README\.txt"
+                              r"|Progress\.md|\.vscode/(tasks|settings)\.json)$")
+    with open(os.path.join(REPO, "manifest.json"), encoding="utf-8") as f:
+        m = json.load(f)
+    full, v7 = m.get("full", {}), m.get("full_v7", {})
+    check(bool(v7) and full.get("bootstrap") is True, "manifest has full_v7 and a bootstrap \"full\"")
+    check(all(old_managed.match(k) for k in full.get("managed", {})) and
+          all(old_set.match(k) for k in full.get("create_only", {})), "the bootstrap view only holds old-style paths")
+    check(full.get("files") == v7.get("files"), "the bootstrap view installs every Judge/ file (incl. the new updater)")
 
 
 def write(path, text):
@@ -135,14 +149,17 @@ def read(path):
 
 
 def test_moves(root, tmp, release="6.0.2"):
-    """v6.1: after an update from an older release the student's files follow their problems, once, never over
-    written code (6.0 also has a swap: 2/4 <-> 2/5)."""
+    """After an update from an older release (6.0, 6.0.2, 6.1) the student's files follow their problems to the v7
+    folders, once, never over written code; an old folder with nothing of the student's left is removed, one with
+    something left gets README_MOVED.txt."""
     print(f"Moves ({release} -> now)")
     base = os.path.join(tmp, "moves_pkg_" + release)
     shutil.copytree(root, base)
     jd = os.path.join(base, "Judge")
     with open(os.path.join(jd, "manifest.json"), encoding="utf-8") as f:
         manifest = json.load(f)
+    for rel in manifest.get("create_only", {}):                  # a fresh install: every starter empty
+        write(os.path.join(base, *rel.split("/")), "")
     old = os.path.join(REPO, "tools", "moves", f"problems_{release}.json")
     pairs = manifest.get("moves", {}).get(sha(old))
     check(bool(pairs), f"the manifest lists moves for a {release} install", str(list(manifest.get("moves", {}))))
@@ -155,14 +172,25 @@ def test_moves(root, tmp, release="6.0.2"):
     for src, text in written.items():
         if src != first:
             write(os.path.join(base, *src.split("/")), text)
-    write(os.path.join(base, *first.split("/")), "")             # an untouched (empty) starter stays where it is
-    write(os.path.join(base, "Mock_2", "1.cpp"), "// stays\n")    # a file that does not move
+    write(os.path.join(base, *first.split("/")), "")             # an untouched (empty) starter is not moved
+    keep_dir = pairs[-1][0].split("/")[0]                        # a folder that keeps something of the student's
+    write(os.path.join(base, keep_dir, "notes.txt"), "// stays\n")
+    gone_dir = first.split("/")[0]                               # holds only starters / managed files after the moves
+    for name in ("Makefile", "judge.bat"):
+        write(os.path.join(base, gone_dir, name), "managed\n")
+    run_dir = os.path.join(base, os.path.dirname(next(iter(manifest["create_only"]))))   # a v7 set folder
     sources = {src for src, _ in pairs}
     clash = next((dst for src, dst in pairs[1:] if dst.split("/")[1] != "old" and dst not in sources), None)
     if clash:                                                    # written code already at a destination
         write(os.path.join(base, *clash.split("/")), "// written before the update\n")
-    code, out, _ = run_judge(["--list", "--no-color"], os.path.join(base, "Mock_1"))
-    check(code == 0 and "moved with their problems" in out, "the judge says the files moved", out[:800])
+    probe = next(((s, d) for s, d in reversed(pairs) if d != clash and s.split("/")[0] == keep_dir), None)
+    if probe:                                                    # judging a file that moves in this very run
+        code, out, _ = run_judge([probe[0].split("/")[1], "--no-color"], os.path.join(base, keep_dir))
+        check(code == 1 and "moved with their problems" in out and f"moved with its problem to {probe[1]}" in out,
+              "the judge says the files moved, and where the file it was asked to judge went", out[:800])
+    else:
+        code, out, _ = run_judge(["--list", "--no-color"], run_dir)
+        check(code == 0 and "moved with their problems" in out, "the judge says the files moved", out[:800])
     bad = []
     for src, dst in pairs[1:]:
         if dst == clash:
@@ -177,11 +205,17 @@ def test_moves(root, tmp, release="6.0.2"):
         check(kept and any(read(p) == written[src] for p in parked), "a clash never overwrites: the moved file goes to old/",
               f"{clash}: kept={kept}, parked={parked}")
     vacated = [src for src, _ in pairs[1:] if not any(d == src for _, d in pairs)]
-    check(all(read(os.path.join(base, *v.split("/"))) == "" for v in vacated), "an empty starter stands where a file left")
-    check(read(os.path.join(base, *first.split("/"))) == "", "an untouched starter is not moved")
-    check(read(os.path.join(base, "Mock_2", "1.cpp")) == "// stays\n", "files that do not move are untouched")
+    check(all(read(os.path.join(base, *v.split("/"))) in (None, "") for v in vacated), "no written file is left behind")
+    check(not glob.glob(os.path.join(base, first.split("/")[0], first.split("/")[1])) or
+          read(os.path.join(base, *first.split("/"))) == "", "an untouched starter is not moved")
+    check(read(os.path.join(base, keep_dir, "notes.txt")) == "// stays\n" and
+          os.path.exists(os.path.join(base, keep_dir, "README_MOVED.txt")),
+          "an old folder with something of the student's stays, with README_MOVED.txt")
+    gone_left = os.listdir(os.path.join(base, gone_dir)) if os.path.isdir(os.path.join(base, gone_dir)) else []
+    check(not os.path.isdir(os.path.join(base, gone_dir)) or "README_MOVED.txt" in gone_left,
+          f"an old folder with only starters / managed files is removed ({gone_dir})", str(gone_left))
     snapshot = {p: read(p) for p in glob.glob(os.path.join(base, "Mock_*", "**", "*.cpp"), recursive=True)}
-    code, out, _ = run_judge(["--list", "--no-color"], os.path.join(base, "Mock_1"))
+    code, out, _ = run_judge(["--list", "--no-color"], run_dir)
     again = {p: read(p) for p in glob.glob(os.path.join(base, "Mock_*", "**", "*.cpp"), recursive=True)}
     check("moved" not in out and again == snapshot, "the moves happen once")
     if release != "6.0.2":
@@ -191,7 +225,7 @@ def test_moves(root, tmp, release="6.0.2"):
     os.makedirs(os.path.join(other, "Judge", ".backup", "problems", "batch"))
     write(os.path.join(other, "Judge", ".backup", "problems", "batch", "problems.json"), '{"1": {"en": "Signal Towers", "dir": "Mock_1/1"}}')
     write(os.path.join(other, "Mock_1", "6.cpp"), "// 3.2 code\n")
-    code, out, _ = run_judge(["--list", "--no-color"], os.path.join(other, "Mock_1"))
+    code, out, _ = run_judge(["--list", "--no-color"], os.path.join(other, os.path.dirname(next(iter(manifest["create_only"])))))
     check("moved" not in out and read(os.path.join(other, "Mock_1", "6.cpp")) == "// 3.2 code\n",
           "an unknown older release (e.g. 3.2) gets no moves")
 
@@ -392,7 +426,7 @@ def test_cli(root):
     code, out, plain = run_judge(["--progress", "--ascii"], set1)
     check(code == 0 and plain, "judge.py --progress --ascii", f"exit {code}, ascii={plain}\n{out}")
     code, out, plain = run_judge(["--list", "--ascii"], set1)
-    check(code == 0 and "Set 4" in out and plain, "judge.py --list --ascii", f"exit {code}\n{out}")
+    check(code == 0 and "Set A4" in out and plain, "judge.py --list --ascii", f"exit {code}\n{out}")
     code, out, _ = run_judge(["--tl", "abc"], set1)
     check(code == 2 and "--tl must be" in out, "judge.py --tl abc is rejected", f"exit {code}\n{out}")
 
@@ -452,11 +486,13 @@ def rebuild_manifest(repo2):
 
 
 def edit_manifest(repo2, fn):
-    """fn changes the part of manifest.json that the updater installs ("full" in format 2)."""
+    """fn changes the parts of manifest.json that updaters install ("full_v7" and the bootstrap "full", format 2)."""
     p = os.path.join(repo2, "manifest.json")
     with open(p, encoding="utf-8") as f:
         m = json.load(f)
-    fn(m.get("full", m))
+    parts = [m[k] for k in ("full_v7", "full") if isinstance(m.get(k), dict)] or [m]
+    for part in parts:
+        fn(part)
     with open(p, "w", encoding="utf-8") as f:
         json.dump(m, f)
 
@@ -592,8 +628,7 @@ def test_fast_update():
                        check=True, stdout=subprocess.DEVNULL)
         root = os.path.join(tmp, os.listdir(tmp)[0])
         judge_dir = os.path.join(root, "Judge")
-        sets = sorted(int(d.split("_")[1]) for d in os.listdir(root) if d.startswith("Mock_"))
-        last = "Mock_%d" % sets[-1]
+        last = sorted(d for d in os.listdir(root) if d.startswith("Mock_"))[-1]      # e.g. Mock_A12
         # an old package: the updater and manifest of the last format-1 release
         shutil.copy(os.path.join(REPO, "tests", "fixtures", "updater_v2.py"), os.path.join(judge_dir, "updater.py"))
         shutil.copy(os.path.join(REPO, "tools", "legacy_manifest.json"), os.path.join(judge_dir, "manifest.json"))
@@ -621,7 +656,8 @@ def test_fast_update():
               f"new updater installs {last} ({len(files)} files) in {len(log)} requests", f"{log}\n{out}")
         with open(os.path.join(judge_dir, "manifest.json"), encoding="utf-8") as f:
             installed = json.load(f)
-        check("full" not in installed and installed.get("version") == build_version(),
+        check("full" not in installed and "full_v7" not in installed and not installed.get("bootstrap")
+              and installed.get("version") == build_version(),
               "the installed manifest is the full version")
         srv.shutdown()
 
@@ -669,9 +705,11 @@ def main():
             test_exited_peak()
             test_missed_last_reading()
             test_cli(root)
-            test_supplementary(root)
+            test_tracks(root)
+            test_bootstrap_view()
             test_moves(root, tmp)
             test_moves(root, tmp, "6.0")
+            test_moves(root, tmp, "6.1")
             test_updater()
             test_fast_update()
             test_data()

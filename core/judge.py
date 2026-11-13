@@ -3,16 +3,16 @@
 POSN Camp 2 Practice Judge
 ==========================
 
-Usage (inside a Mock_K folder, e.g. Mock_3, with the judge in ../Judge)
+Usage (inside a set folder, e.g. Mock_A03, with the judge in ../Judge)
   python3 ../Judge/judge.py                    judge the whole set (1.cpp ... 6.cpp in this folder)
   python3 ../Judge/judge.py 5.cpp              judge problem 5 of this set   (or just: python3 ../Judge/judge.py 5)
 
 Usage (anywhere)
-  python3 judge.py SOLUTION.cpp K-P            judge one solution for set K, problem P   (e.g. 3-5)
+  python3 judge.py SOLUTION.cpp K-P            judge one solution for set K, problem P   (e.g. A3-5)
   python3 judge.py --set K FOLDER              judge a whole mock exam set (files 1.cpp ... 6.cpp in FOLDER)
-  python3 judge.py --set K                     show the problems of mock exam set K
+  python3 judge.py --set K                     show the problems of mock exam set K (e.g. --set B2)
   python3 judge.py --list                      list all sets and problems
-  python3 judge.py --progress                  show which problems you have solved (--progress 3: set 3 only)
+  python3 judge.py --progress                  show which problems you have solved (--progress A3: set A3 only)
 
 Options
   --tl SECONDS     time limit per test (default 1.0)
@@ -30,6 +30,8 @@ Score: share of tests passed (with subtasks: each subtask's points x share of it
 problems marked "scoring": "all" give 100 only when every test passes, else 0 (like the real exam).
 Progress: every judged solution is recorded in Judge/progress.json (best score per problem);
 --progress shows the dashboard in the terminal (--progress K: set K only).
+Sets are named by track and number (A1 ... A12, B1 ... B8; folders Mock_A01 ...); numbered sets of older versions
+(1, 2, ...; folders Mock_1 ...) still work.
 """
 import glob
 import hashlib
@@ -228,11 +230,43 @@ def load_sets():
     return []
 
 
+SET_KEY = re.compile(r"^([ABab]?)0*([0-9]+)$")
+
+
+def set_key(s):
+    """("A", 3) for set "A03" of sets.json, ("", 3) for set 3 of the numbered sets of older versions."""
+    m = SET_KEY.match(str(s["set"]))
+    return (m.group(1).upper(), int(m.group(2))) if m else (str(s["set"]), 0)
+
+
+def set_label(s):
+    """How a set is written for the student: A3, B2 (or 3 for an old numbered set)."""
+    t, n = set_key(s)
+    return f"{t}{n}"
+
+
+def set_index(token, sets=None):
+    """1-based position in sets.json of the set written as A3, a03, B2 or 3; None if there is no such set."""
+    m = SET_KEY.match(str(token).strip())
+    if not m:
+        return None
+    key = (m.group(1).upper(), int(m.group(2)))
+    for i, s in enumerate(load_sets() if sets is None else sets, 1):
+        if set_key(s) == key:
+            return i
+    return None
+
+
+def track_of(s):
+    """Progress is counted per track: "A", "B", "" (old numbered sets) or "Extra" (the v6.1 supplementary set)."""
+    return "Extra" if s.get("supplementary") else set_key(s)[0]
+
+
 def set_name(s, short=False):
-    """'Set 3', or the supplementary set (problems beyond the Camp 2 syllabus, not counted with the main sets)."""
+    """'Set A3' (short: 'A3'), 'Set 3', or the v6.1 supplementary set."""
     if s.get("supplementary"):
         return "Extra" if short else "Supplementary set"
-    return f"Set {s['set']}"
+    return set_label(s) if short and set_key(s)[0] else f"Set {set_label(s)}"
 
 
 def student_layout():
@@ -339,11 +373,11 @@ def expected_matches(fin, got, man_out):
 
 
 def find_problem(arg, meta):
-    parts = arg.split("-")
-    if len(parts) == 2 and all(x.isdecimal() for x in parts):
-        k, p = int(parts[0]), int(parts[1])
+    parts = arg.rsplit("-", 1)
+    if len(parts) == 2 and parts[1].isdecimal() and SET_KEY.match(parts[0]):     # K-P: A3-5 (or 3-5)
         sets = load_sets()
-        if 1 <= k <= len(sets) and 1 <= p <= len(sets[k - 1]["problems"]):
+        k, p = set_index(parts[0], sets), int(parts[1])
+        if k and 1 <= p <= len(sets[k - 1]["problems"]):
             return find_problem(str(sets[k - 1]["problems"][p - 1]), meta)
         return None, None
     if arg.isdecimal():                 # a bank id: never a folder of the current directory
@@ -381,9 +415,10 @@ def find_problem(arg, meta):
 
 
 def set_of_problem(num):
-    for s in load_sets():
+    """1-based position in sets.json of the set holding problem num, or None."""
+    for i, s in enumerate(load_sets(), 1):
         if num in s["problems"]:
-            return s["set"]
+            return i
     return None
 
 
@@ -575,9 +610,17 @@ def trend(st, e, n=8):
     return "".join(out) + " " * (n - len(hist))
 
 
-def totals(data, extra=False):
-    """(solved, problems, best points) over the main sets, or over the supplementary set with extra=True."""
-    sets = [s for s in available_sets() if bool(s.get("supplementary")) == extra]
+def tracks():
+    """The tracks of the available sets, in order (A before B; old numbered sets have the track "")."""
+    order = {"A": 0, "": 1, "B": 2, "Extra": 3}
+    return sorted({track_of(s) for s in available_sets()}, key=lambda t: (order.get(t, 4), t))
+
+
+def totals(data, track=None):
+    """(solved, problems, best points) over one track (default: the first one)."""
+    if track is None:
+        track = (tracks() or [""])[0]
+    sets = [s for s in available_sets() if track_of(s) == track]
     probs = [n for s in sets for n in s["problems"]]
     solved = sum(1 for n in probs if data["problems"].get(str(n), {}).get("best", 0) == 100)
     best = sum(data["problems"].get(str(n), {}).get("best", 0) for n in probs)
@@ -592,33 +635,38 @@ def progress_line(st, set_no):
         return
     s = sets[set_no - 1]
     cells = " ".join(score_cell(st, data["problems"].get(str(n), {}), 3) for n in s["problems"])
-    solved, total, _ = totals(data, extra=bool(s.get("supplementary")))
+    solved, total, _ = totals(data, track_of(s))
     print("  " + st.bold("Progress") + f"  {set_name(s, short=True)} " + cells + st.dim("   ·   ") +
           f"solved {st.bold(str(solved))} / {total}")
     print("  " + st.dim(f"full view: {PY} ../Judge/judge.py --progress"))
 
 
-def extra_line(st, data):
-    """The supplementary set's count, shown apart from the main sets (empty when the package has none)."""
-    solved, total, _ = totals(data, extra=True)
-    return [f"Extra       {st.bold(f'{solved:>3}')} / {total:<3}" + st.dim("  supplementary set, counted apart")] if total else []
+def track_lines(st, data):
+    """One line per further track (Track B, the v6.1 supplementary set), counted apart from the first one."""
+    out = []
+    for t in tracks()[1:]:
+        solved, total, _ = totals(data, t)
+        label = "Extra" if t == "Extra" else f"Track {t}" if t else "Solved"
+        out.append(f"{label:<12}{st.bold(f'{solved:>3}')} / {total:<3}  " + bar(st, solved / total if total else 0, 20))
+    return out
 
 
 def cmd_progress(meta, st, only=None):
     data = load_progress()
     ch = st.chars
-    solved, total, best = totals(data)
+    first = (tracks() or [""])[0]
+    solved, total, best = totals(data, first)
     runs = sum(e.get("attempts", 0) for e in data["problems"].values())
+    label = f"Track {first}" if first not in ("", "Extra") else "Solved"
     frac = solved / total if total else 0
     box(st, [st.bold(st.cyan("POSN Camp 2 · Progress")) + " " * 14 + st.dim(datetime.now().strftime("%Y-%m-%d %H:%M")),
              "",
-             f"Solved      {st.bold(f'{solved:>3}')} / {total:<3}  " + bar(st, frac, 20) + f"  {round(100 * frac):>3}%",
+             f"{label:<12}{st.bold(f'{solved:>3}')} / {total:<3}  " + bar(st, frac, 20) + f"  {round(100 * frac):>3}%",
              f"Best total  {st.bold(f'{best:>4}')} / {100 * total}" + st.dim(f"     {runs} judged runs")]
-        + extra_line(st, data), st.dim)
+        + track_lines(st, data), st.dim)
     recent = []
-    for s in available_sets():
-        k = s["set"]
-        if only is not None and k != only:
+    for s in sorted(available_sets(), key=lambda s: tracks().index(track_of(s))):
+        if only is not None and set_index(s["set"]) != only:
             continue
         pts = sum(data["problems"].get(str(n), {}).get("best", 0) for n in s["problems"])
         print()
@@ -1406,7 +1454,7 @@ def cmd_list(meta, st):
         print("  " + st.bold(set_name(s)) + st.dim(f"  {s.get('level_en', '')}"))
         for i, n in enumerate(s["problems"], 1):
             m = meta.get(n, {})
-            print(f"    {s['set']}-{i:<3} " + (stars(st, m['tier']) + "  " if m.get('tier') else "") + m.get('en', '?'))
+            print(f"    {set_label(s)}-{i:<3} " + (stars(st, m['tier']) + "  " if m.get('tier') else "") + m.get('en', '?'))
 
 
 TEMPLATE_WORDS = ("#include <bits/stdc++.h> using namespace std; int32_t main() { "
@@ -1428,14 +1476,14 @@ def is_template(src):
 
 def cmd_set(k, folder, meta, sets, st, tl, show_diff):
     if not (1 <= k <= len(sets)):
-        print(st.red(f"Set {k} does not exist (1-{len(sets)})."))
+        print(st.red(f"Set {k} does not exist."))
         return 1
     if folder is not None and not os.path.isdir(folder):
         print(st.red(f"Folder not found: {folder}"))
         return 1
     s = sets[k - 1]
     probs = s["problems"]
-    head = [title(st, "POSN Camp 2 · Supplementary Set" if s.get("supplementary") else f"POSN Camp 2 · Mock Exam Set {k}"),
+    head = [title(st, "POSN Camp 2 · Supplementary Set" if s.get("supplementary") else f"POSN Camp 2 · Mock Exam {set_name(s)}"),
             f"{s.get('level_en', '')}",
             f"{len(probs)} problems · 3 hours · {100 * len(probs)} points"]
     box(st, head, st.dim)
@@ -1445,11 +1493,11 @@ def cmd_set(k, folder, meta, sets, st, tl, show_diff):
     if folder is None:
         print()
         if student_layout():
-            print(st.dim(f"  Save your solutions as 1.cpp ... {len(probs)}.cpp in folder Mock_{k}, then run there:"))
+            print(st.dim(f"  Save your solutions as 1.cpp ... {len(probs)}.cpp in folder Mock_{s['set']}, then run there:"))
             print(f"  {PY} ../Judge/judge.py")
         else:
             print(st.dim(f"  Save your solutions as 1.cpp ... {len(probs)}.cpp in one folder, then run:"))
-            print(f"  {PY} judge.py --set {k} FOLDER")
+            print(f"  {PY} judge.py --set {set_label(s)} FOLDER")
         return 0
     scores = []
     print()
@@ -1511,13 +1559,18 @@ def cmd_set(k, folder, meta, sets, st, tl, show_diff):
     return 0
 
 
-MOCK_DIR = re.compile(r"^mock[ _-]?0*([0-9]+)$", re.IGNORECASE)
+MOCK_DIR = re.compile(r"^mock[ _-]?([ab]?[0-9]+)$", re.IGNORECASE)
 
 
 def mock_set_of(folder):
-    """Set number K of a folder named Mock_K (Mock_3, mock-03, ...), else None."""
+    """Position in sets.json of the set of a folder named Mock_A03 (mock-a3, Mock_3, ...), else None."""
     m = MOCK_DIR.match(os.path.basename(os.path.abspath(folder).rstrip("/\\")))
-    return int(m.group(1)) if m else None
+    return set_index(m.group(1)) if m else None
+
+
+def set_token(k):
+    """The set at position k as the student writes it (A3)."""
+    return set_label(load_sets()[k - 1])
 
 
 def prog_name():
@@ -1528,12 +1581,12 @@ def prog_name():
 def not_a_mock_folder(st, folder, name):
     """The set number comes from the folder name Mock_K; explain what to do when the folder has another name."""
     base = os.path.basename(os.path.abspath(folder).rstrip("/\\"))
-    print(st.red(f"Cannot tell which set this is: the folder '{base}' is not named Mock_K (e.g. Mock_3)."))
-    print(st.dim("  Rename the folder to Mock_K (K = set number), or give the set yourself, e.g. for set 3:"))
+    print(st.red(f"Cannot tell which set this is: the folder '{base}' is not named like Mock_A03."))
+    print(st.dim("  Rename the folder back (Mock_A03 = set A3), or give the set yourself, e.g. for set A3:"))
     if name is None:
-        print(f"  {PY} {prog_name()} --set 3 .")
+        print(f"  {PY} {prog_name()} --set A3 .")
     else:
-        print(f"  {PY} {prog_name()} \"{name}\" 3-{name[:-4] if name[:-4].isdecimal() else 5}")
+        print(f"  {PY} {prog_name()} \"{name}\" A3-{name[:-4] if name[:-4].isdecimal() else 5}")
     return 1
 
 
@@ -1593,6 +1646,25 @@ def self_update(st, argv):
         return None
 
 
+def finish_bootstrap(st):
+    """An updater before 7.0 could only install the judge itself (its path rules reject Mock_A01 ...): this run's
+    updater adds the new set folders at once, even right after the restart (JUDGE_NO_UPDATE) or a recent check."""
+    if updater is None or not hasattr(updater, "bootstrapped") or not updater.bootstrapped(ROOT):
+        return
+    r = updater.check(ROOT, notify=lambda text: print("  " + st.dim(text), flush=True))
+    if r.status == "updated":
+        print("  " + st.dim(f"Judge {r.message}: the new sets are in place"))
+
+
+MOVED = []                              # [(from, to)] moved by show_moves in this run (paths from the package folder)
+
+
+def moved_to(path):
+    """Where this run's moves took the file at path, or None."""
+    rel = os.path.relpath(os.path.abspath(path), os.path.dirname(ROOT)).replace(os.sep, "/")
+    return next((dst for src, dst in MOVED if src == rel), None)
+
+
 def show_moves(st):
     """After an update that reorganised the sets, the student's files follow their problems (once)."""
     if updater is None or not hasattr(updater, "follow_moves") or not student_layout():
@@ -1600,10 +1672,11 @@ def show_moves(st):
     moved = updater.follow_moves(ROOT)
     if not moved:
         return
+    MOVED.extend(moved)
     print("  " + st.yellow(st.bold("The sets were reorganised: your files moved with their problems")))
     for src, dst in moved:
         print("    " + f"{src:<14} -> {dst}")
-    print("  " + st.dim("(an empty file now stands in each old place; nothing was deleted)"))
+    print("  " + st.dim("(nothing you wrote was deleted; an old folder that still holds your files gets README_MOVED.txt)"))
 
 
 def main():
@@ -1653,6 +1726,7 @@ def main():
     if code is not None:
         return code
     show_moves(st)
+    finish_bootstrap(st)
     meta = load_meta()
     if os.name != "nt":
         raise_stack_limit()     # Windows: the stack size is set when linking (compile_source)
@@ -1688,17 +1762,17 @@ def main():
         pos = ["progress"]
     if "--progress" in flags or (pos and pos[0].lower() in ("progress", "progress.cpp")):
         rest = [x for x in pos if x.lower() not in ("progress", "progress.cpp")]
-        only = int(rest[0]) if rest and rest[0].isdecimal() else None
+        only = set_index(rest[0]) if rest else None
         return cmd_progress(meta, st, only)
     if "--set" in opts:
-        if not opts["--set"].isdecimal():
-            return usage(f"--set needs a set number (got {opts['--set']})")
+        if set_index(opts["--set"]) is None:
+            return usage(f"--set needs a set such as A3 or B2 (got {opts['--set']}); see --list")
         if len(pos) > 1:
             return usage("--set takes one folder")
         if pos and not shutil.which("g++"):
             print(st.red("g++ not found. Please install a C++ compiler and add it to PATH."))
             return 1
-        return cmd_set(int(opts["--set"]), pos[0] if pos else None, meta, load_sets(), st, tl, show_diff)
+        return cmd_set(set_index(opts["--set"]), pos[0] if pos else None, meta, load_sets(), st, tl, show_diff)
     if not pos:
         k = mock_set_of(os.getcwd())
         if k is None:
@@ -1719,41 +1793,48 @@ def main():
         k = mock_set_of(os.path.dirname(os.path.abspath(a))) if os.path.isfile(a) else None
         name = os.path.basename(a)
         if k is not None and name.lower().endswith(".cpp") and name[:-4].isdecimal():
-            pos = [a, f"{k}-{int(name[:-4])}"]      # Mock_3/5.cpp  ->  5.cpp 3-5
+            pos = [a, f"{set_token(k)}-{int(name[:-4])}"]      # Mock_A03/5.cpp  ->  5.cpp A3-5
         elif not os.path.exists(a) and (a.lower().endswith(".cpp") or mock_set_of(os.getcwd()) is not None):
             print(st.red(f"Source file not found: {a}"))
-            print(st.dim("  Check the file name (e.g. 5.cpp, not 5.cpp.txt) and that you are in the Mock_K folder."))
+            dst = moved_to(a)
+            if dst:
+                print(st.yellow(f"  It just moved with its problem to {dst}: open it there."))
+            else:
+                print(st.dim("  Check the file name (e.g. 5.cpp, not 5.cpp.txt) and that you are in the set's folder (Mock_A03 ...)."))
             return 1
         elif os.path.isfile(a) and name.lower().endswith(".cpp"):
             if k is None:               # e.g. Mock_3 - Copy/5.cpp
                 return not_a_mock_folder(st, os.path.dirname(os.path.abspath(a)), name)
             print(st.red(f"Cannot tell the problem number from the file name '{name}'."))   # e.g. 5_brute.cpp
             print(st.dim(f"  Name it 1.cpp ... 6.cpp, or give the problem as K-P, e.g.:"))
-            print(f"  {PY} {prog_name()} \"{name}\" {k}-5")
+            print(f"  {PY} {prog_name()} \"{name}\" {set_token(k)}-5")
             return 1
         else:
-            return usage("expected SOLUTION.cpp and a problem (e.g. 3-5), "
-                         "or run it inside a Mock_K folder (files 1.cpp ... 6.cpp)")
+            return usage("expected SOLUTION.cpp and a problem (e.g. A3-5), "
+                         "or run it inside a set folder such as Mock_A03 (files 1.cpp ... 6.cpp)")
     if len(pos) != 2:
-        return usage("expected SOLUTION.cpp and a problem (e.g. 3-5)")
+        return usage("expected SOLUTION.cpp and a problem (e.g. A3-5)")
     src, parg = pos
     if os.path.isfile(parg) and (not os.path.isfile(src) or
                                  (parg.lower().endswith(".cpp") and not src.lower().endswith(".cpp"))):
         src, parg = parg, src           # arguments given in the other order
     if not os.path.isfile(src):
         print(st.red(f"Source file not found: {src}"))
+        if moved_to(src):
+            print(st.yellow(f"  It just moved with its problem to {moved_to(src)}: open it there."))
         return 1
     if student_layout() and parg.isdecimal():
         k = mock_set_of(os.path.dirname(os.path.abspath(src)))
         if k is None:
-            return usage(f"use K-P to name a problem (e.g. 3-{parg} for set 3, problem {parg})")
-        parg = f"{k}-{int(parg)}"         # inside Mock_3: '5.cpp 5' means problem 3-5
+            return usage(f"use K-P to name a problem (e.g. A3-{parg} for set A3, problem {parg})")
+        parg = f"{set_token(k)}-{int(parg)}"     # inside Mock_A03: '5.cpp 5' means problem A3-5
     pdir, num = find_problem(parg, meta)
     if not pdir:
         sets = load_sets()
         print(st.red(f"Problem not found: {parg}"))
         most = max((len(s["problems"]) for s in sets), default=6)
-        print(st.dim(f"  Use K-P with set K = 1-{len(sets)} and problem P = 1-{most} (e.g. 3-5); see --list."))
+        names = ", ".join(set_label(s) for s in sets[:2] + sets[-1:]) if sets else "A1"
+        print(st.dim(f"  Use K-P with a set K ({names}, ...) and problem P = 1-{most} (e.g. A3-5); see --list."))
         return 1
     if not shutil.which("g++"):
         print(st.red("g++ not found. Please install a C++ compiler and add it to PATH."))

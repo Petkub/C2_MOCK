@@ -31,6 +31,7 @@ goes to Mock_K/old/N_<Title>.cpp. Judge/updater.py follow_moves() applies them o
 """
 import hashlib
 import json
+import re
 import os
 import sys
 import zipfile
@@ -204,6 +205,22 @@ def legacy_view(full):
             "create_only": unchanged(base["create_only"], full["create_only"])}
 
 
+# path rules of the updaters before 7.0 (6.1 and older): they reject a whole manifest with another set folder name
+OLD_SET_FILE = re.compile(r"^Mock_[0-9]+/[0-9]+\.cpp$")
+OLD_MANAGED_FILE = re.compile(r"^(Mock_[0-9]+/(Makefile|judge\.bat|Mock_[0-9]+\.pdf)|Guide\.pdf|README\.txt"
+                              r"|Progress\.md|\.vscode/(tasks|settings)\.json)$")
+
+
+def bootstrap_view(full):
+    """What updaters before 7.0 read ("full"): every Judge/ file (so they install the 7.0 updater and judge), only the
+    package files their path rules accept, and "bootstrap": true so the new updater adds the rest at once."""
+    view = dict(full)
+    view["managed"] = {k: v for k, v in full["managed"].items() if OLD_MANAGED_FILE.match(k)}
+    view["create_only"] = {k: v for k, v in full["create_only"].items() if OLD_SET_FILE.match(k)}
+    view["bootstrap"] = True
+    return view
+
+
 def build(write=True):
     pairs = judge_files()
     files = {rel: sha256_file(os.path.join(REPO, src)) for rel, src in pairs}
@@ -211,12 +228,12 @@ def build(write=True):
             "create_only": with_hashes(set_files()), "bundles": bundles(pairs, files, write), "moves": moves()}
     if not os.path.exists(LEGACY):
         return full
-    return dict(legacy_view(full), full=full)
+    return dict(legacy_view(full), full=bootstrap_view(full), full_v7=full)
 
 
 def installed(manifest):
     """The part of a manifest that the updater installs (and writes as Judge/manifest.json)."""
-    return manifest.get("full", manifest)
+    return manifest.get("full_v7", manifest.get("full", manifest))
 
 
 def dumps(manifest):

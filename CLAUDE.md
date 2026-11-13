@@ -1,6 +1,8 @@
 # C2_MOCK: POSN Camp 2 Practice Judge
 
-A terminal judge that students run on their own machines to practice for the POSN Computer Olympiad (Camp 2: 12 sets x 6 problems, no subtasks, plus a supplementary set Mock_13 of 7 problems beyond the syllabus).
+A terminal judge that students run on their own machines to practice for the POSN Computer Olympiad (Camp 2, no subtasks). Since v7.0 the sets come in tracks: Track A = 12 exam-level sets x 6 problems
+(`Mock_A01` ... `Mock_A12`, set names A1 ... A12, `--set A3`); Track B (`Mock_B01` ..., harder / beyond the syllabus) is
+planned. Set keys are strings ("A01"); `judge.py` helpers `set_key` / `set_label` / `set_index` / `track_of` parse them.
 Sibling repo `C1_MOCK` is the Camp 1 judge (same structure); fix shared bugs in both.
 Today it judges batch problems (`judge.py`). We are adding interactive and communication problems,
 and it updates itself from this GitHub repo so bugs can be fixed without re-sending zip files.
@@ -16,6 +18,9 @@ and it updates itself from this GitHub repo so bugs can be fixed without re-send
    or `progress.json`. One exception (approved by the teacher 2026-11-13, v6.1): when sets are reorganised, the
    manifest's `moves` let a student's written `Mock_K/N.cpp` follow its problem once (`follow_moves` in
    `updater.py`): never over written code (a clash goes to `Mock_K/old/`), empty starters stay, nothing deleted.
+   v7.0 adds one more step (plan V7_TWO_TRACKS section 3): an old set folder that is no longer a set is removed
+   only when nothing of the student's is left in it (its Makefile, judge.bat, PDF and empty starters); otherwise
+   it keeps everything and gets `README_MOVED.txt` (`tidy_old_folders`).
 4. **Never delete files the updater does not own.** No "wipe and reinstall" step, ever.
 5. **Fail safe.** If the network is down, slow (>2 s), or a hash does not match, keep the current
    version and continue silently. A broken update must never stop a student from judging.
@@ -37,12 +42,12 @@ C2_MOCK/
   problems/
     batch/Mock_K/N/*.in|out, gen.py, manifest.json   # see "Compact test data" below
     batch/problems.json         # problem bank: id -> title, tier, dir (Mock_K/N), samples, subtasks, optional ml (MB)
-    batch/sets.json             # set K -> list of problem ids (6; 7 in the supplementary set, "supplementary": true)
+    batch/sets.json             # set key ("A01") -> list of problem ids (6) and its "track" ("A" / "B")
     interactive/<name>/{problem.json, interactor.cpp, tests/NN.in}
     communication/<name>/{problem.json, manager.cpp, stub/, tests/}
   student/                      # student-side files outside Judge/ (copied by build_dist.py)
     README.txt, Progress.md, .vscode/, Mock_K/Mock_K.pdf
-    set_files/{Makefile, Makefile_7, judge.bat, template.cpp}   # every Mock_K (Makefile_<n> for a set of n != 6
+    set_files/{Makefile, judge.bat, template.cpp}   # every Mock_K (a Makefile_<n> is used for a set of n != 6
                                                     # problems); template.cpp (empty) -> 1.cpp ... n.cpp
   samples/                      # known-verdict programs used as regression tests
     batch/towers_ok.cpp, towers_smallhi.cpp, towers_slow.cpp, towers_crash.cpp, towers_syntax.cpp
@@ -158,6 +163,11 @@ Propose the design and wait for approval before writing it.
   An old judge thus downloads two files, restarts with the new updater, and its next check installs `full`
   quickly. The updater writes the `full` part as `Judge/manifest.json`. Keep `legacy_manifest.json`; never edit
   it. `tests/fixtures/updater_v2.py` is that old updater, used by the regression test "Fast update".
+- Format 3 (v7.0, because updaters before 7.0 reject `Mock_A01/...` paths): the real manifest is under `full_v7`;
+  `full` is a *bootstrap* view (`"bootstrap": true`) holding every `Judge/` file but only package entries the old
+  path rules accept. An old updater installs it (so it gets the new updater); the new `judge.py` then calls
+  `finish_bootstrap()`, which installs `full_v7` at once (even right after the restart or a recent check).
+  The updater prefers `full_v7`, then `full`. Regression: "Bootstrap view", "Moves (6.0 / 6.0.2 / 6.1 -> now)".
 
 ## Releasing a change to students
 
@@ -175,7 +185,7 @@ python3 tools/build_manifest.py          # after changing anything under core/, 
 python3 tools/build_manifest.py --check  # CI: fails if manifest.json is stale
 python3 tools/update_problem_manifest.py Mock_K/N   # after adding NN.in/NN.out to a problem (--check --all in CI)
 python3 tools/build_dist.py              # build dist/C2_Mock_Test/ + dist/C2_Mock_Test.zip (--out DIR, --no-zip)
-python3 core/judge.py samples/batch/towers_ok.cpp 3-2      # judge one file from the repo (creates big tests, see above)
+python3 core/judge.py samples/batch/towers_ok.cpp A6-3     # judge one file from the repo (creates big tests, see above)
 python3 core/interactive_judge.py guess samples/interactive/guess_ok.cpp
 ```
 
