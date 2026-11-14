@@ -223,14 +223,6 @@
   "samples": 5,
   "scoring": "all"
  },
- "51": {
-  "title": "ธงราวงานกีฬาสี",
-  "en": "Sports Day Bunting",
-  "tier": 0,
-  "dir": "Mock_A09/6",
-  "samples": 5,
-  "scoring": "all"
- },
  "55": {
   "title": "จัดรูปตาราง Markdown",
   "en": "Markdown Table Formatter",
@@ -327,6 +319,14 @@
   "samples": 5,
   "scoring": "all"
  },
+ "77": {
+  "title": "ย้ายรถก่อนทาสี",
+  "en": "Moving the Parked Cars",
+  "tier": 0,
+  "dir": "Mock_A09/6",
+  "samples": 5,
+  "scoring": "all"
+ },
  "78": {
   "title": "ลืมรหัสผ่าน",
   "en": "Forgotten Password",
@@ -356,14 +356,6 @@
   "en": "High Fives on the Trail",
   "tier": 0,
   "dir": "Mock_A10/6",
-  "samples": 5,
-  "scoring": "all"
- },
- "84": {
-  "title": "ตารางงานของนักร้อง",
-  "en": "The Singer's Schedule",
-  "tier": 0,
-  "dir": "Mock_A01/1",
   "samples": 5,
   "scoring": "all"
  },
@@ -479,14 +471,6 @@
   "samples": 5,
   "scoring": "all"
  },
- "99": {
-  "title": "นักวิ่งสีละคน",
-  "en": "One Runner per Colour",
-  "tier": 0,
-  "dir": "Mock_A07/4",
-  "samples": 5,
-  "scoring": "all"
- },
  "100": {
   "title": "ลมพัดเข้ากับดัก",
   "en": "Blown Into the Traps",
@@ -516,14 +500,6 @@
   "en": "Shady Bike Routes",
   "tier": 0,
   "dir": "Mock_A09/5",
-  "samples": 5,
-  "scoring": "all"
- },
- "104": {
-  "title": "พันธุ์ข้าวน่าปลูก",
-  "en": "Rice Varieties Worth Planting",
-  "tier": 0,
-  "dir": "Mock_A11/1",
   "samples": 5,
   "scoring": "all"
  },
@@ -572,6 +548,30 @@
   "en": "Cutting the Pearl Necklace",
   "tier": 0,
   "dir": "Mock_A12/5",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "111": {
+  "title": "ใบเสร็จไร้ช่องว่าง",
+  "en": "Receipt Without Spaces",
+  "tier": 0,
+  "dir": "Mock_A01/1",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "112": {
+  "title": "สั่งกล้าไม้จากสามร้าน",
+  "en": "Seedlings From Three Nurseries",
+  "tier": 0,
+  "dir": "Mock_A11/1",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "113": {
+  "title": "กระเช้าเที่ยวพิเศษ",
+  "en": "One Extra Cable Car",
+  "tier": 0,
+  "dir": "Mock_A07/4",
   "samples": 5,
   "scoring": "all"
  }

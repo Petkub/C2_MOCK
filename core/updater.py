@@ -427,13 +427,22 @@ def current_set_folders(judge_dir):
     return {f"Mock_{s['set']}" for s in sets if isinstance(s, dict) and "set" in s}
 
 
+OLD_SET_FOLDER = re.compile(r"^Mock_[0-9]+$")
+TIDIED = []                             # old set folders tidied in this run: [(folder, "removed" | "README_MOVED.txt")]
+
+
 def tidy_old_folders(base, judge_dir, pairs, done):
     """A set folder of the old layout that is no longer a set: removed when nothing the student wrote is left in it
-    (only its Makefile, judge.bat, PDF and empty starters), else it gets README_MOVED.txt saying where things went."""
+    (only its Makefile, judge.bat, PDF and empty starters), else it gets README_MOVED.txt saying where things went.
+    pairs=None (a release without a moves list, e.g. 3.2): every old-style Mock_<number> folder; nothing moved."""
     keep = current_set_folders(judge_dir)
     if not keep:
         return
-    for folder in sorted({src.split("/")[0] for src, _ in pairs} - keep):
+    if pairs is None:
+        folders = {d for d in os.listdir(base) if OLD_SET_FOLDER.match(d) and os.path.isdir(os.path.join(base, d))}
+    else:
+        folders = {src.split("/")[0] for src, _ in pairs}
+    for folder in sorted(folders - keep):
         d = os.path.join(base, folder)
         if not os.path.isdir(d):
             continue
@@ -444,14 +453,23 @@ def tidy_old_folders(base, judge_dir, pairs, done):
             for n in ours:
                 os.remove(os.path.join(d, n))
             os.rmdir(d)
+            TIDIED.append((folder, "removed"))
             continue
         note = os.path.join(d, "README_MOVED.txt")
         if not os.path.exists(note):
-            lines = [f"{src} -> {dst}" for src, dst in done if src.startswith(folder + "/")]
             with open(note, "w", encoding="utf-8") as f:
-                f.write("ชุดโจทย์ถูกจัดใหม่ (v7): โฟลเดอร์นี้ไม่ใช่ชุดโจทย์แล้ว ไฟล์ที่เขียนไว้ย้ายไปอยู่กับโจทย์ของมัน\n"
-                        "The sets were reorganised (v7): this folder is no longer a set. Written files moved with\n"
-                        "their problems; anything left here is yours and was not touched.\n\n" + "\n".join(lines) + "\n")
+                if pairs is None:
+                    f.write("ชุดโจทย์ถูกจัดใหม่ (v7): โฟลเดอร์นี้ไม่ใช่ชุดโจทย์แล้ว ชุดใหม่อยู่ใน Mock_A01 ... Mock_A12\n"
+                            "ไฟล์ในโฟลเดอร์นี้ไม่ได้ถูกย้ายหรือลบ ถ้าจะส่งโค้ดเดิมกับโจทย์ในชุดใหม่ ให้คัดลอกไปเอง\n"
+                            "The sets were reorganised (v7): this folder is no longer a set; the new sets are in\n"
+                            "Mock_A01 ... Mock_A12. Nothing here was moved or deleted. To judge old code against a\n"
+                            "problem of the new sets, copy it there yourself.\n")
+                else:
+                    lines = [f"{src} -> {dst}" for src, dst in done if src.startswith(folder + "/")]
+                    f.write("ชุดโจทย์ถูกจัดใหม่ (v7): โฟลเดอร์นี้ไม่ใช่ชุดโจทย์แล้ว ไฟล์ที่เขียนไว้ย้ายไปอยู่กับโจทย์ของมัน\n"
+                            "The sets were reorganised (v7): this folder is no longer a set. Written files moved with\n"
+                            "their problems; anything left here is yours and was not touched.\n\n" + "\n".join(lines) + "\n")
+            TIDIED.append((folder, "README_MOVED.txt"))
 
 
 def follow_moves(judge_dir=ROOT):
@@ -476,6 +494,8 @@ def follow_moves(judge_dir=ROOT):
             done = apply_moves(base, pairs)
             refill_starters(base, manifest, [src for src, _ in done])
             tidy_old_folders(base, judge_dir, pairs, done)
+        elif (manifest or {}).get("moves"):              # an older release without a moves list (e.g. 3.2)
+            tidy_old_folders(os.path.dirname(judge_dir), judge_dir, None, done)
         with open(marker, "a", encoding="utf-8") as f:
             f.write(old + "\n")
         return done

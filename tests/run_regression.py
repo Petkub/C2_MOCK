@@ -222,12 +222,39 @@ def test_moves(root, tmp, release="6.0.2"):
         return
     other = os.path.join(tmp, "moves_32")
     shutil.copytree(root, other)
+    for rel in manifest.get("create_only", {}):
+        write(os.path.join(other, *rel.split("/")), "")
     os.makedirs(os.path.join(other, "Judge", ".backup", "problems", "batch"))
     write(os.path.join(other, "Judge", ".backup", "problems", "batch", "problems.json"), '{"1": {"en": "Signal Towers", "dir": "Mock_1/1"}}')
-    write(os.path.join(other, "Mock_1", "6.cpp"), "// 3.2 code\n")
-    code, out, _ = run_judge(["--list", "--no-color"], os.path.join(other, os.path.dirname(next(iter(manifest["create_only"])))))
-    check("moved" not in out and read(os.path.join(other, "Mock_1", "6.cpp")) == "// 3.2 code\n",
-          "an unknown older release (e.g. 3.2) gets no moves")
+    template = "#include <bits/stdc++.h>\nusing namespace std;\n\nint32_t main() {\n    cin.tie(0); ios::sync_with_stdio(0);\n\n    return 0;\n}\n"
+    for k in (1, 2, 3):                                          # a 3.2 package: Mock_1 ... with starters and set files
+        for name in ("Makefile", "judge.bat", f"Mock_{k}.pdf"):
+            write(os.path.join(other, f"Mock_{k}", name), "managed\n")
+        for n in range(1, 6):
+            write(os.path.join(other, f"Mock_{k}", f"{n}.cpp"), template if n % 2 else "")
+    write(os.path.join(other, "Mock_1", "6.cpp"), "// 3.2 code\n")     # written code
+    write(os.path.join(other, "Mock_3", "a.exe"), "binary")              # something of the student's (not code)
+    v7_dir = os.path.join(other, os.path.dirname(next(iter(manifest["create_only"]))))
+    before = {p: read(p) for p in glob.glob(os.path.join(other, "Mock_A*", "*.cpp"))}
+    code, out, _ = run_judge(["--list", "--no-color"], v7_dir)
+    check("moved with their problems" not in out and read(os.path.join(other, "Mock_1", "6.cpp")) == "// 3.2 code\n",
+          "an unknown older release (e.g. 3.2) gets no moves", out[:600])
+    m1 = sorted(os.listdir(os.path.join(other, "Mock_1"))) if os.path.isdir(os.path.join(other, "Mock_1")) else []
+    check(m1 == sorted(["1.cpp", "2.cpp", "3.cpp", "4.cpp", "5.cpp", "6.cpp", "Makefile", "judge.bat", "Mock_1.pdf",
+                        "README_MOVED.txt"]) and "Nothing here was moved or deleted" in
+          (read(os.path.join(other, "Mock_1", "README_MOVED.txt")) or ""),
+          "3.2: a folder with written code keeps every file and gets README_MOVED.txt", str(m1))
+    check(not os.path.exists(os.path.join(other, "Mock_2")), "3.2: a folder with only starters and set files is removed")
+    check(read(os.path.join(other, "Mock_3", "a.exe")) == "binary" and
+          os.path.exists(os.path.join(other, "Mock_3", "README_MOVED.txt")),
+          "3.2: a folder with any other file of the student's stays (README_MOVED.txt)")
+    check("Mock_2" in out and "removed" in out and before == {p: read(p) for p in glob.glob(os.path.join(other, "Mock_A*", "*.cpp"))},
+          "3.2: the judge lists what it tidied; the new set folders are untouched", out[:600])
+    code, out, _ = run_judge(["--list", "--no-color"], v7_dir)
+    check("reorganised" not in out and os.path.isdir(os.path.join(other, "Mock_1")), "3.2: the tidy happens once")
+    code, out, _ = run_judge(["6.cpp", "--no-color"], os.path.join(other, "Mock_1"))
+    check(code == 1 and "is an old set folder" in out and "Rename the folder" not in out,
+          "3.2: judging inside a kept old folder explains it is no longer a set", out[:400])
 
 
 def test_crlf_generator():

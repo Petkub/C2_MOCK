@@ -1581,6 +1581,12 @@ def prog_name():
 def not_a_mock_folder(st, folder, name):
     """The set number comes from the folder name Mock_K; explain what to do when the folder has another name."""
     base = os.path.basename(os.path.abspath(folder).rstrip("/\\"))
+    if os.path.isfile(os.path.join(folder, "README_MOVED.txt")):   # an old set folder kept after v7's reorganisation
+        print(st.red(f"'{base}' is an old set folder: it is no longer a set (see README_MOVED.txt in it)."))
+        print(st.dim("  The sets are now Mock_A01 ... Mock_A12. To judge this code against a problem there, copy it"))
+        print(st.dim("  into that set's folder, or give the problem yourself, e.g. for set A3 problem 2:"))
+        print(f"  {PY} {prog_name()} \"{name or '2.cpp'}\" A3-2")
+        return 1
     print(st.red(f"Cannot tell which set this is: the folder '{base}' is not named like Mock_A03."))
     print(st.dim("  Rename the folder back (Mock_A03 = set A3), or give the set yourself, e.g. for set A3:"))
     if name is None:
@@ -1670,7 +1676,13 @@ def show_moves(st):
     if updater is None or not hasattr(updater, "follow_moves") or not student_layout():
         return
     moved = updater.follow_moves(ROOT)
+    tidied = list(getattr(updater, "TIDIED", []))
     if not moved:
+        if tidied:
+            print("  " + st.yellow(st.bold("The sets were reorganised: the new sets are Mock_A01 ... Mock_A12")))
+            for folder, what in tidied:
+                print("    " + f"{folder:<14} {'removed (only empty starters)' if what == 'removed' else '-> ' + what}")
+            print("  " + st.dim("(nothing you wrote was moved or deleted)"))
         return
     MOVED.extend(moved)
     print("  " + st.yellow(st.bold("The sets were reorganised: your files moved with their problems")))

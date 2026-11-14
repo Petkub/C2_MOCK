@@ -21,6 +21,8 @@ and it updates itself from this GitHub repo so bugs can be fixed without re-send
    v7.0 adds one more step (plan V7_TWO_TRACKS section 3): an old set folder that is no longer a set is removed
    only when nothing of the student's is left in it (its Makefile, judge.bat, PDF and empty starters); otherwise
    it keeps everything and gets `README_MOVED.txt` (`tidy_old_folders`).
+   Releases without a moves list (3.2 and older) get the same tidy once for every old-style `Mock_<number>` folder
+   (teacher decision 2026-11-14): nothing is moved, only starter-only folders are removed.
 4. **Never delete files the updater does not own.** No "wipe and reinstall" step, ever.
 5. **Fail safe.** If the network is down, slow (>2 s), or a hash does not match, keep the current
    version and continue silently. A broken update must never stop a student from judging.
