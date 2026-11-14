@@ -16,7 +16,7 @@
   "scoring": "all"
  },
  "3": {
-  "title": "spreadsheet ที่อ้างถึงกันเป็นวง",
+  "title": "สเปรดชีตที่อ้างถึงกันเป็นวง",
   "en": "Spreadsheet With Loops",
   "tier": 0,
   "dir": "Mock_A11/5",
@@ -64,7 +64,7 @@
   "scoring": "all"
  },
  "13": {
-  "title": "string แบบย่อ",
+  "title": "สตริงแบบย่อ",
   "en": "Compressed Strings",
   "tier": 0,
   "dir": "Mock_A05/1",
@@ -216,7 +216,7 @@
   "scoring": "all"
  },
  "57": {
-  "title": "หุ่นยนต์ส่งของกับ battery",
+  "title": "หุ่นยนต์ส่งของกับแบตเตอรี่",
   "en": "Delivery Robot With a Battery",
   "tier": 0,
   "dir": "Mock_A01/5",
@@ -224,7 +224,7 @@
   "scoring": "all"
  },
  "62": {
-  "title": "จัดแถว robot บนราง",
+  "title": "จัดแถวหุ่นยนต์บนราง",
   "en": "Robots Into Order",
   "tier": 0,
   "dir": "Mock_A09/4",
@@ -384,7 +384,7 @@
   "scoring": "all"
  },
  "94": {
-  "title": "โรงงาน robot สองรุ่น",
+  "title": "โรงงานหุ่นยนต์สองรุ่น",
   "en": "Two Robot Models",
   "tier": 0,
   "dir": "Mock_A04/6",

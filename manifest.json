@@ -3367,7 +3367,7 @@
 "problems/batch/Mock_A12/6/13.out": "55e2c4699bdd2c54de36384552565d7541c78cabd80689e6204a2056ce7a10d3",
 "problems/batch/Mock_A12/6/gen.py": "0b7e622096b1c506f91a7032d9f5c068245ba7959879ebb365c2b7cf81a73f06",
 "problems/batch/Mock_A12/6/manifest.json": "6366f1e7caeb250b5def0de16b1983ab3473d3a5c4157ca988c0beb37ea5afa0",
-"problems/batch/problems.json": "8d0685b05bf802612f7c51677100aaeb3d8f33dd3df4f6ee33b46ff37aa682ad",
+"problems/batch/problems.json": "513200f9497d9e9a6ba08d167a6349b5806ce0218ae1da7be5567ae554c3fd59",
 "problems/batch/sets.json": "2fe5f62bfebd4b87ff9d77298e1c2eb881e1f80a98ba74bb959df7e9307dec5b",
 "updater.py": "0b9d5cc7f55d54fd04c36641ce2eac16ba5633e6ee07ec5b7640867884993f0d"
 },
@@ -7753,7 +7753,7 @@
 "problems/batch/Mock_A12/6/13.out": "55e2c4699bdd2c54de36384552565d7541c78cabd80689e6204a2056ce7a10d3",
 "problems/batch/Mock_A12/6/gen.py": "0b7e622096b1c506f91a7032d9f5c068245ba7959879ebb365c2b7cf81a73f06",
 "problems/batch/Mock_A12/6/manifest.json": "6366f1e7caeb250b5def0de16b1983ab3473d3a5c4157ca988c0beb37ea5afa0",
-"problems/batch/problems.json": "8d0685b05bf802612f7c51677100aaeb3d8f33dd3df4f6ee33b46ff37aa682ad",
+"problems/batch/problems.json": "513200f9497d9e9a6ba08d167a6349b5806ce0218ae1da7be5567ae554c3fd59",
 "problems/batch/sets.json": "2fe5f62bfebd4b87ff9d77298e1c2eb881e1f80a98ba74bb959df7e9307dec5b",
 "updater.py": "0b9d5cc7f55d54fd04c36641ce2eac16ba5633e6ee07ec5b7640867884993f0d"
 },
@@ -7771,7 +7771,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A01/Mock_A01.pdf": [
-"80a40a694cfc2342a1823331141dc2174fb57e45da670cb9ff3d0d4edc1823f7",
+"7dc6d7bf3b8a0ce7d91852f137685e19d8269e0fb0c3f442d1d2c6753cb3a044",
 "student/Mock_A01/Mock_A01.pdf"
 ],
 "Mock_A01/judge.bat": [
@@ -7783,7 +7783,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A02/Mock_A02.pdf": [
-"9c43f77ac6380f8d9568ec97071dd2051a32dd2df14a16a3741540cc26e2c376",
+"1aed400d9a026ccb74a63db11dd57709a5f4d0f42a6433090c387d1112e75940",
 "student/Mock_A02/Mock_A02.pdf"
 ],
 "Mock_A02/judge.bat": [
@@ -7795,7 +7795,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A03/Mock_A03.pdf": [
-"8280fc08c64622d0d46cbffc1f069d6f93514b41e1ebc5d2f23b330f9a140c71",
+"ecd3fca6ac2796a486f6b7cb660789f683efcade69621d7af5e4eb2cbab9a85d",
 "student/Mock_A03/Mock_A03.pdf"
 ],
 "Mock_A03/judge.bat": [
@@ -7807,7 +7807,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A04/Mock_A04.pdf": [
-"26dd446a6db4682c089aa16391fc8855a36a8069488ffa192cab1661ff17b1d0",
+"f2d6ec68c65b9c9552438589c6f0b603d63a90c657ad9d0a77129b08e107ffca",
 "student/Mock_A04/Mock_A04.pdf"
 ],
 "Mock_A04/judge.bat": [
@@ -7819,7 +7819,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A05/Mock_A05.pdf": [
-"ff636d60bb5c8f941560742e46af2091d93c733c1272887b5b5427cd88c58db1",
+"3bfff437ca24f8d47b07879c1c78e5c62252cf72892b86c17ef812d67cc5e735",
 "student/Mock_A05/Mock_A05.pdf"
 ],
 "Mock_A05/judge.bat": [
@@ -7831,7 +7831,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A06/Mock_A06.pdf": [
-"062d06e765a0df178a9cf1245028b93e8e7e49d729808a35b26047dac2da3bf2",
+"9a1b75b519261920c1956f0ef42de24f0d75557b5ff853a31b6a7fd8e3f38fef",
 "student/Mock_A06/Mock_A06.pdf"
 ],
 "Mock_A06/judge.bat": [
@@ -7843,7 +7843,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A07/Mock_A07.pdf": [
-"41eb8fcd2298da3fe9097a83554fdc19581836e2f159595cc21d8d4950ec9f50",
+"9a4c2d972edef33eab181cfc94802b3d989ab95dd1f40423ddf3a89f014864bb",
 "student/Mock_A07/Mock_A07.pdf"
 ],
 "Mock_A07/judge.bat": [
@@ -7855,7 +7855,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A08/Mock_A08.pdf": [
-"583e9bf2ee529875eabf18f7a58a2326e94efd716ab8d6cc5ed70e8d40bd2996",
+"bb550c0553d21da74dc155270b5d375fa6483dd63c3440d664b29df0e883293a",
 "student/Mock_A08/Mock_A08.pdf"
 ],
 "Mock_A08/judge.bat": [
@@ -7867,7 +7867,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A09/Mock_A09.pdf": [
-"b218b49fe9970a56c9cc392b2577d2db4faf324dd373c9215d55c86806f10e59",
+"d5451a0220013d1e519a921f9a2d36ab3d83b980e4bcf608ae533641281d591f",
 "student/Mock_A09/Mock_A09.pdf"
 ],
 "Mock_A09/judge.bat": [
@@ -7879,7 +7879,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A10/Mock_A10.pdf": [
-"d1a717c3f4fe8f1dd64155e37ba02485cdad04e2fcc5d56e5b5dd92adc049bfe",
+"d4418e1f2195b4b478bc807bf4a83df3d5e5354bf0f2a308ce6ae1699292eb10",
 "student/Mock_A10/Mock_A10.pdf"
 ],
 "Mock_A10/judge.bat": [
@@ -7891,7 +7891,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A11/Mock_A11.pdf": [
-"44cc3dc7630a83c2ad093fdade2732fae1601df7ad9a589ea5d5494f11cb1a33",
+"9db8a2fc7e1f8a304f918a63d9f92c7c1665a4cc9a0d4bb02fb602b3d9409544",
 "student/Mock_A11/Mock_A11.pdf"
 ],
 "Mock_A11/judge.bat": [
@@ -7903,7 +7903,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A12/Mock_A12.pdf": [
-"606bcd3fb3bd2e5e89e541416071e97424eef581d3ab84f06274b2beba41c746",
+"bf45754604f554cdd65782e2adc8b374e383a43fb4fd3382acf45b50250cd6e9",
 "student/Mock_A12/Mock_A12.pdf"
 ],
 "Mock_A12/judge.bat": [
