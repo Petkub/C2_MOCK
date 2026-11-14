@@ -1,10 +1,14 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-# A monster's "first trap" is the first trap at or to the right of it; d = its distance to that trap.
+# Job i needs skill p_i and adds g_i when done; at most K jobs may be passed on; print the smallest start.
+# Hidden tests: tiny edge cases, small random (brute tries every set of passed jobs), medium (brute dp),
+# then max tests: large gains (the running skill passes 2^31), small gains with large answers,
+# hard jobs late in the day (every check below the answer runs to the end), K = N (answer 0),
+# answer equal to max p, all gains 0, increasing / decreasing needs.
 import os, random
 
-random.seed(82025)
+random.seed(7202)
 rnd = random.random
-MAXN, MAXM, MAXV = 100000, 100000, 10 ** 9
+MAXN, MAXV = 100000, 10 ** 9
 tests = []
 
 
@@ -12,138 +16,108 @@ def ri(a, b):
     return a + int(rnd() * (b - a + 1))
 
 
-def add(mons, xs):
-    n, m = len(mons), len(xs)
-    assert 1 <= n <= MAXN and 1 <= m <= MAXM
-    assert all(1 <= a <= MAXV and 1 <= h <= MAXV for a, h in mons)
-    assert all(1 <= x <= MAXV for x in xs) and len(set(xs)) == m
-    tests.append(f"{n} {m}\n" + "".join(f"{a} {h}\n" for a, h in mons) + " ".join(map(str, xs)) + "\n")
+def add(k, p, g):
+    n = len(p)
+    assert 1 <= n <= MAXN and len(g) == n and 0 <= k <= n
+    assert all(0 <= x <= MAXV for x in p) and all(0 <= x <= MAXV for x in g)
+    tests.append(f"{n} {k}\n" + " ".join(map(str, p)) + "\n" + " ".join(map(str, g)) + "\n")
 
 
-def shuffle(v):
-    for i in range(len(v) - 1, 0, -1):
-        j = int(rnd() * (i + 1))
-        v[i], v[j] = v[j], v[i]
-    return v
+def rand_case(n, k, plo, phi, glo, ghi):
+    return k, [ri(plo, phi) for _ in range(n)], [ri(glo, ghi) for _ in range(n)]
 
 
-def traps(m, lo, hi):
-    """m distinct positions in [lo, hi], in random order"""
-    assert hi - lo + 1 >= m
-    seen, out = set(), []
-    while len(out) < m:
-        x = ri(lo, hi)
-        if x not in seen:
-            seen.add(x)
-            out.append(x)
-    return out
+def late_hard(n, k, m, glo, ghi, plo):
+    """easy jobs with small gains, then m hard jobs (p near 10^9) at the end; K < m"""
+    p = [ri(0, 100) for _ in range(n - m)] + [ri(plo, MAXV) for _ in range(m)]
+    g = [ri(glo, ghi) for _ in range(n)]
+    return k, p, g
 
 
-def first_trap(xs):
-    s = sorted(xs)
-
-    def f(a):
-        lo, hi = 0, len(s)
-        while lo < hi:
-            mid = (lo + hi) // 2
-            if s[mid] < a:
-                lo = mid + 1
-            else:
-                hi = mid
-        return s[lo] if lo < len(s) else None
-    return f
+def ramp(n, k, step, jitter, gain):
+    """needs grow along the day by about step per job, each job adds about gain"""
+    p = [min(MAXV, max(0, i * step + ri(-jitter, jitter))) for i in range(n)]
+    g = [ri(max(0, gain - jitter), gain + jitter) for _ in range(n)]
+    return k, p, g
 
 
-def rand_mons(n, lo, hi, hlo, hhi):
-    return [(ri(lo, hi), ri(hlo, hhi)) for _ in range(n)]
+def easy_start(p, g, m):
+    """the first m jobs are easy and give nothing"""
+    for i in range(m):
+        p[i], g[i] = ri(0, 1000), 0
+    return p, g
 
 
-def tie_mons(n, xs, lo, hi, p_tie):
-    """health = d for a share p_tie of the monsters, health < d (or a fireball-only monster) for the others,
-    so that many traps have no monster closer than its health but one with d == h"""
-    f = first_trap(xs)
-    out = []
-    for _ in range(n):
-        a = ri(lo, hi)
-        t = f(a)
-        if t is None or t == a:
-            out.append((a, ri(1, 1000)))
-        elif rnd() < p_tie:
-            out.append((a, t - a))
-        else:
-            out.append((a, ri(1, t - a)))
-    return out
-
-
-def on_traps(n, xs, share, hlo, hhi, lo, hi):
-    """a share of the monsters stand exactly on a trap"""
-    out = []
-    for _ in range(n):
-        a = xs[int(rnd() * len(xs))] if rnd() < share else ri(lo, hi)
-        out.append((a, ri(hlo, hhi)))
-    return out
-
-
-N, M = MAXN, MAXM
 # samples
-add([(3, 2), (5, 6), (6, 3), (9, 4)], [7, 10])
-add([(1, 4), (6, 7), (12, 5)], [4, 9])
-add([(15, 9), (28, 4), (6, 9), (16, 3)], [20, 27, 17])
-add([(5, 2), (12, 3), (29, 8), (11, 9)], [14, 19, 21])
-add([(11, 9), (17, 7), (14, 1), (11, 1)], [6, 21, 19])
-# hidden: small and medium (brute checks these)
-add([(5, 7)], [5])                                                     # on the trap
-add([(9, 4)], [3])                                                     # right of the only trap
-xs = traps(40, 1, 400)
-add(tie_mons(300, xs, 1, 420, 0.3), xs)                                # d == h
-xs = traps(60, 1, 600)
-add(on_traps(300, xs, 0.5, 1, 30, 1, 650), xs)                         # monsters on traps
-xs = traps(50, 1, 5000)
-add(rand_mons(400, 1, 5200, 1, 150), xs)                               # many traps with nobody worth it
-xs = traps(250, 1, 10 ** 9)
-add(rand_mons(2000, 1, MAXV, 1, MAXV), xs)
-xs = traps(300, 1, 10 ** 6)
-add(rand_mons(2000, 1, 10 ** 6, 1, 6000), xs)
-xs = traps(200, 1, 10 ** 5)
-add(rand_mons(2000, 10 ** 5 + 1, MAXV, MAXV - 1000, MAXV), xs)         # all right of every trap, big sum
-xs = traps(300, 10 ** 8, 2 * 10 ** 8)
-add(rand_mons(1500, 1, 10 ** 8, MAXV // 2, MAXV), xs)                  # all left of every trap, big distances
-# hidden: max size (some with most monsters right of most traps, some with most monsters left of them)
-xs = traps(M, 1, MAXV)
-add(rand_mons(N, 1, MAXV, 1, MAXV), xs)                                # uniform
-xs = traps(M, 1, MAXV)
-add(rand_mons(N, 1, MAXV, 1, 20000), xs)                               # health ~ the gaps: mixed
-xs = traps(M, 1, MAXV)
-add(rand_mons(N, 1, MAXV, 1, 3000), xs)                                # mostly arrows
-xs = traps(M, 1, MAXV)
-add(tie_mons(N, xs, 1, MAXV, 0.25), xs)                                # d == h
-xs = traps(M, 1, 3 * 10 ** 6)
-add(tie_mons(N, xs, 2 * 10 ** 6, 3 * 10 ** 6, 0.5), xs)                # d == h, dense, right third
-xs = traps(M, 1, MAXV)
-add(on_traps(N, xs, 0.5, 1, 10 ** 6, 1, MAXV), xs)                     # on traps
-xs = traps(M, 1, 10 ** 6)
-add(on_traps(N, xs, 0.7, 1, 50, 1, 10 ** 6), xs)                       # on traps, dense, small health
-xs = traps(M, 1, 10 ** 6)
-add(rand_mons(N, 10 ** 6 + 1, MAXV, MAXV - 10 ** 6, MAXV), xs)         # all right of every trap
-xs = traps(M, 9 * 10 ** 8, MAXV)
-add(rand_mons(N, 1, 9 * 10 ** 8, MAXV // 2, MAXV), xs)                 # all left of every trap
-xs = traps(M, 1, 2 * 10 ** 8)
-add(rand_mons(N, 1, MAXV, 1, 10 ** 6), xs)                             # traps on the left
-xs = traps(M, 1, 4 * 10 ** 5)
-add(rand_mons(N, 1, 2 * 10 ** 6, 1, 5), xs)                            # dense, tiny health, traps on the left
-xs = traps(M, 1, 2 * 10 ** 6)
-add(tie_mons(N, xs, 1, 4 * 10 ** 5, 0.3), xs)                          # d == h, monsters left of most traps
-xs = traps(M, 1, MAXV)
-pos = [ri(1, MAXV // 10) for _ in range(450)] + [ri(1, MAXV) for _ in range(50)]
-add([(pos[int(rnd() * 500)], ri(1, 10 ** 6)) for _ in range(N)], xs)      # few positions, many monsters each
-xs = traps(M, 1, MAXV)
-add(shuffle(rand_mons(N * 9 // 10, 1, 10 ** 8, 1, 10 ** 6) + rand_mons(N // 10, 1, MAXV, 1, MAXV)), xs)
-xs = traps(M, 8 * 10 ** 8, MAXV)
-add(shuffle(rand_mons(N // 2, 1, 8 * 10 ** 8, 1, 200) + rand_mons(N // 2, 8 * 10 ** 8, 10 ** 9, 1, 200000)), xs)
-xs = traps(M, 1, MAXV)
-add(on_traps(N, xs, 0.3, 1, 30000, 9 * 10 ** 8, MAXV), xs)            # on traps, the others far right
+add(1, [3, 6, 2, 9, 7], [2, 1, 4, 0, 3])
+add(0, [0, 4, 3, 10], [3, 2, 5, 1])
+add(2, [8, 1, 5, 12, 6, 20], [3, 2, 2, 4, 6, 1])
+add(3, [10, 2, 30, 4, 25, 7, 40], [5, 6, 1, 8, 2, 9, 3])
+add(1, [5, 9, 14, 3, 20, 11, 26, 30], [4, 5, 2, 6, 3, 7, 4, 1])
 
+# hidden: tiny and small (brute tries every set of passed jobs)
+add(0, [7], [0])
+add(1, [6], [2])
+add(3, [0, 0, 5, 0, 9, 2, 0, 14, 3, 20, 1, 8], [4, 0, 3, 1, 0, 6, 2, 0, 5, 1, 0, 2])
+add(2, [0, 50, 60, 70, 80, 200, 90, 100, 300, 110, 120, 130, 140, 150, 400], [40] * 15)
+add(0, [ri(0, 1000) for _ in range(18)], [ri(0, 60) for _ in range(18)])
+add(5, [ri(0, 10 ** 6) for _ in range(18)], [ri(0, 10 ** 5) for _ in range(18)])
+# medium (brute dp)
+add(*rand_case(2000, 40, 0, 10 ** 4, 0, 20))
+add(*ramp(1500, 300, 10, 3, 7))
+add(*late_hard(2500, 20, 30, 0, 3, 9 * 10 ** 8))
+
+# max tests
+N = MAXN
+# skill passes 2^31 within a few jobs once the first 1000 easy jobs are done
+k, p, g = rand_case(N, 0, 0, MAXV, 0, MAXV)
+for i in range(1000):
+    p[i], g[i] = ri(0, 1000), ri(0, 1)
+add(k, p, g)
+k, p, g = rand_case(N, 7, 0, MAXV, 0, MAXV)
+add(k, *easy_start(p, g, 3000))
+k, p, g = rand_case(N, 100, 0, MAXV, 10 ** 8, MAXV)
+add(k, *easy_start(p, g, 50000))
+add(*rand_case(N, 12, 0, MAXV, 0, 20))                      # small gains: the answer is large
+add(*rand_case(N, 5000, 0, MAXV, 0, 3000))
+add(*late_hard(N, 0, 3, 0, 2, 9 * 10 ** 8))
+add(*late_hard(N, 9, 25, 0, 5, 5 * 10 ** 8))
+add(*late_hard(N, 999, 1500, 0, 3, 8 * 10 ** 8))
+add(*ramp(N, 100, 5000, 2000, 4990))                        # needs grow a little faster than the gains
+add(*ramp(N, 10000, 5000, 4000, 4000))
+add(*ramp(N, 3, 5000, 100, 4950))
+add(N, [ri(0, MAXV) for _ in range(N)], [ri(0, MAXV) for _ in range(N)])        # K = N: answer 0
+add(N - 1, [ri(1, MAXV) for _ in range(N)], [ri(0, 10) for _ in range(N)])      # K = N - 1
+# answer = max p: the hardest job comes after many jobs with no gain
+add(0, [ri(0, 1000) for _ in range(N // 2)] + [MAXV] + [ri(0, MAXV) for _ in range(N - N // 2 - 1)],
+    [0] * (N // 2) + [ri(0, MAXV) for _ in range(N - N // 2)])
+add(777, [ri(0, MAXV) for _ in range(N)], [0] * N)          # no gains at all
+# a few huge gains early, then the needs rise to 10^9 (an int skill wraps below zero)
+k, p, g = rand_case(N, 50, 0, 10 ** 6, 0, 1000)
+for i in range(0, 4):
+    p[i], g[i] = ri(0, 10), MAXV
+for i in range(N // 2, N):
+    p[i] = ri(10 ** 9 - 10 ** 6, MAXV)
+add(k, p, g)
+# first job free with a big gain: answer 0 although K < N
+k, p, g = rand_case(N, 30, 0, MAXV, 0, 5000)
+p[0], g[0] = 0, MAXV
+add(k, p, g)
+# needs sorted increasing / decreasing
+k, p, g = rand_case(N, 200, 0, MAXV, 0, 4000)
+add(k, sorted(p), g)
+k, p, g = rand_case(N, 200, 0, MAXV, 0, 10 ** 5)
+add(k, sorted(p, reverse=True), g)
+# mostly easy jobs, but every 1000th job is hard; gains medium
+k = 10
+p = [ri(9 * 10 ** 8, MAXV) if i % 1000 == 999 else ri(0, 10 ** 5) for i in range(N)]
+g = [ri(0, 10 ** 5) for _ in range(N)]
+add(k, p, g)
+
+assert 25 <= len(tests) <= 35
+for t in tests:
+    assert t.endswith("\n") and "  " not in t and " \n" not in t
 os.makedirs("tests", exist_ok=True)
-for k, t in enumerate(tests, 1):
-    with open(f"tests/{k:02d}.in", "w") as f:
+for i, t in enumerate(tests, 1):
+    with open(f"tests/{i:02d}.in", "w") as f:
         f.write(t)

@@ -1,7 +1,9 @@
 POSN Practice Judge - changes
 
 7.0  แบ่งเป็น 2 ชุด: Track A ระดับข้อสอบจริง 12 ชุด (Mock_A01 ... Mock_A12) และ Track B ยาก/เกินหลักสูตร (จะตามมา);
-     โจทย์ใหม่ใน Track A 27 ข้อ (ดัดแปลงจาก NOI Singapore 13 ข้อ, ข้อใหม่ 11 ข้อ, จากคลังโจทย์ 3 ข้อ).
+     โจทย์ใหม่ใน Track A 33 ข้อ (ดัดแปลงจาก NOI Singapore 13 ข้อ, ข้อใหม่ 16 ข้อ, จากคลังโจทย์ 4 ข้อ);
+     ตัดโจทย์ implementation ที่มีกฎรูปแบบข้อมูลเยอะออก 5 ข้อ; ตัวอย่างในโจทย์เหลือข้อละ 4 ชุด (ชุดที่ 5 เดิมเป็นชุดทดสอบลับ);
+     รูปแบบเอกสารโจทย์ใหม่ (แบบ NOI: เว้นระยะชัด ตารางตัวอย่างเดียว); หน้าปกและ judge ไม่แสดงระดับความยากของโจทย์.
      Sets are now named A1 ... A12 (folders Mock_A01 ...; judge.py --set A3, problem A3-5); the progress view
      counts Track A apart. Your written .cpp files move with their problems to the new folders (the judge lists
      every move); a file of a problem not in Track A goes to that old folder's old/ subfolder; an old folder with

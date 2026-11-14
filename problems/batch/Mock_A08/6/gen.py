@@ -1,171 +1,119 @@
-# Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-import os, random
-
-random.seed(1304)
-MAXN, MAXQ = 100_000, 100_000
-tests = []
-rnd = random.random
+import random, os
+random.seed(2604)
+_rnd = random.random
 
 
 def ri(a, b):
-    return a + int(rnd() * (b - a + 1))
+    """random integer in [a, b] from random() only (much faster than randint, same on every Python 3)"""
+    return a + int(_rnd() * (b - a + 1))
 
 
-def add(p, qs):
-    """p = [p_2, ..., p_N]"""
-    n = len(p) + 1
-    assert 2 <= n <= MAXN and 1 <= len(qs) <= MAXQ
-    for i, x in enumerate(p, 2):
-        assert 1 <= x < i
-    for u, v in qs:
-        assert 1 <= u <= n and 1 <= v <= n
-    lines = [str(n), " ".join(map(str, p)), str(len(qs))] + [f"{u} {v}" for u, v in qs]
-    tests.append("\n".join(lines) + "\n")
+def two(lo, hi):
+    """two different random integers in [lo, hi]"""
+    u = ri(lo, hi)
+    v = ri(lo, hi - 1)
+    return u, (v + 1 if v >= u else v)
 
 
-# trees (p_2 .. p_N)
-def path(n):
-    return [i - 1 for i in range(2, n + 1)]
-
-
-def near(n, k):
-    """p_i among the k previous towns: deep, a little branched"""
-    return [max(1, i - ri(1, k)) for i in range(2, n + 1)]
-
-
-def uniform(n):
-    return [ri(1, i - 1) for i in range(2, n + 1)]
-
-
-def chains(n, k):
-    """k long chains hanging from town 1 (town i continues chain i mod k)"""
-    return [1 if i <= k + 1 else i - k for i in range(2, n + 1)]
-
-
-def caterpillar(n, spine):
-    return [i - 1 if i <= spine else ri(1, spine) for i in range(2, n + 1)]
-
-
-def broom(n, handle):
-    return [i - 1 if i <= handle else handle for i in range(2, n + 1)]
-
-
-def heap(n):
-    return [i // 2 for i in range(2, n + 1)]
-
-
-def relabel(p):
-    """random numbering that still gives every town a parent with a smaller number (a random topological order)"""
-    n = len(p) + 1
-    children = [[] for _ in range(n + 1)]
-    for i, x in enumerate(p, 2):
-        children[x].append(i)
-    new = [0] * (n + 1)
-    avail = [1]
-    k = 0
-    while avail:
-        j = ri(0, len(avail) - 1) if rnd() < 0.5 else len(avail) - 1
-        avail[j], avail[-1] = avail[-1], avail[j]
-        v = avail.pop()
-        k += 1
-        new[v] = k
-        avail.extend(children[v])
-    q = [0] * (n + 1)
-    for i, x in enumerate(p, 2):
-        q[new[i]] = new[x]
-    return q[2:]
-
-
-# queries
-def rand_q(n, q):
-    return [(ri(1, n), ri(1, n)) for _ in range(q)]
-
-
-def far_q(n, q, w):
-    """one end among the first w towns, the other among the last w (long routes in deep trees)"""
-    out = []
-    for _ in range(q):
-        a, b = ri(1, w), ri(n - w + 1, n)
-        out.append((a, b) if rnd() < 0.5 else (b, a))
-    return out
-
-
-def deep_q(n, q, w):
-    """both ends among the last w towns"""
-    return [(ri(n - w + 1, n), ri(n - w + 1, n)) for _ in range(q)]
-
-
-def mix(*parts):
-    out = [x for part in parts for x in part]
-    random.shuffle(out)
-    return out
-
-
-def spare(p, qs, k=3):
-    """pick k leaves and never end a route there (their roads stay unrepaired to the end)"""
-    n = len(p) + 1
-    has_child = [False] * (n + 1)
-    for x in p:
-        has_child[x] = True
-    leaves = [v for v in range(2, n + 1) if not has_child[v]]
-    keep = set(random.sample(leaves, min(k, len(leaves))))
-    par = lambda v: p[v - 2] if v in keep else v
-    return p, [(par(u), par(v)) for u, v in qs]
-
-
-# samples
-add([1, 1, 2, 2, 3, 6], [(4, 5), (6, 4), (1, 5)])
-add([1, 1, 1, 1], [(2, 3), (4, 2), (1, 4)])
-add([1], [(1, 2)])
-add([1, 2, 1, 3, 3, 4, 6], [(5, 8), (7, 2), (6, 1), (8, 6)])
-add([1, 1, 2, 3, 3, 2, 7, 5], [(9, 4), (6, 6), (8, 1), (2, 3), (9, 4)])
-
-# hidden: small (brute checks these)
-add([1], [(2, 2), (1, 1)])
-add(path(30), [(30, 1), (1, 30), (5, 9)])
-add(path(40), mix(rand_q(40, 25), [(i, i) for i in range(1, 6)]))
-add(uniform(60), rand_q(60, 40))
-add(near(80, 3), rand_q(80, 30))
-add(relabel(chains(70, 3)), rand_q(70, 50))
-add(relabel(caterpillar(100, 40)), rand_q(100, 20))
-add(relabel(near(300, 4)), rand_q(300, 300))
-add(broom(500, 250), mix(far_q(500, 100, 20), rand_q(500, 50)))
-add(relabel(uniform(2000)), rand_q(2000, 2000))
-
-# hidden: big
-N, Q = MAXN, MAXQ
-BIG = [
-    (13041, lambda: (path(N), far_q(N, Q, 1000))),
-    (13042, lambda: (path(N), [(1, N)] * (Q // 2) + [(N, 1)] * (Q // 2))),
-    (13043, lambda: (path(N), mix(rand_q(N, Q // 2), deep_q(N, Q // 2, 5000)))),
-    (13044, lambda: (path(N), [(ri(1, 100), N - ri(0, 99)) if i % 1000 == 0 else (ri(N // 2, N), ri(N // 2, N))
-                                for i in range(Q)])),
-    (13045, lambda: (near(N, 3), far_q(N, Q, 3000))),
-    (13046, lambda: (near(N, 10), mix(rand_q(N, Q // 2), deep_q(N, Q // 2, 20000)))),
-    (13047, lambda: (relabel(near(N, 2)), rand_q(N, Q))),
-    (13048, lambda: (chains(N, 2), far_q(N, Q, 2000))),
-    (13049, lambda: (chains(N, 5), deep_q(N, Q, 1000))),
-    (13050, lambda: (relabel(chains(N, 3)), rand_q(N, Q))),
-    (13051, lambda: (caterpillar(N, N // 2), deep_q(N, Q, N // 2))),
-    (13052, lambda: (relabel(caterpillar(N, 75_000)), rand_q(N, Q))),
-    (13053, lambda: (broom(N, 75_000), mix(far_q(N, Q // 2, 1000), deep_q(N, Q // 2, 25_000)))),
-    (13054, lambda: (broom(N, 50_000), mix(far_q(N, Q // 2, 1000), [(ri(1, 1000), ri(1, 1000)) for _ in range(Q // 2)]))),
-    (13055, lambda: (uniform(N), rand_q(N, Q))),
-    (13056, lambda: (heap(N), rand_q(N, Q))),
-    (13057, lambda: (path(N), [(i, i) for i in range(1, Q)] + [(N, N - 1)])),       # a single road repaired
-    (13058, lambda: (near(N, 2), [(N - ri(0, 100), N - ri(0, 100)) for _ in range(Q)])),   # few roads repaired
-    (13059, lambda: (path(N), [(ri(1, 10), N - ri(0, 9)) for _ in range(Q)])),
-]
-for seed, make in BIG:
-    random.seed(seed)
-    p, qs = make()
-    if seed not in (13057, 13058):
-        p, qs = spare(p, qs)
-    add(p, qs)
-
-for t in tests:
-    assert t.endswith("\n") and "  " not in t and " \n" not in t
 os.makedirs("tests", exist_ok=True)
-for i, t in enumerate(tests, 1):
-    with open(f"tests/{i:02d}.in", "w") as f:
-        f.write(t)
+cases = []
+# ---- samples ----
+cases.append((4, 20, [(1, 2, 0, 5, 3), (2, 4, 2, 6, 4), (1, 3, 1, 4, 2), (3, 4, 0, 10, 7), (3, 2, 0, 1, 1)]))
+cases.append((3, 10, [(1, 2, 0, 3, 4), (2, 3, 1, 5, 4)]))
+cases.append((2, 2, [(1, 2, 0, 7, 3)]))
+cases.append((4, 30, [(1, 2, 5, 10, 2), (2, 3, 0, 4, 3), (3, 1, 0, 5, 1), (2, 4, 9, 20, 1), (3, 4, 0, 100, 1)]))
+cases.append((5, 25, [(1, 2, 1, 4, 3), (2, 5, 2, 6, 5), (1, 3, 0, 5, 2), (3, 4, 4, 7, 6), (4, 5, 1, 3, 2), (2, 4, 0, 9, 1)]))
+# ---- small random ----
+def rnd_edges(n, m, pr, wr):
+    E = []
+    for _ in range(m):
+        u, v = two(1, n)
+        p = ri(*pr); o = ri(0, p - 1); w = ri(*wr)
+        E.append((u, v, o, p, w))
+    return E
+def with_path(n, E, hops, pr, wr):
+    mids = random.sample(range(2, n), min(hops, n - 2))
+    seq = [1] + mids + [n]
+    for a, b in zip(seq, seq[1:]):
+        p = ri(*pr); E.append((a, b, ri(0, p - 1), p, ri(*wr)))
+    random.shuffle(E)
+    return E
+for _ in range(6):
+    n = ri(2, 6)
+    cases.append((n, ri(5, 40), rnd_edges(n, ri(1, 10), (1, 10), (1, 8))))
+# ---- large ----
+N, M, B = 100000, 100000, 10**9
+cases.append((N, B, with_path(N, rnd_edges(N, M - 30, (1, 10**7), (1, 10**4)), 29, (1, 10**7), (1, 10**4))))
+cases.append((N, B, with_path(N, rnd_edges(N, M - 30, (1, 50), (1, 10**4)), 29, (1, 50), (1, 10**4))))
+cases.append((N, 10**6, with_path(N, rnd_edges(N, M - 30, (1, 1000), (1, 100)), 29, (1, 1000), (1, 100))))
+cases.append((N, B, with_path(N, rnd_edges(N, 40000, (10**8, 10**9), (10**7, 10**8)), 2, (10**8, 3 * 10**8), (10**7, 10**8))))   # big numbers
+# long chain 1 -> 2 -> ... -> N with noise edges
+E = [(i, i + 1, ri(0, 9), 10, ri(1, 1000)) for i in range(1, N)]
+E += rnd_edges(N, M - len(E), (1, 10**6), (10**5, 10**6))
+cases.append((N, B, E))
+# chain where every hop has a single departure time (p huge): exact boundary checks
+E = [(1, 2, 7, 13, 100)]
+t = 7 + 13 * 380 + 100          # arrive at station 2 at this time if you catch the 381st train
+for i in range(2, 1000):
+    t += ri(0, 5)   # next (only) departure
+    w = ri(1, 1000)
+    E.append((i, i + 1, t, B, w)); t += w
+cases.append((1000, t, E))
+cases.append((1000, t - 1, E))
+# layered DAG: many choices, depart time tradeoffs
+L, W = 100, 500
+def node(l, j): return l * W + j + 1
+E = []
+for l in range(L - 1):
+    for j in range(W):
+        for _ in range(2):
+            p = ri(1, 100); E.append((node(l, j), node(l + 1, ri(0, W - 1)), ri(0, p - 1), p, ri(1, 50)))
+n = L * W
+E += [(node(L - 1, j), n, 0, 1, 1) for j in range(W - 1)]
+E += [(1, node(0, j), ri(0, 9), 10, 1) for j in range(1, W)]
+cases.append((n, 10**6, E[:100000]))
+# N unreachable (all trains point away from N)
+E = rnd_edges(20000 - 1, 50000 - 5, (1, 100), (1, 100)) + [(20000, ri(1, 19999), 0, 1, 1) for _ in range(5)]
+cases.append((20000, B, E))
+# T = 0: nothing can arrive in time
+cases.append((N, 0, rnd_edges(N, 30000, (1, 10), (1, 10))))
+# star through hub with wide period choices
+E = []
+for i in range(2, N):
+    p = ri(1, 10**6); E.append((1, i, ri(0, p - 1), p, ri(1, 10**6)))
+    p = ri(1, 10**6); E.append((i, N, ri(0, p - 1), p, ri(1, 10**6)))
+cases.append((N, B, E[:M]))
+# 32-bit overflow trap: departure + travel time exceeds 2^31
+E = rnd_edges(N, 50000, (5 * 10**8, 10**9), (5 * 10**8, 10**9))
+E += [(1, N, 5 * 10**8, 10**9, 10**9), (1, 2, 0, 1, 1), (2, 3, 0, 1, 1), (3, N, 0, 1, 1)]
+random.shuffle(E)
+cases.append((N, 10**9, E))
+# more 32-bit traps for the forward approach: late departures with long trips everywhere
+for hops in (3, 12):
+    n2 = N
+    E = rnd_edges(n2, 60000, (6 * 10**8, 10**9), (6 * 10**8, 10**9))     # 60 000 lines keep the file near 2.7 MB
+    E += [(1, n2, 7 * 10**8, 10**9, 9 * 10**8)]
+    E = with_path(n2, E, hops, (1, 1000), (1, 10**4))
+    cases.append((n2, 10**9, E))
+# medium random graphs
+for _ in range(3):
+    cases.append((N, ri(10**5, 10**9), with_path(N, rnd_edges(N, M - 16, (1, 10**5), (1, 10**4)), 15, (1, 10**5), (1, 10**4))))
+# the old sample 5 (values near 10^9), moved here when the sample was replaced (2026-11-02)
+cases.append((3, 10**9, [(1, 2, 999999998, 999999999, 1), (2, 3, 0, 10**9, 10**9), (1, 3, 1, 2, 10**9 - 1)]))
+# rare trains: about 10^4 busy stations, many lines run only a few times (period 10^8..10^9),
+# so the latest usable departure is often before the first one
+for seed, rare in ((26053, 0.5), (26052, 1.0)):
+    random.seed(seed)
+    act = list(range(1, 7000)) + [N]
+    E = []
+    for _ in range(65000):          # 65 000 lines of big numbers: about 2.8 MB
+        i, j = two(0, len(act) - 1)
+        u, v = act[i], act[j]
+        p = ri(10**8, 10**9) if _rnd() < rare else ri(1, 10**6)
+        E.append((u, v, ri(0, p - 1), p, ri(10**6, 10**8)))
+    cases.append((N, 10**9, E))
+for i, (n, T, E) in enumerate(cases, 1):
+    assert 2 <= n <= 100000 and 1 <= len(E) <= 100000 and 0 <= T <= 10**9
+    assert all(1 <= u <= n and 1 <= v <= n and u != v and 0 <= o < p <= 10**9 and 1 <= w <= 10**9 for u, v, o, p, w in E)
+    open(f"tests/{i:02d}.in", "w").write(f"{n} {len(E)} {T}\n" + "".join(f"{u} {v} {o} {p} {w}\n" for u, v, o, p, w in E))
+print(len(cases), "tests")

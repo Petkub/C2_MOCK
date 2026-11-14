@@ -1489,7 +1489,8 @@ def cmd_set(k, folder, meta, sets, st, tl, show_diff):
     box(st, head, st.dim)
     for i, n in enumerate(probs, 1):
         m = meta.get(n, {})
-        print(f"  Problem {i}   {stars(st, m.get('tier', 0))}  " + st.bold(m.get("en", "?")))
+        tier = m.get("tier", 0)      # mock problems (tier 0) show no difficulty
+        print(f"  Problem {i}   " + (stars(st, tier) + "  " if tier else "") + st.bold(m.get("en", "?")))
     if folder is None:
         print()
         if student_layout():

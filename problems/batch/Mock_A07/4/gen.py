@@ -1,128 +1,116 @@
-import random, os
-random.seed(7404)
+# Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
+import os, random
+
+random.seed(1403)
+MAXRC, MAXK, MAXA = 500, 20, 10 ** 9
+tests = []
 rnd = random.random
-ri = lambda a, b: a + int(rnd() * (b - a + 1))
-os.makedirs("tests", exist_ok=True)
-NMAX, MMAX, V = 200000, 50000, 10**9
-cases = []
-# samples
-cases.append((1, [1, 3, 4, 7, 10], [2, 8, 12]))
-cases.append((3, [2, 5, 6, 7], [4, 8]))
-cases.append((0, [5, 5, 12, 6], [5, 9, 14]))
-cases.append((3, [3, 12, 13, 15, 16, 20, 25], [4, 20, 30]))
-cases.append((1, [7, 3, 9, 11, 2, 6, 13], [4, 13]))
 
 
-def boats(m, top, lo=0):
-    s = set()
-    while len(s) < m:
-        s.add(ri(lo, top))
-    return sorted(s)
+def ri(a, b):
+    """random integer in [a, b] (only random.random(), so every Python version gives the same tests)"""
+    return a + int(rnd() * (b - a + 1))
 
 
-def small(n, m, top, d):
-    b = boats(m, top)
-    return (d, [ri(0, b[-1]) for _ in range(n)], b)
+def add(K, g):
+    R, C = len(g), len(g[0])
+    assert 1 <= R <= MAXRC and 1 <= C <= MAXRC and 1 <= K <= MAXK
+    for row in g:
+        assert len(row) == C and -MAXA <= min(row) and max(row) <= MAXA
+    tests.append(f"{R} {C} {K}\n" + "".join(" ".join(map(str, row)) + "\n" for row in g))
 
 
-# small tests for brute.cpp
-for top, d in ((10, 1), (20, 2), (30, 0), (50, 4), (60, 10), (100, 20)):
-    cases.append(small(ri(1, 12), ri(1, 5), top, d))
-cases.append((3, [0, 0, 1, 2, 3], [9]))                  # only the first gap, arrivals at time 0
-cases.append((50, [10, 20, 30], [40, 60, 99]))           # band too wide everywhere: no extra boat
+def uniform(R, C, lo, hi):
+    return [[ri(lo, hi) for _ in range(C)] for _ in range(R)]
 
 
-def uniform(n, m, top, d):
-    b = boats(m, top)
-    return (d, [ri(0, b[-1]) for _ in range(n)], b)
-
-
-def bursts(n, m, top, d, w):
-    # passengers come in bursts right after each boat, inside the forbidden band
-    b = boats(m, top)
-    a = []
-    for _ in range(n):
-        j = ri(0, m - 1)
-        lo = b[j - 1] + 1 if j > 0 else max(0, b[0] - w)
-        a.append(min(b[j], ri(lo, lo + w)))
-    return (d, a, b)
-
-
-def first_gap(n, m, d):
-    # long wait before the first boat, short gaps after it
-    b = [V - 3 * m + 3 * i for i in range(m)]
-    a = [ri(0, b[0]) if rnd() < 0.7 else ri(b[0], b[-1]) for _ in range(n)]
-    return (d, a, b)
-
-
-def ties(n, m, top, d):
-    # few distinct arrival times, many equal to a boat time or to a band edge
-    b = boats(m, top)
-    pts = []
-    for j in range(m):
-        p = b[j - 1] if j > 0 else 0
-        pts += [b[j], p + d, b[j] - d, (p + b[j]) // 2]
-    pts = [x for x in pts if 0 <= x <= b[-1]]
-    return (d, [pts[int(rnd() * len(pts))] for _ in range(n)], b)
-
-
-def big_first(n, m, d):
-    # a long first gap with a wide band, later gaps too short for the extra boat
-    b0 = ri(4 * 10**8, 6 * 10**8)
-    b = [b0]
-    while len(b) < m:
-        b.append(b[-1] + d + ri(0, d // 2))
-    a = [ri(0, d - 1) if rnd() < 0.6 else ri(b[0] + 1, b[-1]) for _ in range(n)]
-    return (d, a, b)
-
-
-def mixed(n, m, top, d):
-    # gaps of similar length: passengers spread out in odd gaps, about three times fewer and early in even gaps
-    step = top // m
-    b = [i * step - ri(0, step // 10) for i in range(1, m + 1)]
-    a = []
-    for _ in range(n):
-        j = ri(0, m - 1)
-        while j % 2 == 0 and rnd() < 0.67:
-            j = ri(0, m - 1)
-        p = b[j - 1] + 1 if j > 0 else 0
-        if j % 2:
-            a.append(ri(p, b[j]))
+def staircase(R, C, steps, good, bad, noise=0):
+    """bad everywhere except a monotone staircase (from (1, 1) to (R, C)) with about `steps` turns, worth `good`"""
+    g = [[ri(bad[0], bad[1]) for _ in range(C)] for _ in range(R)]
+    r = c = 0
+    moves = ["R"] * (C - 1) + ["D"] * (R - 1)
+    # group the moves into `steps` + 1 alternating runs
+    runs = max(1, min(steps + 1, len(moves)))
+    seq, nr, nd = [], C - 1, R - 1
+    for i in range(runs):
+        left = runs - i
+        if i % 2 == 0:
+            k = nr if left <= 2 else ri(0, max(0, 2 * nr // left))
+            seq += ["R"] * k
+            nr -= k
         else:
-            a.append(p + int(rnd() * step * 0.05))
-    return (d, a, b)
+            k = nd if left <= 2 else ri(0, max(0, 2 * nd // left))
+            seq += ["D"] * k
+            nd -= k
+    seq += ["R"] * nr + ["D"] * nd
+    g[0][0] = ri(good[0], good[1])
+    for m in seq:
+        if m == "R":
+            c += 1
+        else:
+            r += 1
+        g[r][c] = ri(good[0], good[1])
+        if noise and 0 <= r + 1 < R:
+            g[r + 1][c] = ri(good[0], good[1]) // noise
+    return g
 
 
-# largest sizes
-cases.append(uniform(NMAX, MMAX, 10**8, 0))
-cases.append(uniform(NMAX, MMAX, 10**8, 900))
-cases.append(uniform(NMAX, 3, V, 10**8))
-cases.append(uniform(NMAX, 1, V, 0))                     # one gap holds everyone
-cases.append(uniform(NMAX, 2, V, 4 * 10**8))
-cases.append(bursts(NMAX, MMAX, V, 15000, 12000))
-cases.append(bursts(NMAX, 5, V, 10**8, 9 * 10**7))
-cases.append(bursts(NMAX, 1000, 10**7, 4000, 3500))
-cases.append(first_gap(NMAX, MMAX, 1))
-cases.append(first_gap(NMAX, 4, 2))
-cases.append(ties(NMAX, MMAX, 10**6, 3))
-cases.append(ties(NMAX, 100, V, 10**6))
-cases.append((10**8 + 1, [ri(0, 10**8) for _ in range(NMAX)], [10**8]))   # band covers everything: no extra boat
-cases.append((0, [0] * NMAX, [V]))                            # everyone at time 0, one boat at 10^9
-cases.append(uniform(NMAX, MMAX, 10**6, 7))
-cases.append(bursts(NMAX, 20000, V, 30000, 25000))
-cases.append(bursts(NMAX, 300, V, 10**6, 8 * 10**5))
-cases.append(big_first(NMAX, 10000, 2 * 10**4))
-cases.append(big_first(NMAX, 5, 5 * 10**7))
-cases.append(mixed(NMAX, 8, V, 0))
-cases.append(mixed(NMAX, 2000, 10**8, 1000))
-# medium
-cases.append(ties(2000, 30, 1000, 4))
+def transpose(g):
+    return [list(col) for col in zip(*g)]
 
-for i, (d, a, b) in enumerate(cases, 1):
-    n, m = len(a), len(b)
-    assert 1 <= n <= NMAX and 1 <= m <= MMAX and 0 <= d <= V
-    assert all(0 <= b[k] < b[k + 1] for k in range(m - 1)) and 0 <= b[0] and b[-1] <= V
-    assert all(0 <= x <= b[-1] for x in a)
+
+def bands(R, C, width, hi, lo):
+    """diagonal bands: good cells where (r + c) // width is even, so a straight line crosses many bad bands"""
+    return [[ri(hi // 2, hi) if ((r + c) // width) % 2 == 0 else ri(lo, lo // 2) for c in range(C)] for r in range(R)]
+
+
+def checker(R, C, a, b):
+    return [[(a if (r + c) % 2 == 0 else b) + ri(-3, 3) for c in range(C)] for r in range(R)]
+
+
+# samples
+add(2, [[2, -3, 4, 1], [1, 5, -2, 3], [-4, 2, 6, 1]])
+add(1, [[1, 8, -9, 0], [-2, 3, 7, -1], [5, -6, 4, 2], [0, 1, -3, 6]])
+add(3, [[4, -1, -2, 7, 3]])
+add(1, [[-5]])
+add(3, [[3, -2, 0, 1, 5], [1, 4, -3, 2, -1], [-6, 2, 8, -4, 0], [2, 0, 1, 3, 2], [-1, 5, -2, 6, 4]])
+# hidden: small (brute checks these)
+add(1, [[7], [-2], [3]])
+add(20, [[MAXA] * 3] * 2)
+add(1, uniform(2, 2, -MAXA, MAXA))
+for R, C, K, lo, hi in [(9, 8, 2, -10, 10), (20, 25, 5, -10 ** 6, 10 ** 6),
+                        (40, 40, 20, -50, 80), (50, 60, 4, -MAXA, MAXA)]:
+    add(K, uniform(R, C, lo, hi))
+add(6, staircase(45, 50, 9, (10 ** 8, MAXA), (-MAXA, -10 ** 8)))
+add(3, bands(60, 60, 5, 10 ** 6, -10 ** 6))
+# hidden: big
+M = MAXRC
+BIG = [
+    (14300, lambda: (20, uniform(M, M, -MAXA, MAXA))),
+    (14301, lambda: (1, uniform(M, M, -MAXA, MAXA // 2))),
+    (14302, lambda: (12, transpose(staircase(M, M, 12, (-3 * 10 ** 8, -10 ** 8), (-MAXA, -6 * 10 ** 8))))),
+    (14303, lambda: (20, [[MAXA] * M for _ in range(M)])),
+    (14304, lambda: (20, [[-MAXA] * M for _ in range(M)])),
+    (14305, lambda: (10, staircase(M, M, 30, (10 ** 8, MAXA), (-MAXA, -10 ** 8)))),
+    (14306, lambda: (20, staircase(M, M, 20, (5 * 10 ** 8, MAXA), (-MAXA, 0), noise=3))),
+    (14307, lambda: (18, staircase(M, M, 18, (MAXA, MAXA), (-10, 10)))),
+    (14308, lambda: (13, bands(M, M, 7, MAXA, -MAXA))),
+    (14309, lambda: (12, bands(M, M, 40, MAXA, -MAXA))),
+    (14310, lambda: (20, checker(M, M, MAXA - 3, -MAXA + 3))),
+    (14311, lambda: (16, checker(M, M, -10 ** 8, 10 ** 7))),
+    (14312, lambda: (20, uniform(1, M, -MAXA, 0))),
+    (14314, lambda: (15, uniform(M, 2, -MAXA, MAXA))),
+    (14318, lambda: (2, uniform(M, M, -10 ** 4, 10 ** 4))),
+    (14315, lambda: (11, uniform(M, M, -2 * 10 ** 8, 10 ** 7))),
+    (14316, lambda: (14, staircase(M, M, 60, (-10 ** 7, 0), (-10 ** 8, -10 ** 7)))),
+    (14317, lambda: (19, uniform(M, M, -10, 10))),
+    (14319, lambda: (4, transpose(staircase(M, M, 4, (-10 ** 7, 0), (-5 * 10 ** 7, -10 ** 7))))),
+]
+for seed, make in BIG:
+    random.seed(seed)
+    add(*make())
+
+os.makedirs("tests", exist_ok=True)
+for i, t in enumerate(tests, 1):
     with open(f"tests/{i:02d}.in", "w") as f:
-        f.write(f"{n} {m} {d}\n{' '.join(map(str, a))}\n{' '.join(map(str, b))}\n")
-print(len(cases), "tests,", sum(1 for d, a, b in cases if len(a) == NMAX), "with N = 200000")
+        f.write(t)

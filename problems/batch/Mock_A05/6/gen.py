@@ -1,81 +1,171 @@
-import random, os
-random.seed(2603)
+# Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
+import os, random
+
+random.seed(1304)
+MAXN, MAXQ = 100_000, 100_000
+tests = []
+rnd = random.random
+
+
+def ri(a, b):
+    return a + int(rnd() * (b - a + 1))
+
+
+def add(p, qs):
+    """p = [p_2, ..., p_N]"""
+    n = len(p) + 1
+    assert 2 <= n <= MAXN and 1 <= len(qs) <= MAXQ
+    for i, x in enumerate(p, 2):
+        assert 1 <= x < i
+    for u, v in qs:
+        assert 1 <= u <= n and 1 <= v <= n
+    lines = [str(n), " ".join(map(str, p)), str(len(qs))] + [f"{u} {v}" for u, v in qs]
+    tests.append("\n".join(lines) + "\n")
+
+
+# trees (p_2 .. p_N)
+def path(n):
+    return [i - 1 for i in range(2, n + 1)]
+
+
+def near(n, k):
+    """p_i among the k previous towns: deep, a little branched"""
+    return [max(1, i - ri(1, k)) for i in range(2, n + 1)]
+
+
+def uniform(n):
+    return [ri(1, i - 1) for i in range(2, n + 1)]
+
+
+def chains(n, k):
+    """k long chains hanging from town 1 (town i continues chain i mod k)"""
+    return [1 if i <= k + 1 else i - k for i in range(2, n + 1)]
+
+
+def caterpillar(n, spine):
+    return [i - 1 if i <= spine else ri(1, spine) for i in range(2, n + 1)]
+
+
+def broom(n, handle):
+    return [i - 1 if i <= handle else handle for i in range(2, n + 1)]
+
+
+def heap(n):
+    return [i // 2 for i in range(2, n + 1)]
+
+
+def relabel(p):
+    """random numbering that still gives every town a parent with a smaller number (a random topological order)"""
+    n = len(p) + 1
+    children = [[] for _ in range(n + 1)]
+    for i, x in enumerate(p, 2):
+        children[x].append(i)
+    new = [0] * (n + 1)
+    avail = [1]
+    k = 0
+    while avail:
+        j = ri(0, len(avail) - 1) if rnd() < 0.5 else len(avail) - 1
+        avail[j], avail[-1] = avail[-1], avail[j]
+        v = avail.pop()
+        k += 1
+        new[v] = k
+        avail.extend(children[v])
+    q = [0] * (n + 1)
+    for i, x in enumerate(p, 2):
+        q[new[i]] = new[x]
+    return q[2:]
+
+
+# queries
+def rand_q(n, q):
+    return [(ri(1, n), ri(1, n)) for _ in range(q)]
+
+
+def far_q(n, q, w):
+    """one end among the first w towns, the other among the last w (long routes in deep trees)"""
+    out = []
+    for _ in range(q):
+        a, b = ri(1, w), ri(n - w + 1, n)
+        out.append((a, b) if rnd() < 0.5 else (b, a))
+    return out
+
+
+def deep_q(n, q, w):
+    """both ends among the last w towns"""
+    return [(ri(n - w + 1, n), ri(n - w + 1, n)) for _ in range(q)]
+
+
+def mix(*parts):
+    out = [x for part in parts for x in part]
+    random.shuffle(out)
+    return out
+
+
+def spare(p, qs, k=3):
+    """pick k leaves and never end a route there (their roads stay unrepaired to the end)"""
+    n = len(p) + 1
+    has_child = [False] * (n + 1)
+    for x in p:
+        has_child[x] = True
+    leaves = [v for v in range(2, n + 1) if not has_child[v]]
+    keep = set(random.sample(leaves, min(k, len(leaves))))
+    par = lambda v: p[v - 2] if v in keep else v
+    return p, [(par(u), par(v)) for u, v in qs]
+
+
+# samples
+add([1, 1, 2, 2, 3, 6], [(4, 5), (6, 4), (1, 5)])
+add([1, 1, 1, 1], [(2, 3), (4, 2), (1, 4)])
+add([1], [(1, 2)])
+add([1, 2, 1, 3, 3, 4, 6], [(5, 8), (7, 2), (6, 1), (8, 6)])
+add([1, 1, 2, 3, 3, 2, 7, 5], [(9, 4), (6, 6), (8, 1), (2, 3), (9, 4)])
+
+# hidden: small (brute checks these)
+add([1], [(2, 2), (1, 1)])
+add(path(30), [(30, 1), (1, 30), (5, 9)])
+add(path(40), mix(rand_q(40, 25), [(i, i) for i in range(1, 6)]))
+add(uniform(60), rand_q(60, 40))
+add(near(80, 3), rand_q(80, 30))
+add(relabel(chains(70, 3)), rand_q(70, 50))
+add(relabel(caterpillar(100, 40)), rand_q(100, 20))
+add(relabel(near(300, 4)), rand_q(300, 300))
+add(broom(500, 250), mix(far_q(500, 100, 20), rand_q(500, 50)))
+add(relabel(uniform(2000)), rand_q(2000, 2000))
+
+# hidden: big
+N, Q = MAXN, MAXQ
+BIG = [
+    (13041, lambda: (path(N), far_q(N, Q, 1000))),
+    (13042, lambda: (path(N), [(1, N)] * (Q // 2) + [(N, 1)] * (Q // 2))),
+    (13043, lambda: (path(N), mix(rand_q(N, Q // 2), deep_q(N, Q // 2, 5000)))),
+    (13044, lambda: (path(N), [(ri(1, 100), N - ri(0, 99)) if i % 1000 == 0 else (ri(N // 2, N), ri(N // 2, N))
+                                for i in range(Q)])),
+    (13045, lambda: (near(N, 3), far_q(N, Q, 3000))),
+    (13046, lambda: (near(N, 10), mix(rand_q(N, Q // 2), deep_q(N, Q // 2, 20000)))),
+    (13047, lambda: (relabel(near(N, 2)), rand_q(N, Q))),
+    (13048, lambda: (chains(N, 2), far_q(N, Q, 2000))),
+    (13049, lambda: (chains(N, 5), deep_q(N, Q, 1000))),
+    (13050, lambda: (relabel(chains(N, 3)), rand_q(N, Q))),
+    (13051, lambda: (caterpillar(N, N // 2), deep_q(N, Q, N // 2))),
+    (13052, lambda: (relabel(caterpillar(N, 75_000)), rand_q(N, Q))),
+    (13053, lambda: (broom(N, 75_000), mix(far_q(N, Q // 2, 1000), deep_q(N, Q // 2, 25_000)))),
+    (13054, lambda: (broom(N, 50_000), mix(far_q(N, Q // 2, 1000), [(ri(1, 1000), ri(1, 1000)) for _ in range(Q // 2)]))),
+    (13055, lambda: (uniform(N), rand_q(N, Q))),
+    (13056, lambda: (heap(N), rand_q(N, Q))),
+    (13057, lambda: (path(N), [(i, i) for i in range(1, Q)] + [(N, N - 1)])),       # a single road repaired
+    (13058, lambda: (near(N, 2), [(N - ri(0, 100), N - ri(0, 100)) for _ in range(Q)])),   # few roads repaired
+    (13059, lambda: (path(N), [(ri(1, 10), N - ri(0, 9)) for _ in range(Q)])),
+]
+for seed, make in BIG:
+    random.seed(seed)
+    p, qs = make()
+    if seed not in (13057, 13058):
+        p, qs = spare(p, qs)
+    add(p, qs)
+
+for t in tests:
+    assert t.endswith("\n") and "  " not in t and " \n" not in t
 os.makedirs("tests", exist_ok=True)
-cases = []
-# ---- samples ----
-cases.append((2, 2, [3, -1, 4, -10, 5, -9, 2]))
-cases.append((1, 1, [1, 2, 3, 4, 5]))
-cases.append((2, 1, [4, 4, 4]))
-cases.append((1, 6, [-3, 1, -4, 1, -5, 9]))
-cases.append((3, 2, [-1, -2, 7, 8, -100, -3, -4, 6, 6]))
-# ---- small random ----
-def rnd(n, k, L, lo, hi):
-    return (k, L, [random.randint(lo, hi) for _ in range(n)])
-for _ in range(6):
-    n = random.randint(3, 12); L = random.randint(1, 3)
-    k = random.randint(1, max(1, (n + 1) // (L + 1)))
-    cases.append(rnd(n, k, L, -20, 20))
-# ---- large ----
-N = 100000
-B = 10**9
-cases.append(rnd(N, 100, 1, -B, B))
-cases.append(rnd(N, 100, 50, -B, B))
-cases.append(rnd(N, 100, 990, -B, B))                 # K(L+1) = N + 1 - 1 + ... near tight
-cases.append(rnd(N, 1, 1000, -B, B))
-cases.append(rnd(N, 100, 1, 1, B))                    # all positive: rest days are the only loss
-cases.append(rnd(N, 100, 3, -B, -1))                  # all negative
-cases.append(rnd(N, 50, 1999, -B, B))                 # 50 * 2000 = 100000 <= N + 1 (tight)
-cases.append((100, 999, [B if (i // 1000) % 2 == 0 else -B for i in range(N)]))
-cases.append(rnd(N, 37, 7, -1000, 1000))
-cases.append((100, 1, [B] * N))                        # sum fits only in 64-bit
-cases.append(rnd(N, 100, 1, -B, B // 10))              # mostly negative, must still pick 100
-cases.append((1, 1, [-7]))                              # N = 1
-cases.append(rnd(3000, 100, 2, -B, B))                  # medium: O(N^2 K) still too slow
-cases.append(rnd(5000, 20, 10, -B, B))
-cases.append(rnd(N, 100, 999, -B, B))                   # tight: 100 * 1000 = N
-cases.append(rnd(N, 80, 1, -5, 5))                      # many ties
-cases.append(rnd(N, 2, 30000, -B, B))
-cases.append(rnd(N, 100, 7, -B, B // 3))
-# ---- stronger tests (2026-10-20): long runs, so the O(N K L) DP over the run length is too slow ----
-# (a separate random stream, so the tests that stay as they were keep their bytes)
-rng = random.Random(260320)
-def big(k, L, lo, hi): return (k, L, [rng.randint(lo, hi) for _ in range(N)])
-cases[14] = big(1, 40000, -B, B)                         # test 15: one long run
-cases[15] = big(100, 300, 1, B)                          # test 16: all positive, rest days are the only loss
-cases[16] = big(100, 600, -B, -1)                        # test 17: all negative
-cases[19] = big(37, 2000, 1, 1000)                       # test 20: small positive values, every rest day costs
-cases[20] = (100, 900, [B] * N)                          # test 21: sum fits only in 64-bit
-cases[21] = big(100, 400, -B, B // 10)                   # test 22: mostly negative, must still pick 100
-cases[26] = big(80, 250, -5, 5)                          # test 27: many ties
-cases[28] = big(100, 700, -B, B // 3)                    # test 29
-cases.append((100, 999, [rng.randint(1, B) for _ in range(N)]))   # K (L + 1) = N: no slack at all
-# positive days with about 40 negative valleys: fewer valleys than the K - 1 rest days needed
-a = [rng.randint(1, B) for _ in range(N)]
-for _ in range(40):
-    st = rng.randrange(N - 200)
-    for j in range(st, st + rng.randint(1, 200)): a[j] = -rng.randint(1, B)
-cases.append((100, 500, a))
-cases.append(big(100, 800, B // 2, B))                   # all positive: where the 99 rest days go decides
-cases.append(big(10, 9999, -B, B))
-# long positive stretches cut by single very negative days: the best runs are much longer than L
-a = []
-while len(a) < N:
-    a += [rng.randint(1, B) for _ in range(rng.randint(3000, 6000))] + [-B]
-cases.append((35, 2500, a[:N]))
-# positive blocks of length L + 1 .. 3L separated by one negative day: a rest day costs only that day
-a = []
-while len(a) < N:
-    a += [rng.randint(B // 2, B) for _ in range(rng.randint(1000, 3000))] + [-rng.randint(1, 1000)]
-cases.append((100, 300, a[:N]))
-cases.append(big(99, 1000, -5, 5))
-cases.append((100, 990, [-B] * N))                       # all equal negative: shortest runs everywhere
-cases.append((50, 1000, [B] * N))
-cases.append(big(1, 60000, -B, B))
-cases.append(big(30, 3000, 1, B))
-assert len(cases) <= 40
-for i, (k, L, a) in enumerate(cases, 1):
-    n = len(a)
-    assert 1 <= n <= 100000 and 1 <= k <= 100 and 1 <= L <= n and k * (L + 1) <= n + 1
-    assert all(-10**9 <= x <= 10**9 for x in a)
-    open(f"tests/{i:02d}.in", "w").write(f"{n} {k} {L}\n" + " ".join(map(str, a)) + "\n")
-print(len(cases), "tests")
+for i, t in enumerate(tests, 1):
+    with open(f"tests/{i:02d}.in", "w") as f:
+        f.write(t)

@@ -1,107 +1,128 @@
-# Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-# A route is (u, v, c); routes with v < u cannot be used (some tests have many of them).
-import os, random
-
-random.seed(52018)
+import random, os
+random.seed(7404)
 rnd = random.random
-MAXN, MAXR, MAXM = 500, 20000, 1000
-tests = []
-
-
-def ri(a, b):
-    return a + int(rnd() * (b - a + 1))
-
-
-def add(n, m, e):
-    assert 2 <= n <= MAXN and 1 <= len(e) <= MAXR and 1 <= m <= MAXM
-    for u, v, c in e:
-        assert 1 <= u <= n and 1 <= v <= n and u != v and 0 <= c <= m
-    tests.append("%d %d %d\n" % (n, len(e), m) + "".join(["%d %d %d\n" % x for x in e]))
-
-
-def mixed(n, r, m, cfun, back=0.0, lo_span=1, hi_span=None):
-    """random routes u -> v; v - u in [lo_span, hi_span] clipped at n, or v uniform in u+1..n without hi_span;
-    a fraction `back` of them reversed"""
-    e = []
-    w = (hi_span or 0) - lo_span + 1
-    for _ in range(r):
-        u = 1 + int(rnd() * (n - 1))
-        if hi_span:
-            v = min(n, u + lo_span + int(rnd() * w))
-        else:
-            v = u + 1 + int(rnd() * (n - u))
-        if back and rnd() < back:
-            u, v = v, u
-        e.append((u, v, cfun()))
-    return e
-
-
-N, R, M = MAXN, MAXR, MAXM
-# samples
-add(4, 4, [(1, 2, 1), (1, 4, 0), (2, 4, 1), (2, 3, 0), (3, 4, 2)])
-add(3, 3, [(1, 3, 2), (1, 2, 1), (2, 3, 0)])
-add(4, 5, [(1, 2, 0), (2, 3, 1), (2, 3, 2), (3, 4, 0), (1, 3, 3)])
-add(5, 6, [(1, 2, 2), (2, 5, 3), (1, 3, 1), (3, 4, 4)])
-add(5, 7, [(1, 2, 1), (1, 3, 0), (2, 4, 2), (4, 5, 0), (4, 2, 0), (3, 5, 3)])
-
-# hidden: small and medium (brute checks these)
-add(2, 1, [(1, 2, 1)])
-add(2, 1000, [(2, 1, 0), (1, 2, 1000)])
-add(8, 12, mixed(8, 20, 12, lambda: ri(0, 3), back=0.3))
-add(30, 60, mixed(30, 400, 60, lambda: ri(0, 2), back=0.2))
-add(6, 9, [(1, 2, 0), (2, 3, 1), (1, 4, 2), (4, 3, 0), (3, 5, 0), (6, 2, 0), (6, 5, 1), (2, 4, 3)])  # 6 unreachable
-add(50, 400, [(i, i + 1, 0) for i in range(1, 50)])                                                 # one path
-add(300, 300, mixed(300, 5000, 300, lambda: ri(0, 300)))
-add(500, 200, mixed(500, 10000, 200, lambda: ri(0, 6), back=0.3, hi_span=40))
-
-# hidden: big
-add(N, M, mixed(N, R, M, lambda: ri(0, 2)))                                           # all large
-add(N, M, mixed(N, R, M, lambda: ri(0, M)))
-add(N, M, mixed(N, R, M, lambda: ri(0, M), back=0.3))
-add(N, M, mixed(N, R, M, lambda: ri(0, 3), back=0.3))
-add(N, M, mixed(N, R, M, lambda: ri(4, 9), hi_span=8))                                # long plans
-add(N, M, mixed(N, R, M, lambda: ri(1, 4), hi_span=12))                               # long plans
-add(N, M, mixed(N, R, M, lambda: ri(100, 400)))                                       # few rides per plan
-add(N, M, mixed(N, R, M, lambda: ri(230, 500), back=0.2))
-# a few distinct pairs, many copies of each
-pairs = [(u, min(N, u + ri(1, 30)), ri(0, 20)) for u in range(1, N)] + mixed(N, 501, M, lambda: ri(0, 20))
-add(N, M, [(u, v, ri(0, 20) if rnd() < 0.5 else c) for _ in range(R // len(pairs)) for u, v, c in pairs])
-# star: 1 -> every city -> N, values stay below the limit
-e = [(1, v, ri(0, M)) for v in range(2, N)] + [(v, N, ri(0, M)) for v in range(2, N)]
-e += [(N, ri(1, N - 1), ri(0, M)) for _ in range(R - len(e))]
-add(N, M, e)
-# no route into city N can be used
-e = mixed(N - 1, R - 2000, M, lambda: ri(0, 5)) + [(N, ri(1, N - 1), ri(0, 5)) for _ in range(2000)]
-add(N, M, e)
-# one chain with heavy stays (only the last nights have plans) + many rides that need too many nights
-e = [(i, i + 1, 2) for i in range(1, N)]
-for i in random.sample(range(N - 1), 8):
-    e[i] = (e[i][0], e[i][1], 1)
-e += mixed(N, R - len(e), M, lambda: ri(400, M))
-add(N, M, e)
-# layers: 1 -> layer A -> layer B -> N with big stays, values cross the limit in the middle
-A, B = list(range(2, 251)), list(range(251, N))
-e = [(1, a, ri(0, 250)) for a in A] + [(b, N, ri(0, 250)) for b in B]
-e += [(A[ri(0, len(A) - 1)], B[ri(0, len(B) - 1)], ri(0, 400)) for _ in range(R - len(e))]
-add(N, M, e)
-# short jumps, mostly c = 0, some backward
-add(N, M, mixed(N, R, M, lambda: 0 if rnd() < 0.7 else ri(1, 10), back=0.15, hi_span=6))
-# medium jumps, stays 0..50
-add(N, M, mixed(N, R, M, lambda: ri(0, 50), lo_span=10, hi_span=100))
-# the second half of the cities only reached late
-e = mixed(250, R // 2, M, lambda: ri(0, 3))
-e += [(u + 250, v + 250, c) for u, v, c in mixed(250, R // 2 - 50, M, lambda: ri(0, 3))]
-e += [(ri(1, 250), ri(251, N), ri(600, 800)) for _ in range(50)]
-add(N, M, e)
-# many routes from city 1 and into city N
-e = [(1, ri(2, N), ri(0, M)) for _ in range(6000)] + [(ri(1, N - 1), N, ri(0, M)) for _ in range(6000)]
-e += mixed(N, R - len(e), M, lambda: ri(0, M))
-add(N, M, e)
-add(N, M, mixed(N, R, M, lambda: ri(0, 8), back=0.5, hi_span=25))
-
-for t in tests:
-    assert t.endswith("\n") and "  " not in t and " \n" not in t
+ri = lambda a, b: a + int(rnd() * (b - a + 1))
 os.makedirs("tests", exist_ok=True)
-for i, t in enumerate(tests, 1):
+NMAX, MMAX, V = 200000, 50000, 10**9
+cases = []
+# samples
+cases.append((1, [1, 3, 4, 7, 10], [2, 8, 12]))
+cases.append((3, [2, 5, 6, 7], [4, 8]))
+cases.append((0, [5, 5, 12, 6], [5, 9, 14]))
+cases.append((3, [3, 12, 13, 15, 16, 20, 25], [4, 20, 30]))
+cases.append((1, [7, 3, 9, 11, 2, 6, 13], [4, 13]))
+
+
+def boats(m, top, lo=0):
+    s = set()
+    while len(s) < m:
+        s.add(ri(lo, top))
+    return sorted(s)
+
+
+def small(n, m, top, d):
+    b = boats(m, top)
+    return (d, [ri(0, b[-1]) for _ in range(n)], b)
+
+
+# small tests for brute.cpp
+for top, d in ((10, 1), (20, 2), (30, 0), (50, 4), (60, 10), (100, 20)):
+    cases.append(small(ri(1, 12), ri(1, 5), top, d))
+cases.append((3, [0, 0, 1, 2, 3], [9]))                  # only the first gap, arrivals at time 0
+cases.append((50, [10, 20, 30], [40, 60, 99]))           # band too wide everywhere: no extra boat
+
+
+def uniform(n, m, top, d):
+    b = boats(m, top)
+    return (d, [ri(0, b[-1]) for _ in range(n)], b)
+
+
+def bursts(n, m, top, d, w):
+    # passengers come in bursts right after each boat, inside the forbidden band
+    b = boats(m, top)
+    a = []
+    for _ in range(n):
+        j = ri(0, m - 1)
+        lo = b[j - 1] + 1 if j > 0 else max(0, b[0] - w)
+        a.append(min(b[j], ri(lo, lo + w)))
+    return (d, a, b)
+
+
+def first_gap(n, m, d):
+    # long wait before the first boat, short gaps after it
+    b = [V - 3 * m + 3 * i for i in range(m)]
+    a = [ri(0, b[0]) if rnd() < 0.7 else ri(b[0], b[-1]) for _ in range(n)]
+    return (d, a, b)
+
+
+def ties(n, m, top, d):
+    # few distinct arrival times, many equal to a boat time or to a band edge
+    b = boats(m, top)
+    pts = []
+    for j in range(m):
+        p = b[j - 1] if j > 0 else 0
+        pts += [b[j], p + d, b[j] - d, (p + b[j]) // 2]
+    pts = [x for x in pts if 0 <= x <= b[-1]]
+    return (d, [pts[int(rnd() * len(pts))] for _ in range(n)], b)
+
+
+def big_first(n, m, d):
+    # a long first gap with a wide band, later gaps too short for the extra boat
+    b0 = ri(4 * 10**8, 6 * 10**8)
+    b = [b0]
+    while len(b) < m:
+        b.append(b[-1] + d + ri(0, d // 2))
+    a = [ri(0, d - 1) if rnd() < 0.6 else ri(b[0] + 1, b[-1]) for _ in range(n)]
+    return (d, a, b)
+
+
+def mixed(n, m, top, d):
+    # gaps of similar length: passengers spread out in odd gaps, about three times fewer and early in even gaps
+    step = top // m
+    b = [i * step - ri(0, step // 10) for i in range(1, m + 1)]
+    a = []
+    for _ in range(n):
+        j = ri(0, m - 1)
+        while j % 2 == 0 and rnd() < 0.67:
+            j = ri(0, m - 1)
+        p = b[j - 1] + 1 if j > 0 else 0
+        if j % 2:
+            a.append(ri(p, b[j]))
+        else:
+            a.append(p + int(rnd() * step * 0.05))
+    return (d, a, b)
+
+
+# largest sizes
+cases.append(uniform(NMAX, MMAX, 10**8, 0))
+cases.append(uniform(NMAX, MMAX, 10**8, 900))
+cases.append(uniform(NMAX, 3, V, 10**8))
+cases.append(uniform(NMAX, 1, V, 0))                     # one gap holds everyone
+cases.append(uniform(NMAX, 2, V, 4 * 10**8))
+cases.append(bursts(NMAX, MMAX, V, 15000, 12000))
+cases.append(bursts(NMAX, 5, V, 10**8, 9 * 10**7))
+cases.append(bursts(NMAX, 1000, 10**7, 4000, 3500))
+cases.append(first_gap(NMAX, MMAX, 1))
+cases.append(first_gap(NMAX, 4, 2))
+cases.append(ties(NMAX, MMAX, 10**6, 3))
+cases.append(ties(NMAX, 100, V, 10**6))
+cases.append((10**8 + 1, [ri(0, 10**8) for _ in range(NMAX)], [10**8]))   # band covers everything: no extra boat
+cases.append((0, [0] * NMAX, [V]))                            # everyone at time 0, one boat at 10^9
+cases.append(uniform(NMAX, MMAX, 10**6, 7))
+cases.append(bursts(NMAX, 20000, V, 30000, 25000))
+cases.append(bursts(NMAX, 300, V, 10**6, 8 * 10**5))
+cases.append(big_first(NMAX, 10000, 2 * 10**4))
+cases.append(big_first(NMAX, 5, 5 * 10**7))
+cases.append(mixed(NMAX, 8, V, 0))
+cases.append(mixed(NMAX, 2000, 10**8, 1000))
+# medium
+cases.append(ties(2000, 30, 1000, 4))
+
+for i, (d, a, b) in enumerate(cases, 1):
+    n, m = len(a), len(b)
+    assert 1 <= n <= NMAX and 1 <= m <= MMAX and 0 <= d <= V
+    assert all(0 <= b[k] < b[k + 1] for k in range(m - 1)) and 0 <= b[0] and b[-1] <= V
+    assert all(0 <= x <= b[-1] for x in a)
     with open(f"tests/{i:02d}.in", "w") as f:
-        f.write(t)
+        f.write(f"{n} {m} {d}\n{' '.join(map(str, a))}\n{' '.join(map(str, b))}\n")
+print(len(cases), "tests,", sum(1 for d, a, b in cases if len(a) == NMAX), "with N = 200000")

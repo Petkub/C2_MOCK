@@ -187,7 +187,7 @@ python3 tools/build_manifest.py          # after changing anything under core/, 
 python3 tools/build_manifest.py --check  # CI: fails if manifest.json is stale
 python3 tools/update_problem_manifest.py Mock_K/N   # after adding NN.in/NN.out to a problem (--check --all in CI)
 python3 tools/build_dist.py              # build dist/C2_Mock_Test/ + dist/C2_Mock_Test.zip (--out DIR, --no-zip)
-python3 core/judge.py samples/batch/towers_ok.cpp A6-3     # judge one file from the repo (creates big tests, see above)
+python3 core/judge.py samples/batch/towers_ok.cpp A7-3     # judge one file from the repo (creates big tests, see above)
 python3 core/interactive_judge.py guess samples/interactive/guess_ok.cpp
 ```
 

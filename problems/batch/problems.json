@@ -3,8 +3,8 @@
   "title": "เมนูปลอดภัย",
   "en": "Allergy-Free Menu",
   "tier": 0,
-  "dir": "Mock_A05/2",
-  "samples": 5,
+  "dir": "Mock_A06/2",
+  "samples": 4,
   "scoring": "all"
  },
  "2": {
@@ -12,7 +12,7 @@
   "en": "Stable Temperature",
   "tier": 0,
   "dir": "Mock_A01/3",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "3": {
@@ -20,7 +20,7 @@
   "en": "Spreadsheet With Loops",
   "tier": 0,
   "dir": "Mock_A11/5",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "4": {
@@ -28,7 +28,7 @@
   "en": "Print Shop",
   "tier": 0,
   "dir": "Mock_A12/6",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "5": {
@@ -36,7 +36,7 @@
   "en": "Dishes That Cool Down",
   "tier": 0,
   "dir": "Mock_A03/6",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "7": {
@@ -44,47 +44,39 @@
   "en": "Office Hours",
   "tier": 0,
   "dir": "Mock_A09/1",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "8": {
   "title": "หุ่นยนต์เลี้ยวน้อยครั้ง",
   "en": "Robot With Few Turns",
   "tier": 0,
-  "dir": "Mock_A06/4",
-  "samples": 5,
-  "scoring": "all"
- },
- "9": {
-  "title": "ตรวจ tag",
-  "en": "Tag Checker",
-  "tier": 0,
-  "dir": "Mock_A04/3",
-  "samples": 5,
+  "dir": "Mock_A07/4",
+  "samples": 4,
   "scoring": "all"
  },
  "10": {
   "title": "รถไฟเที่ยวสุดท้าย",
   "en": "Last Train",
   "tier": 0,
-  "dir": "Mock_A07/6",
-  "samples": 5,
+  "dir": "Mock_A08/6",
+  "samples": 4,
   "scoring": "all"
  },
  "13": {
   "title": "string แบบย่อ",
   "en": "Compressed Strings",
   "tier": 0,
-  "dir": "Mock_A08/1",
-  "samples": 5,
+  "dir": "Mock_A05/1",
+  "samples": 4,
   "scoring": "all"
  },
  "14": {
   "title": "เสาสัญญาณ",
   "en": "Signal Towers",
   "tier": 0,
-  "dir": "Mock_A06/3",
-  "samples": 5,
+  "dir": "Mock_A07/3",
+  "samples": 4,
   "scoring": "all"
  },
  "15": {
@@ -92,7 +84,7 @@
   "en": "Course Plan",
   "tier": 0,
   "dir": "Mock_A10/4",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "19": {
@@ -100,31 +92,31 @@
   "en": "Keyboard Slips",
   "tier": 0,
   "dir": "Mock_A10/1",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "20": {
   "title": "คูปองส่วนลด",
   "en": "Discount Coupons",
   "tier": 0,
-  "dir": "Mock_A07/3",
-  "samples": 5,
+  "dir": "Mock_A08/3",
+  "samples": 4,
   "scoring": "all"
  },
  "21": {
   "title": "ทีมที่ไม่ใหญ่เกินไป",
   "en": "Not Too Big a Team",
   "tier": 0,
-  "dir": "Mock_A08/5",
-  "samples": 5,
+  "dir": "Mock_A05/5",
+  "samples": 4,
   "scoring": "all"
  },
  "22": {
   "title": "ขบวนซ่อมถนน",
   "en": "Repair Convoys",
   "tier": 0,
-  "dir": "Mock_A08/6",
-  "samples": 5,
+  "dir": "Mock_A05/6",
+  "samples": 4,
   "scoring": "all"
  },
  "25": {
@@ -132,23 +124,23 @@
   "en": "Two-Colour Can Pyramid",
   "tier": 0,
   "dir": "Mock_A02/1",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "27": {
   "title": "ปากกาเน้นคำ",
   "en": "Keyword Highlighter",
   "tier": 0,
-  "dir": "Mock_A05/4",
-  "samples": 5,
+  "dir": "Mock_A06/4",
+  "samples": 4,
   "scoring": "all"
  },
  "28": {
   "title": "รอบการแสดงลิเก",
   "en": "Festival Shows",
   "tier": 0,
-  "dir": "Mock_A05/6",
-  "samples": 5,
+  "dir": "Mock_A06/6",
+  "samples": 4,
   "scoring": "all"
  },
  "31": {
@@ -156,7 +148,7 @@
   "en": "Divisible Segments",
   "tier": 0,
   "dir": "Mock_A02/2",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "32": {
@@ -164,23 +156,15 @@
   "en": "Three Heirs",
   "tier": 0,
   "dir": "Mock_A04/4",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "33": {
   "title": "ความยากของเส้นทางเดินป่า",
   "en": "Hiking Difficulty",
   "tier": 0,
-  "dir": "Mock_A06/6",
-  "samples": 5,
-  "scoring": "all"
- },
- "37": {
-  "title": "บันทึกการเข้าใช้งาน",
-  "en": "Login Log",
-  "tier": 0,
-  "dir": "Mock_A11/2",
-  "samples": 5,
+  "dir": "Mock_A07/6",
+  "samples": 4,
   "scoring": "all"
  },
  "38": {
@@ -188,7 +172,7 @@
   "en": "Choosing Committees",
   "tier": 0,
   "dir": "Mock_A11/3",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "40": {
@@ -196,15 +180,15 @@
   "en": "Review Rounds",
   "tier": 0,
   "dir": "Mock_A01/6",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "43": {
   "title": "ทุกช่วงต้องหลากหลาย",
   "en": "Every Window Has Variety",
   "tier": 0,
-  "dir": "Mock_A05/3",
-  "samples": 5,
+  "dir": "Mock_A06/3",
+  "samples": 4,
   "scoring": "all"
  },
  "49": {
@@ -212,7 +196,7 @@
   "en": "Biggest Island After One Fill",
   "tier": 0,
   "dir": "Mock_A04/2",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "50": {
@@ -220,15 +204,7 @@
   "en": "Every K-th Day Free",
   "tier": 0,
   "dir": "Mock_A10/3",
-  "samples": 5,
-  "scoring": "all"
- },
- "55": {
-  "title": "จัดรูปตาราง Markdown",
-  "en": "Markdown Table Formatter",
-  "tier": 0,
-  "dir": "Mock_A07/2",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "56": {
@@ -236,7 +212,7 @@
   "en": "Ruler With Few Marks",
   "tier": 0,
   "dir": "Mock_A03/3",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "57": {
@@ -244,15 +220,7 @@
   "en": "Delivery Robot With a Battery",
   "tier": 0,
   "dir": "Mock_A01/5",
-  "samples": 5,
-  "scoring": "all"
- },
- "61": {
-  "title": "ปาเป้านับถอยหลัง",
-  "en": "Darts Countdown",
-  "tier": 0,
-  "dir": "Mock_A06/2",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "62": {
@@ -260,7 +228,7 @@
   "en": "Robots Into Order",
   "tier": 0,
   "dir": "Mock_A09/4",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "63": {
@@ -268,7 +236,7 @@
   "en": "Colourful Districts",
   "tier": 0,
   "dir": "Mock_A04/5",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "67": {
@@ -276,15 +244,7 @@
   "en": "Mountain Descent With One Long Jump",
   "tier": 0,
   "dir": "Mock_A10/2",
-  "samples": 5,
-  "scoring": "all"
- },
- "68": {
-  "title": "คำบรรยายใต้ภาพ",
-  "en": "Subtitles",
-  "tier": 0,
-  "dir": "Mock_A08/3",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "69": {
@@ -292,7 +252,7 @@
   "en": "Diamond Sprinklers",
   "tier": 0,
   "dir": "Mock_A03/5",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "70": {
@@ -300,7 +260,7 @@
   "en": "Quest Board",
   "tier": 0,
   "dir": "Mock_A10/5",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "73": {
@@ -308,31 +268,23 @@
   "en": "Playable Stage Ranges",
   "tier": 0,
   "dir": "Mock_A02/5",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "76": {
   "title": "พลิกกองพัสดุ",
   "en": "Flipping Parcel Stacks",
   "tier": 0,
-  "dir": "Mock_A07/5",
-  "samples": 5,
-  "scoring": "all"
- },
- "77": {
-  "title": "ย้ายรถก่อนทาสี",
-  "en": "Moving the Parked Cars",
-  "tier": 0,
-  "dir": "Mock_A09/6",
-  "samples": 5,
+  "dir": "Mock_A08/5",
+  "samples": 4,
   "scoring": "all"
  },
  "78": {
   "title": "ลืมรหัสผ่าน",
   "en": "Forgotten Password",
   "tier": 0,
-  "dir": "Mock_A06/5",
-  "samples": 5,
+  "dir": "Mock_A07/5",
+  "samples": 4,
   "scoring": "all"
  },
  "79": {
@@ -340,7 +292,7 @@
   "en": "Tank Level Alarm",
   "tier": 0,
   "dir": "Mock_A09/3",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "80": {
@@ -348,7 +300,7 @@
   "en": "L-Shaped Ditch",
   "tier": 0,
   "dir": "Mock_A12/3",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "81": {
@@ -356,7 +308,7 @@
   "en": "High Fives on the Trail",
   "tier": 0,
   "dir": "Mock_A10/6",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "85": {
@@ -364,7 +316,7 @@
   "en": "Ramping Up Production",
   "tier": 0,
   "dir": "Mock_A01/2",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "86": {
@@ -372,7 +324,7 @@
   "en": "Frogs on Lily Pads",
   "tier": 0,
   "dir": "Mock_A01/4",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "87": {
@@ -380,7 +332,7 @@
   "en": "Boxes Within Boxes",
   "tier": 0,
   "dir": "Mock_A02/3",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "88": {
@@ -388,7 +340,7 @@
   "en": "Two Stacks of Boxes",
   "tier": 0,
   "dir": "Mock_A02/4",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "89": {
@@ -396,7 +348,7 @@
   "en": "Black and White Beads",
   "tier": 0,
   "dir": "Mock_A02/6",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "90": {
@@ -404,7 +356,7 @@
   "en": "Rope Test Log",
   "tier": 0,
   "dir": "Mock_A03/1",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "91": {
@@ -412,7 +364,7 @@
   "en": "Selling Woven Cloth",
   "tier": 0,
   "dir": "Mock_A03/2",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "92": {
@@ -420,7 +372,7 @@
   "en": "Reassigning Shifts",
   "tier": 0,
   "dir": "Mock_A03/4",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "93": {
@@ -428,7 +380,7 @@
   "en": "Free Stalls Around the Market",
   "tier": 0,
   "dir": "Mock_A04/1",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "94": {
@@ -436,55 +388,55 @@
   "en": "Two Robot Models",
   "tier": 0,
   "dir": "Mock_A04/6",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "95": {
   "title": "แผ่นกดกลางทางเดิน",
   "en": "Robots on Pressure Plates",
   "tier": 0,
-  "dir": "Mock_A05/1",
-  "samples": 5,
+  "dir": "Mock_A06/1",
+  "samples": 4,
   "scoring": "all"
  },
  "96": {
   "title": "บัตรคำใบ้ล่าสมบัติ",
   "en": "Treasure Hunt Clues",
   "tier": 0,
-  "dir": "Mock_A05/5",
-  "samples": 5,
+  "dir": "Mock_A06/5",
+  "samples": 4,
   "scoring": "all"
  },
  "97": {
   "title": "บันทึกจุดจอดของหุ่นยนต์",
   "en": "Robot Stop Log",
   "tier": 0,
-  "dir": "Mock_A06/1",
-  "samples": 5,
+  "dir": "Mock_A07/1",
+  "samples": 4,
   "scoring": "all"
  },
  "98": {
   "title": "ร้านตัดท่อเหล็ก",
   "en": "Pipe Cutting Shop",
   "tier": 0,
-  "dir": "Mock_A07/1",
-  "samples": 5,
+  "dir": "Mock_A08/1",
+  "samples": 4,
   "scoring": "all"
  },
  "100": {
   "title": "ลมพัดเข้ากับดัก",
   "en": "Blown Into the Traps",
   "tier": 0,
-  "dir": "Mock_A08/2",
-  "samples": 5,
+  "dir": "Mock_A05/2",
+  "samples": 4,
   "scoring": "all"
  },
  "101": {
   "title": "ทริปค้างคืน",
   "en": "Overnight Trip Plans",
   "tier": 0,
-  "dir": "Mock_A08/4",
-  "samples": 5,
+  "dir": "Mock_A05/4",
+  "samples": 4,
   "scoring": "all"
  },
  "102": {
@@ -492,7 +444,7 @@
   "en": "Parking Lot Logs",
   "tier": 0,
   "dir": "Mock_A09/2",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "103": {
@@ -500,7 +452,7 @@
   "en": "Shady Bike Routes",
   "tier": 0,
   "dir": "Mock_A09/5",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "105": {
@@ -508,7 +460,7 @@
   "en": "Fixing a Message",
   "tier": 0,
   "dir": "Mock_A11/4",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "106": {
@@ -516,7 +468,7 @@
   "en": "Splitting the Orchard",
   "tier": 0,
   "dir": "Mock_A11/6",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "107": {
@@ -524,7 +476,7 @@
   "en": "Mango or Longan",
   "tier": 0,
   "dir": "Mock_A12/1",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "108": {
@@ -532,7 +484,7 @@
   "en": "Lucky Wheels",
   "tier": 0,
   "dir": "Mock_A12/2",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "109": {
@@ -540,7 +492,7 @@
   "en": "Walks of Exact Length",
   "tier": 0,
   "dir": "Mock_A12/4",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "110": {
@@ -548,15 +500,15 @@
   "en": "Cutting the Pearl Necklace",
   "tier": 0,
   "dir": "Mock_A12/5",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "111": {
-  "title": "ใบเสร็จไร้ช่องว่าง",
-  "en": "Receipt Without Spaces",
+  "title": "แบ่งป้ายตัวเลข",
+  "en": "Splitting the Digit Tiles",
   "tier": 0,
   "dir": "Mock_A01/1",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "112": {
@@ -564,15 +516,63 @@
   "en": "Seedlings From Three Nurseries",
   "tier": 0,
   "dir": "Mock_A11/1",
-  "samples": 5,
+  "samples": 4,
   "scoring": "all"
  },
  "113": {
   "title": "กระเช้าเที่ยวพิเศษ",
   "en": "One Extra Cable Car",
   "tier": 0,
-  "dir": "Mock_A07/4",
-  "samples": 5,
+  "dir": "Mock_A08/4",
+  "samples": 4,
+  "scoring": "all"
+ },
+ "114": {
+  "title": "ตั้งสถานีอนามัย",
+  "en": "Placing the Health Stations",
+  "tier": 0,
+  "dir": "Mock_A04/3",
+  "samples": 4,
+  "scoring": "all"
+ },
+ "115": {
+  "title": "ทีมแข่งขันสามวิชา",
+  "en": "A Team for Three Subjects",
+  "tier": 0,
+  "dir": "Mock_A07/2",
+  "samples": 4,
+  "scoring": "all"
+ },
+ "116": {
+  "title": "ช่างฝึกหัด",
+  "en": "The Apprentice Mechanic",
+  "tier": 0,
+  "dir": "Mock_A08/2",
+  "samples": 4,
+  "scoring": "all"
+ },
+ "117": {
+  "title": "บทสวดซ้ำ",
+  "en": "Repeated Chant",
+  "tier": 0,
+  "dir": "Mock_A05/3",
+  "samples": 4,
+  "scoring": "all"
+ },
+ "118": {
+  "title": "ที่ดินของหมู่บ้าน",
+  "en": "Village Land Claims",
+  "tier": 0,
+  "dir": "Mock_A11/2",
+  "samples": 4,
+  "scoring": "all"
+ },
+ "119": {
+  "title": "ชั้นพักข้างเตาเผา",
+  "en": "The Shelf Beside the Kiln",
+  "tier": 0,
+  "dir": "Mock_A09/6",
+  "samples": 4,
   "scoring": "all"
  }
 }

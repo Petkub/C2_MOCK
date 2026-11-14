@@ -1,108 +1,149 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
+# A monster's "first trap" is the first trap at or to the right of it; d = its distance to that trap.
 import os, random
 
-random.seed(1201001)
-MAXN, MAXM, MAXQ, MAXP = 20, 20, 50000, 10 ** 9
-MAXLR = 10 ** 11
+random.seed(82025)
+rnd = random.random
+MAXN, MAXM, MAXV = 100000, 100000, 10 ** 9
 tests = []
 
 
-def add(M, dishes, bad, qs):
-    N = len(dishes)
-    assert 1 <= N <= MAXN and 1 <= M <= MAXM and 1 <= len(qs) <= MAXQ
-    lines = [f"{N} {M} {len(qs)}"]
-    for p, al in dishes:
-        assert 1 <= p <= MAXP and len(set(al)) == len(al) and all(1 <= a <= M for a in al)
-        lines.append(" ".join(map(str, [p, len(al)] + list(al))))
-    assert len(set(bad)) == len(bad) and all(1 <= b <= M for b in bad)
-    lines.append(" ".join(map(str, [len(bad)] + list(bad))))
-    for L, R in qs:
-        assert 0 <= L <= R <= MAXLR
-        lines.append(f"{L} {R}")
-    tests.append("\n".join(lines) + "\n")
+def ri(a, b):
+    return a + int(rnd() * (b - a + 1))
 
 
-def rdish(M, pmin, pmax, kmax):
-    k = random.randint(0, min(kmax, M))
-    return (random.randint(pmin, pmax), sorted(random.sample(range(1, M + 1), k)))
+def add(mons, xs):
+    n, m = len(mons), len(xs)
+    assert 1 <= n <= MAXN and 1 <= m <= MAXM
+    assert all(1 <= a <= MAXV and 1 <= h <= MAXV for a, h in mons)
+    assert all(1 <= x <= MAXV for x in xs) and len(set(xs)) == m
+    tests.append(f"{n} {m}\n" + "".join(f"{a} {h}\n" for a, h in mons) + " ".join(map(str, xs)) + "\n")
 
 
-def rq(tot, mode):
-    """a question whose range sits around the menu prices (answers neither always 0 nor everything)"""
-    if mode == "mid":
-        a, b = sorted(random.randint(0, tot) for _ in range(2))
-    elif mode == "low":
-        a = random.randint(0, 3)
-        b = random.randint(a, max(a, tot // 3))
-    elif mode == "high":
-        a, b = random.randint(tot // 2, tot + 5), MAXLR
-    elif mode == "wide":
-        a, b = random.randint(0, 3), MAXLR
-    elif mode == "point":
-        a = b = random.randint(0, tot)
-    else:                                   # narrow
-        c = random.randint(0, tot)
-        w = max(1, tot // 2000)
-        a, b = max(0, c - w), c + w
-    return (a, min(b, MAXLR))
+def shuffle(v):
+    for i in range(len(v) - 1, 0, -1):
+        j = int(rnd() * (i + 1))
+        v[i], v[j] = v[j], v[i]
+    return v
 
 
-def case(M, dishes, bad, q, modes):
-    tot = sum(p for p, _ in dishes)
-    add(M, dishes, bad, [rq(tot, random.choice(modes)) for _ in range(q)])
+def traps(m, lo, hi):
+    """m distinct positions in [lo, hi], in random order"""
+    assert hi - lo + 1 >= m
+    seen, out = set(), []
+    while len(out) < m:
+        x = ri(lo, hi)
+        if x not in seen:
+            seen.add(x)
+            out.append(x)
+    return out
 
 
-ALL = ["mid", "mid", "low", "high", "wide", "narrow", "point"]
+def first_trap(xs):
+    s = sorted(xs)
+
+    def f(a):
+        lo, hi = 0, len(s)
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if s[mid] < a:
+                lo = mid + 1
+            else:
+                hi = mid
+        return s[lo] if lo < len(s) else None
+    return f
+
+
+def rand_mons(n, lo, hi, hlo, hhi):
+    return [(ri(lo, hi), ri(hlo, hhi)) for _ in range(n)]
+
+
+def tie_mons(n, xs, lo, hi, p_tie):
+    """health = d for a share p_tie of the monsters, health < d (or a fireball-only monster) for the others,
+    so that many traps have no monster closer than its health but one with d == h"""
+    f = first_trap(xs)
+    out = []
+    for _ in range(n):
+        a = ri(lo, hi)
+        t = f(a)
+        if t is None or t == a:
+            out.append((a, ri(1, 1000)))
+        elif rnd() < p_tie:
+            out.append((a, t - a))
+        else:
+            out.append((a, ri(1, t - a)))
+    return out
+
+
+def on_traps(n, xs, share, hlo, hhi, lo, hi):
+    """a share of the monsters stand exactly on a trap"""
+    out = []
+    for _ in range(n):
+        a = xs[int(rnd() * len(xs))] if rnd() < share else ri(lo, hi)
+        out.append((a, ri(hlo, hhi)))
+    return out
+
+
+N, M = MAXN, MAXM
 # samples
-add(3, [(50, [1]), (30, []), (40, [2, 3])], [1], [(60, 100), (20, 50)])
-add(1, [(10, [1]), (10, [1])], [], [(10, 20), (11, 19)])
-add(2, [(7, [1, 2]), (5, []), (9, [2])], [1], [(6, 13), (0, 100)])
-add(2, [(100, [])], [1, 2], [(100, 100), (1, 99), (101, 200)])
-add(3, [(4, [2, 3]), (8, [])], [1], [(12, 12), (0, 8)])
+add([(3, 2), (5, 6), (6, 3), (9, 4)], [7, 10])
+add([(1, 4), (6, 7), (12, 5)], [4, 9])
+add([(15, 9), (28, 4), (6, 9), (16, 3)], [20, 27, 17])
+add([(5, 2), (12, 3), (29, 8), (11, 9)], [14, 19, 21])
+add([(11, 9), (17, 7), (14, 1), (11, 1)], [6, 21, 19])
+# hidden: small and medium (brute checks these)
+add([(5, 7)], [5])                                                     # on the trap
+add([(9, 4)], [3])                                                     # right of the only trap
+xs = traps(40, 1, 400)
+add(tie_mons(300, xs, 1, 420, 0.3), xs)                                # d == h
+xs = traps(60, 1, 600)
+add(on_traps(300, xs, 0.5, 1, 30, 1, 650), xs)                         # monsters on traps
+xs = traps(50, 1, 5000)
+add(rand_mons(400, 1, 5200, 1, 150), xs)                               # many traps with nobody worth it
+xs = traps(250, 1, 10 ** 9)
+add(rand_mons(2000, 1, MAXV, 1, MAXV), xs)
+xs = traps(300, 1, 10 ** 6)
+add(rand_mons(2000, 1, 10 ** 6, 1, 6000), xs)
+xs = traps(200, 1, 10 ** 5)
+add(rand_mons(2000, 10 ** 5 + 1, MAXV, MAXV - 1000, MAXV), xs)         # all right of every trap, big sum
+xs = traps(300, 10 ** 8, 2 * 10 ** 8)
+add(rand_mons(1500, 1, 10 ** 8, MAXV // 2, MAXV), xs)                  # all left of every trap, big distances
+# hidden: max size (some with most monsters right of most traps, some with most monsters left of them)
+xs = traps(M, 1, MAXV)
+add(rand_mons(N, 1, MAXV, 1, MAXV), xs)                                # uniform
+xs = traps(M, 1, MAXV)
+add(rand_mons(N, 1, MAXV, 1, 20000), xs)                               # health ~ the gaps: mixed
+xs = traps(M, 1, MAXV)
+add(rand_mons(N, 1, MAXV, 1, 3000), xs)                                # mostly arrows
+xs = traps(M, 1, MAXV)
+add(tie_mons(N, xs, 1, MAXV, 0.25), xs)                                # d == h
+xs = traps(M, 1, 3 * 10 ** 6)
+add(tie_mons(N, xs, 2 * 10 ** 6, 3 * 10 ** 6, 0.5), xs)                # d == h, dense, right third
+xs = traps(M, 1, MAXV)
+add(on_traps(N, xs, 0.5, 1, 10 ** 6, 1, MAXV), xs)                     # on traps
+xs = traps(M, 1, 10 ** 6)
+add(on_traps(N, xs, 0.7, 1, 50, 1, 10 ** 6), xs)                       # on traps, dense, small health
+xs = traps(M, 1, 10 ** 6)
+add(rand_mons(N, 10 ** 6 + 1, MAXV, MAXV - 10 ** 6, MAXV), xs)         # all right of every trap
+xs = traps(M, 9 * 10 ** 8, MAXV)
+add(rand_mons(N, 1, 9 * 10 ** 8, MAXV // 2, MAXV), xs)                 # all left of every trap
+xs = traps(M, 1, 2 * 10 ** 8)
+add(rand_mons(N, 1, MAXV, 1, 10 ** 6), xs)                             # traps on the left
+xs = traps(M, 1, 4 * 10 ** 5)
+add(rand_mons(N, 1, 2 * 10 ** 6, 1, 5), xs)                            # dense, tiny health, traps on the left
+xs = traps(M, 1, 2 * 10 ** 6)
+add(tie_mons(N, xs, 1, 4 * 10 ** 5, 0.3), xs)                          # d == h, monsters left of most traps
+xs = traps(M, 1, MAXV)
+pos = [ri(1, MAXV // 10) for _ in range(450)] + [ri(1, MAXV) for _ in range(50)]
+add([(pos[int(rnd() * 500)], ri(1, 10 ** 6)) for _ in range(N)], xs)      # few positions, many monsters each
+xs = traps(M, 1, MAXV)
+add(shuffle(rand_mons(N * 9 // 10, 1, 10 ** 8, 1, 10 ** 6) + rand_mons(N // 10, 1, MAXV, 1, MAXV)), xs)
+xs = traps(M, 8 * 10 ** 8, MAXV)
+add(shuffle(rand_mons(N // 2, 1, 8 * 10 ** 8, 1, 200) + rand_mons(N // 2, 8 * 10 ** 8, 10 ** 9, 1, 200000)), xs)
+xs = traps(M, 1, MAXV)
+add(on_traps(N, xs, 0.3, 1, 30000, 9 * 10 ** 8, MAXV), xs)            # on traps, the others far right
 
-# hidden: small (brute checks these)
-for N, M, Q, pmax, kmax, t in [(1, 1, 5, 10, 1, 1), (4, 3, 30, 20, 2, 1), (8, 6, 50, 100, 2, 2),
-                               (10, 10, 40, 10 ** 9, 3, 3), (12, 20, 30, 50, 3, 5), (13, 5, 20, 10 ** 6, 1, 1)]:
-    dishes = [rdish(M, 1, pmax, kmax) for _ in range(N)]
-    case(M, dishes, random.sample(range(1, M + 1), t), Q, ALL)
-dishes = [(random.randint(1, 30), [1, 2, 3]) for _ in range(9)]           # every dish has every allergen
-case(3, dishes, [2], 20, ALL)
-dishes = [(random.randint(1, 30), []) for _ in range(11)]                 # no dish has an allergen
-case(20, dishes, list(range(1, 21)), 30, ALL)
-
-
-# hidden: big (N = 20, Q = 50 000; the customer can eat almost every dish)
-def big(seed, M, pmin, pmax, kmax, t, modes=ALL, equal=False, q=MAXQ):
-    random.seed(seed)
-    dishes = [rdish(M, pmin, pmax, kmax) for _ in range(MAXN)]
-    if equal:
-        dishes = [(dishes[0][0], al) for _, al in dishes]
-    bad = random.sample(range(1, M + 1), t)
-    case(M, dishes, bad, q, modes)
-
-
-big(1202001, 20, 1, MAXP, 0, 20)                                    # no dish has an allergen
-big(1202002, 20, MAXP - 1000, MAXP, 0, 5, ["wide", "high"])          # the largest prices, nearly all menus
-big(1202003, 20, 1, 1000, 1, 1)
-big(1202004, 20, 1, MAXP, 2, 2, ["mid", "narrow"])
-big(1202005, 20, 1, 100, 1, 1, ["mid", "point"])
-big(1202006, 20, 1, MAXP, 1, 0)
-big(1202007, 20, 1, MAXP, 0, 0, ["wide", "point"])
-big(1202008, 1, 1, MAXP, 0, 1)
-big(1202009, 20, 1, 20, 2, 1, ["narrow", "mid", "point"])
-big(1202010, 20, 1, MAXP, 0, 0, ["narrow", "point", "mid"], equal=True)
-big(1202011, 20, MAXP, MAXP, 0, 3, ALL, equal=True)
-big(1202012, 20, 1, 10 ** 6, 1, 1)
-big(1202013, 20, 1, MAXP, 0, 20, ["low", "high"])
-big(1202014, 20, 1, 1000, 1, 2, ["mid"])
-big(1202015, 20, 5 * 10 ** 8, MAXP, 0, 2, ["high", "mid", "wide"])
-big(1202016, 20, 1, 3, 1, 1)
-big(1202017, 20, 1, MAXP, 1, 1, ["mid", "wide", "point"])
-big(1202018, 20, 1, 50, 0, 0, ["mid"])
-
-for t in tests:
-    assert t.endswith("\n") and "  " not in t and " \n" not in t
 os.makedirs("tests", exist_ok=True)
-for i, t in enumerate(tests, 1):
-    with open(f"tests/{i:02d}.in", "w") as f:
+for k, t in enumerate(tests, 1):
+    with open(f"tests/{k:02d}.in", "w") as f:
         f.write(t)

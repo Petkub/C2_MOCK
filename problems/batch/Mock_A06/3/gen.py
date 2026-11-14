@@ -1,52 +1,123 @@
-import random, os
-random.seed(2601)
-os.makedirs("tests", exist_ok=True)
-cases = []
-# ---- samples (01-05) ----
-cases.append((1, 0, 10, [(2, 1), (7, 2), (12, 1)]))
-cases.append((2, 0, 10, [(2, 1), (7, 2), (12, 1)]))
-cases.append((2, 3, 5, [(4, 3), (0, 1), (10, 2), (4, 1)]))
-cases.append((3, 5, 5, [(5, 7), (5, 1), (5, 100), (6, 1)]))
-cases.append((2, -3, 8, [(0, 2), (5, 1), (-6, 3), (9, 4)]))
-# ---- small random (brute-checkable) ----
-for _ in range(6):
-    n = random.randint(1, 8)
-    k = random.randint(1, n)
-    A = random.randint(-30, 30); B = A + random.randint(0, 30)
-    cases.append((k, A, B, [(random.randint(-40, 40), random.randint(1, 5)) for _ in range(n)]))
-# ---- large ----
-def big(n, k, A, B, xr, sr):
-    return (k, A, B, [(random.randint(*xr), random.randint(*sr)) for _ in range(n)])
-N = 100000
-cases.append(big(N, 1, -10**9, 10**9, (-10**9, 10**9), (1, 1000)))
-cases.append(big(N, N, -10**9, 10**9, (-10**9, 10**9), (1, 10**9)))
-cases.append(big(N, 50000, -10**9, 10**9, (-10**9, 10**9), (1, 1000)))
-cases.append(big(50000, 777, 0, 10**6, (0, 10**6), (1, 3)))
-cases.append(big(N, 30000, -5 * 10**8, 5 * 10**8, (-10**9, 10**9), (1, 1)))
-cases.append(big(50000, 1000, 123456, 123456, (-10**9, 10**9), (1, 1000)))     # A = B
-# towers all outside [A, B]
-cases.append((5000, -1000, 1000, [(random.choice([-1, 1]) * random.randint(10**8, 10**9), random.randint(1, 100)) for _ in range(N)]))
-# overflow trap: huge s, answer near 2e9
-t = [(10**9, 1)] + [(random.randint(-10**9, 10**9), 10**9) for _ in range(N - 1)]
-cases.append((N, -10**9, 10**9, t))
-# dense equal positions, answer 0
-cases.append((N, 42, 42, [(42, random.randint(1, 10**9)) for _ in range(N)]))
-# evenly spaced, small s: answer depends on gaps
-cases.append((3, 0, 999999, [(i * 10, 1 + (i % 3)) for i in range(N)]))
-# intervals touch exactly (r + 1 = l') at the answer P = 5
-cases.append((1, 0, 11 * (N - 1), [(11 * i, 1) for i in range(N)]))
-cases.append((2, 0, 11 * 300, [(11 * i, 1) for i in range(301)] + [(11 * i + 5, 1) for i in range(301)]))
-# binding gap at the left end A: every tower is far to the right of A
-cases.append(big(N, 3, -10**6, 10**9, (0, 10**9), (1, 1000)))
-cases.append(big(N, 20, -10**9, -10**9 + 10**6, (-10**9 + 10**6, 10**9), (1, 10**4)))
-# more large random
-cases.append(big(50000, 49999, 0, 10**9, (0, 10**9), (1, 10**9)))
-# the old sample 5 (answer 2000000000), moved here when the sample was replaced (2026-11-02)
-cases.append((2, -10**9, 10**9, [(10**9, 1), (-10**9, 10**9)]))
-for i, (k, A, B, t) in enumerate(cases, 1):
+# Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
+import os, random
+
+random.seed(810451)
+MAXN, MAXT = 100000, 10 ** 9
+tests = []
+
+
+def add(k, t):
     n = len(t)
-    assert 1 <= k <= n <= 100000 and -10**9 <= A <= B <= 10**9
-    assert all(-10**9 <= x <= 10**9 and 1 <= s <= 10**9 for x, s in t)
+    assert 1 <= n <= MAXN and 1 <= k <= n
+    assert all(1 <= x <= MAXT for x in t)
+    tests.append(f"{n} {k}\n" + " ".join(map(str, t)) + "\n")
+
+
+def relabel(t, big):
+    """replace type numbers by distinct random labels (up to 10^9 when big)"""
+    used = sorted(set(t))
+    hi = MAXT if big else max(len(used) * 3, 10)
+    lab = random.sample(range(1, hi + 1), len(used))
+    m = dict(zip(used, lab))
+    return [m[x] for x in t]
+
+
+def uniform(n, m):
+    return [random.randint(1, m) for _ in range(n)]
+
+
+def rare(n, common, rares, gaps, tail, late=False):
+    """`common` frequent types everywhere, rare types (labels common+1 .. common+rares) at spaced positions:
+    the gaps between consecutive rare items are drawn from `gaps` (a (lo, hi) range), the last rare item is
+    `tail` positions before the end; late: the longest gaps come last"""
+    t = [random.randint(1, common) for _ in range(n)]
+    g = [random.randint(*gaps) for _ in range(n // gaps[0] + 1)]
+    if late:
+        g.sort(reverse=True)
+    pos, j = n - 1 - tail, 0
+    while pos >= 0:
+        t[pos] = common + random.randint(1, rares)
+        pos -= g[j]
+        j += 1
+    return t
+
+
+def tailfix(t, k, x):
+    """the last x items get only k - 1 of the types that occur in t"""
+    keep = random.sample(sorted(set(t)), k - 1)
+    return t[:len(t) - x] + [random.choice(keep) for _ in range(x)]
+
+
+def runs(n, m, mean):
+    """runs of one type with random lengths 1 .. 2 * mean"""
+    t = []
+    while len(t) < n:
+        t += [random.randint(1, m)] * random.randint(1, 2 * mean)
+    return t[:n]
+
+
+def cyc(n, m, noise):
+    """a fixed order of m types repeated, with a few positions changed"""
+    p = list(range(1, m + 1))
+    random.shuffle(p)
+    t = [p[i % m] for i in range(n)]
+    for _ in range(noise):
+        t[random.randrange(n)] = random.randint(1, m)
+    return t
+
+
+# samples
+add(3, [5, 2, 5, 5, 7, 2, 2, 7])
+add(4, [3, 1, 3, 1, 2])
+add(1, [4, 4, 4, 4, 4, 4])
+add(4, [1, 3, 1, 7, 3, 4, 6, 3, 7, 1])
+add(3, [9, 4, 4, 9, 1, 4, 1, 1, 9, 9, 4, 4])
+# hidden: small (brute checks these)
+add(1, [7])
+add(3, [1, 2, 3, 1, 2, 3, 4, 4, 4, 4])                      # the tail decides (answer 6)
+add(2, [8, 8])
+add(6, [6, 1, 5, 2, 4, 3])
+add(30, relabel(uniform(30, 29), True))                      # K = N, a repeated type: -1
+add(7, relabel(rare(500, 6, 2, (20, 60), 120), False))     # long tail without rare types
+add(25, relabel(tailfix(runs(3000, 40, 6), 25, 900), False))
+add(40, relabel(cyc(4000, 45, 300), False))
+add(300, relabel(tailfix(uniform(20000, 330), 300, 2500), False))
+# hidden: big (N = 100000)
+N = MAXN
+add(5, relabel(rare(N, 4, 1, (5000, 15000), 47500), False))       # the tail decides
+add(5, relabel(rare(N, 4, 1, (12500, 25000), 1000, True), True))  # the last inner gap decides
+add(9, relabel(rare(N, 7, 3, (1, 35000), 40000), False))
+add(30, relabel(rare(N, 28, 5, (4000, 15000), 12500, True), True))
+add(1500, relabel(tailfix(uniform(N, 1500), 1500, 35000), False))
+t = [2101] + uniform(N - 2, 2100) + [2101]
+add(len(set(t)), relabel(t, True))                                 # a type only at both ends: answer N - 1
+add(1250, relabel(tailfix(uniform(N, 1250), 1250, 50000), False))
+add(50, relabel(tailfix(uniform(N, 50), 50, 55000), True))
+add(100, relabel(tailfix(runs(N, 120, 150), 100, 45000), False))
+t = runs(N, 40, 75)
+t[N - N // 100:] = cyc(N // 100, 40, 0)                            # every type occurs near the end
+t[N // 400] = t[N - N // 100 - 5] = 41
+add(len(set(t)), relabel(t, True))                                 # a type only twice, far apart
+add(4000, relabel(tailfix(uniform(N, 10000), 4000, 45000), True))
+add(10000, relabel(cyc(N, 10000, 0), False))                      # answer = K
+add(4750, relabel(tailfix(cyc(N, 5000, 1500), 4750, 20000), True))
+add(15000, relabel(cyc(N, 15001, 1), False))
+t = tailfix(rare(N, 12, 4, (2500, 10000), 0, True), 14, 55000)
+add(14, relabel(t, False))
+t = relabel(uniform(N, 2500), False)
+add(len(set(t)) + 1, t)                                            # -1
+add(1, relabel(uniform(N, 2), True))                               # K = 1
+t = [1] + [random.randint(2, 50) for _ in range(N - 1)]
+add(len(set(t)), relabel(t, True))                                 # type 1 only first: answer N
+t = rare(N, 10, 1, (500, 20000), 0, True)
+t[-1] = 11
+add(11, relabel(t, False))                                         # a rare item at the very end
+add(2, relabel(tailfix(runs(N, 2, 10000), 2, 60000), False))
+add(N, list(range(1, N + 1)))                                      # K = N, all different
+
+for t in tests:
+    assert t.endswith("\n") and "  " not in t and " \n" not in t
+os.makedirs("tests", exist_ok=True)
+for i, t in enumerate(tests, 1):
     with open(f"tests/{i:02d}.in", "w") as f:
-        f.write(f"{n} {k} {A} {B}\n" + "".join(f"{x} {s}\n" for x, s in t))
-print(len(cases), "tests")
+        f.write(t)
