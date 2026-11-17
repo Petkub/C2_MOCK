@@ -1,7 +1,7 @@
 # C2_MOCK — POSN Camp 2 Practice Judge (teacher's guide)
 
 This repo is the source of the judge that students run on their own computers for the Camp 2 mock exams
-(12 sets × 6 problems, no subtasks). Students never clone it: they download `C2_Mock_Test.zip` once from
+(Track A: 12 sets × 6 problems at exam level, Track B: 8 harder sets × 6; no subtasks). Students never clone it: they download `C2_Mock_Test.zip` once from
 [Releases](https://github.com/Petkub/C2_MOCK/releases/latest), and from then on their judge **updates itself from
 this repo** every time you push to `main`.
 

@@ -116,6 +116,13 @@ def test_tracks(root):
     code, out, _ = run_judge(["--progress", "--no-color", "--ascii"], folder)
     total_a = sum(len(s["problems"]) for s in sets if str(s["set"]).startswith("A"))
     check(code == 0 and "Track A" in out and f"/ {total_a}" in out, f"--progress shows Track A x / {total_a}", out[:800])
+    total_b = sum(len(s["problems"]) for s in sets if str(s["set"]).startswith("B"))
+    if total_b:         # v7 Track B: counted apart from Track A
+        check("Track B" in out and f"/ {total_b}" in out, f"--progress shows Track B x / {total_b}", out[:1500])
+        last_b = [s for s in sets if str(s["set"]).startswith("B")][-1]
+        lb = last_b["set"][0] + str(int(last_b["set"][1:]))
+        code, out, _ = run_judge(["--set", lb, "--no-color"], os.path.join(root, f"Mock_{last_b['set']}"))
+        check(code == 0 and "Problem 6" in out, f"--set {lb} lists set {lb}", f"exit {code}\n{out[-800:]}")
 
 
 def test_bootstrap_view():

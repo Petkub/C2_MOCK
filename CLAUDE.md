@@ -1,8 +1,8 @@
 # C2_MOCK: POSN Camp 2 Practice Judge
 
 A terminal judge that students run on their own machines to practice for the POSN Computer Olympiad (Camp 2, no subtasks). Since v7.0 the sets come in tracks: Track A = 12 exam-level sets x 6 problems
-(`Mock_A01` ... `Mock_A12`, set names A1 ... A12, `--set A3`); Track B (`Mock_B01` ..., harder / beyond the syllabus) is
-planned. Set keys are strings ("A01"); `judge.py` helpers `set_key` / `set_label` / `set_index` / `track_of` parse them.
+(`Mock_A01` ... `Mock_A12`, set names A1 ... A12, `--set A3`); Track B = 8 harder
+sets x 6 beyond the syllabus (`Mock_B01` ... `Mock_B08`, B1 ... B8, no target scores, progress counted apart). Set keys are strings ("A01"); `judge.py` helpers `set_key` / `set_label` / `set_index` / `track_of` parse them.
 Sibling repo `C1_MOCK` is the Camp 1 judge (same structure); fix shared bugs in both.
 Today it judges batch problems (`judge.py`). We are adding interactive and communication problems,
 and it updates itself from this GitHub repo so bugs can be fixed without re-sending zip files.

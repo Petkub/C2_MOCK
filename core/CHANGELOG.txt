@@ -1,12 +1,14 @@
 POSN Practice Judge - changes
 
-7.0  แบ่งเป็น 2 ชุด: Track A ระดับข้อสอบจริง 12 ชุด (Mock_A01 ... Mock_A12) และ Track B ยาก/เกินหลักสูตร (จะตามมา);
+7.0  แบ่งเป็น 2 ชุด: Track A ระดับข้อสอบจริง 12 ชุด (Mock_A01 ... Mock_A12) และ Track B ยาก/เกินหลักสูตร 8 ชุด (Mock_B01 ... Mock_B08);
+     Track B: โจทย์ใหม่ 24 ข้อ (ดัดแปลงจาก USACO 15, NOI Singapore 6, UVa 3), ข้อเดิมจากชุด 2-13 อีก 22 ข้อ และจากคลังโจทย์ 2 ข้อ
+     (บางข้อมีชุดทดสอบใหม่หรือขอบเขตข้อมูลใหญ่ขึ้น); ไม่มีคะแนนเป้าหมาย; ความคืบหน้านับแยกจาก Track A;
      โจทย์ใหม่ใน Track A 33 ข้อ (ดัดแปลงจาก NOI Singapore 13 ข้อ, ข้อใหม่ 16 ข้อ, จากคลังโจทย์ 4 ข้อ);
      ตัดโจทย์ implementation ที่มีกฎรูปแบบข้อมูลเยอะออก 5 ข้อ; ตัวอย่างในโจทย์เหลือข้อละ 4 ชุด (ชุดที่ 5 เดิมเป็นชุดทดสอบลับ);
      รูปแบบเอกสารโจทย์ใหม่ (แบบ NOI: เว้นระยะชัด ตารางตัวอย่างเดียว); หน้าปกและ judge ไม่แสดงระดับความยากของโจทย์.
      Sets are now named A1 ... A12 (folders Mock_A01 ...; judge.py --set A3, problem A3-5); the progress view
-     counts Track A apart. Your written .cpp files move with their problems to the new folders (the judge lists
-     every move); a file of a problem not in Track A goes to that old folder's old/ subfolder; an old folder with
+     counts Track A and Track B (B1 ... B8) apart. Your written .cpp files move with their problems to the new folders (the judge lists
+     every move); a file of a problem that is in neither track goes to that old folder's old/ subfolder; an old folder with
      nothing of yours left is removed, otherwise it keeps README_MOVED.txt. Nothing you wrote is deleted.
 6.1  Mock sets 9-12, a little harder than set 8, with Fenwick tree, segment tree and tree problems (and more
      grid BFS, backtracking and interval DP). Set 4 problem 5 and set 8 problem 5 are new problems; in set 4 the

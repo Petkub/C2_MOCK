@@ -63,6 +63,22 @@
   "samples": 4,
   "scoring": "all"
  },
+ "11": {
+  "title": "แนวตึกจากหัวมุม",
+  "en": "Skyline From the Corner",
+  "tier": 0,
+  "dir": "Mock_B02/3",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "12": {
+  "title": "เขตที่สมดุล",
+  "en": "Balanced Districts",
+  "tier": 0,
+  "dir": "Mock_B07/4",
+  "samples": 5,
+  "scoring": "all"
+ },
  "13": {
   "title": "สตริงแบบย่อ",
   "en": "Compressed Strings",
@@ -85,6 +101,30 @@
   "tier": 0,
   "dir": "Mock_A10/4",
   "samples": 4,
+  "scoring": "all"
+ },
+ "16": {
+  "title": "สมุดบัญชีของผู้ตรวจสอบ",
+  "en": "Auditor's Ledger",
+  "tier": 0,
+  "dir": "Mock_B05/2",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "17": {
+  "title": "รถรับส่งแถวเดียว",
+  "en": "Single-File Shuttle",
+  "tier": 0,
+  "dir": "Mock_B01/2",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "18": {
+  "title": "สาขาพอดี K แห่ง",
+  "en": "Exactly K Branches",
+  "tier": 0,
+  "dir": "Mock_B02/4",
+  "samples": 5,
   "scoring": "all"
  },
  "19": {
@@ -119,6 +159,14 @@
   "samples": 4,
   "scoring": "all"
  },
+ "23": {
+  "title": "เนินเขาที่มองเห็นกัน",
+  "en": "Hills in View",
+  "tier": 0,
+  "dir": "Mock_B07/3",
+  "samples": 5,
+  "scoring": "all"
+ },
  "25": {
   "title": "กองกระป๋องสองสี",
   "en": "Two-Colour Can Pyramid",
@@ -141,6 +189,22 @@
   "tier": 0,
   "dir": "Mock_A06/6",
   "samples": 4,
+  "scoring": "all"
+ },
+ "29": {
+  "title": "แบ่งกันร้อง",
+  "en": "Sharing the Song",
+  "tier": 0,
+  "dir": "Mock_B04/2",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "30": {
+  "title": "แบ่งอาณาจักร",
+  "en": "Splitting the Kingdom",
+  "tier": 0,
+  "dir": "Mock_B03/4",
+  "samples": 5,
   "scoring": "all"
  },
  "31": {
@@ -167,6 +231,22 @@
   "samples": 4,
   "scoring": "all"
  },
+ "34": {
+  "title": "เติมอักษรไขว้",
+  "en": "Crossword Fill",
+  "tier": 0,
+  "dir": "Mock_B02/2",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "36": {
+  "title": "ลานน้ำแข็งกับเบรก",
+  "en": "Ice Rink With Brakes",
+  "tier": 0,
+  "dir": "Mock_B03/2",
+  "samples": 5,
+  "scoring": "all"
+ },
  "38": {
   "title": "เลือกคณะกรรมการ",
   "en": "Choosing Committees",
@@ -183,12 +263,36 @@
   "samples": 4,
   "scoring": "all"
  },
+ "41": {
+  "title": "โครงข่ายไฟฟ้าที่ค่อย ๆ ขยาย",
+  "en": "Growing Network",
+  "tier": 0,
+  "dir": "Mock_B05/3",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "42": {
+  "title": "ไปคอนเสิร์ตด้วยกัน",
+  "en": "Concert Carpool",
+  "tier": 0,
+  "dir": "Mock_B01/5",
+  "samples": 5,
+  "scoring": "all"
+ },
  "43": {
   "title": "ทุกช่วงต้องหลากหลาย",
   "en": "Every Window Has Variety",
   "tier": 0,
   "dir": "Mock_A06/3",
   "samples": 4,
+  "scoring": "all"
+ },
+ "48": {
+  "title": "สายเคเบิลต่างค่าย",
+  "en": "Cables Across Companies",
+  "tier": 0,
+  "dir": "Mock_B01/3",
+  "samples": 5,
   "scoring": "all"
  },
  "49": {
@@ -207,6 +311,14 @@
   "samples": 4,
   "scoring": "all"
  },
+ "52": {
+  "title": "แนวต้นไม้ฟันปลา",
+  "en": "Weighted Zigzag",
+  "tier": 0,
+  "dir": "Mock_B07/1",
+  "samples": 5,
+  "scoring": "all"
+ },
  "56": {
   "title": "ไม้บรรทัดขีดน้อย",
   "en": "Ruler With Few Marks",
@@ -223,6 +335,22 @@
   "samples": 4,
   "scoring": "all"
  },
+ "58": {
+  "title": "ร้านข้าวสารที่คุ้มที่สุด",
+  "en": "Nearest Shop With Updates",
+  "tier": 0,
+  "dir": "Mock_B06/1",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "59": {
+  "title": "หมายเลขการแขวนภาพ",
+  "en": "Gallery Arrangement Number",
+  "tier": 0,
+  "dir": "Mock_B03/1",
+  "samples": 5,
+  "scoring": "all"
+ },
  "62": {
   "title": "จัดแถวหุ่นยนต์บนราง",
   "en": "Robots Into Order",
@@ -237,6 +365,22 @@
   "tier": 0,
   "dir": "Mock_A04/5",
   "samples": 4,
+  "scoring": "all"
+ },
+ "64": {
+  "title": "รถแจกถุงยังชีพ",
+  "en": "Relief Truck",
+  "tier": 0,
+  "dir": "Mock_B06/3",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "66": {
+  "title": "กลิ้งกล่องยาว",
+  "en": "Rolling Block",
+  "tier": 0,
+  "dir": "Mock_B04/1",
+  "samples": 5,
   "scoring": "all"
  },
  "67": {
@@ -263,6 +407,14 @@
   "samples": 4,
   "scoring": "all"
  },
+ "71": {
+  "title": "เส้นทางเดียวผ่านทุกคน",
+  "en": "One Road Past Everyone",
+  "tier": 0,
+  "dir": "Mock_B03/3",
+  "samples": 5,
+  "scoring": "all"
+ },
  "73": {
   "title": "ช่วงด่านที่เล่นผ่านได้",
   "en": "Playable Stage Ranges",
@@ -271,12 +423,28 @@
   "samples": 4,
   "scoring": "all"
  },
+ "74": {
+  "title": "แสงวาบของดาว",
+  "en": "Star Flares",
+  "tier": 0,
+  "dir": "Mock_B02/1",
+  "samples": 5,
+  "scoring": "all"
+ },
  "76": {
   "title": "พลิกกองพัสดุ",
   "en": "Flipping Parcel Stacks",
   "tier": 0,
   "dir": "Mock_A08/5",
   "samples": 4,
+  "scoring": "all"
+ },
+ "77": {
+  "title": "ย้ายรถก่อนทาสี",
+  "en": "Moving the Parked Cars",
+  "tier": 0,
+  "dir": "Mock_B06/2",
+  "samples": 5,
   "scoring": "all"
  },
  "78": {
@@ -309,6 +477,14 @@
   "tier": 0,
   "dir": "Mock_A10/6",
   "samples": 4,
+  "scoring": "all"
+ },
+ "82": {
+  "title": "นับคำตอบ nonogram",
+  "en": "Nonogram Count",
+  "tier": 0,
+  "dir": "Mock_B05/1",
+  "samples": 5,
   "scoring": "all"
  },
  "85": {
@@ -573,6 +749,214 @@
   "tier": 0,
   "dir": "Mock_A09/6",
   "samples": 4,
+  "scoring": "all"
+ },
+ "120": {
+  "title": "ตัดแต่งแนวรั้วต้นไม้",
+  "en": "Trimming the Hedge",
+  "tier": 0,
+  "dir": "Mock_B01/1",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "121": {
+  "title": "รถตู้โรงเรียนสองเที่ยว",
+  "en": "Two Trips of the School Van",
+  "tier": 0,
+  "dir": "Mock_B01/4",
+  "samples": 4,
+  "scoring": "all"
+ },
+ "122": {
+  "title": "ไกด์รอบลาน",
+  "en": "Tour Around the Courtyard",
+  "tier": 0,
+  "dir": "Mock_B01/6",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "123": {
+  "title": "แก้เลขหนึ่งใบ",
+  "en": "One Card to Fix",
+  "tier": 0,
+  "dir": "Mock_B02/5",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "124": {
+  "title": "ปั่นจักรยานทางไกล",
+  "en": "The Longest Ride",
+  "tier": 0,
+  "dir": "Mock_B02/6",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "125": {
+  "title": "แผนถ่ายรูปขึ้นลง",
+  "en": "Up and Down Photo Plan",
+  "tier": 0,
+  "dir": "Mock_B03/5",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "126": {
+  "title": "ป้ายสี่ตู้",
+  "en": "Four Badges",
+  "tier": 0,
+  "dir": "Mock_B03/6",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "127": {
+  "title": "โคมไฟรอบทะเลสาบ",
+  "en": "Lamps Around the Lake",
+  "tier": 0,
+  "dir": "Mock_B04/3",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "128": {
+  "title": "โดรนส่งพัสดุ",
+  "en": "Delivery Drone",
+  "tier": 0,
+  "dir": "Mock_B04/4",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "129": {
+  "title": "อุณหภูมิตู้ปลา",
+  "en": "Aquarium Temperatures",
+  "tier": 0,
+  "dir": "Mock_B04/5",
+  "samples": 4,
+  "scoring": "all"
+ },
+ "130": {
+  "title": "ลูกไฟกับปีศาจ",
+  "en": "Fireballs and Demons",
+  "tier": 0,
+  "dir": "Mock_B04/6",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "131": {
+  "title": "ซ้อมปิดสถานีวิทยุ",
+  "en": "Radio Station Drill",
+  "tier": 0,
+  "dir": "Mock_B05/4",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "132": {
+  "title": "จอผู้นำ",
+  "en": "The Leader Screen",
+  "tier": 0,
+  "dir": "Mock_B05/5",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "133": {
+  "title": "ฉากละครบังมิด",
+  "en": "Stage Backdrops",
+  "tier": 0,
+  "dir": "Mock_B05/6",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "134": {
+  "title": "เซลล์แบ่งตัว",
+  "en": "Splitting Cells",
+  "tier": 0,
+  "dir": "Mock_B06/4",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "135": {
+  "title": "การ์ดหายเป็นคู่",
+  "en": "Vanishing Card Pairs",
+  "tier": 0,
+  "dir": "Mock_B06/5",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "136": {
+  "title": "เก็บน้ำผึ้ง",
+  "en": "Honey Rounds",
+  "tier": 0,
+  "dir": "Mock_B06/6",
+  "samples": 4,
+  "scoring": "all"
+ },
+ "137": {
+  "title": "ส่งพัสดุเข้าเมืองหลวง",
+  "en": "Parcel to the Capital",
+  "tier": 0,
+  "dir": "Mock_B07/2",
+  "samples": 4,
+  "scoring": "all"
+ },
+ "138": {
+  "title": "เต็นท์ค่ายพักแรม",
+  "en": "Camp Tents",
+  "tier": 0,
+  "dir": "Mock_B07/5",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "139": {
+  "title": "รู้จักกันก่อนย้ายออก",
+  "en": "Introductions Before Moving Out",
+  "tier": 0,
+  "dir": "Mock_B07/6",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "140": {
+  "title": "กีฬาสี",
+  "en": "Sports Day Colours",
+  "tier": 0,
+  "dir": "Mock_B08/1",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "141": {
+  "title": "หุ่นยนต์เก็บใบชา",
+  "en": "Tea-Picking Robots",
+  "tier": 0,
+  "dir": "Mock_B08/2",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "142": {
+  "title": "ลิงรวมฝูง",
+  "en": "Monkey Gathering",
+  "tier": 0,
+  "dir": "Mock_B08/3",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "143": {
+  "title": "ตั๋วสวนสนุก",
+  "en": "Zone Passes",
+  "tier": 0,
+  "dir": "Mock_B08/4",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "144": {
+  "title": "ถังรั่วเรียงแถว",
+  "en": "Leaky Bucket Line",
+  "tier": 0,
+  "dir": "Mock_B08/5",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "145": {
+  "title": "รหัสสมาชิก",
+  "en": "Member Codes",
+  "tier": 0,
+  "dir": "Mock_B08/6",
+  "samples": 5,
   "scoring": "all"
  }
 }
