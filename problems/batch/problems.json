@@ -403,7 +403,7 @@
   "title": "กล่องซ้อนกล่อง",
   "en": "Boxes Within Boxes",
   "tier": 0,
-  "dir": "Mock_A02/3",
+  "dir": "Mock_A02/2",
   "samples": 4,
   "scoring": "all"
  },
@@ -811,7 +811,7 @@
   "title": "เลื่อนเวลาขึ้นบิน",
   "en": "Rescheduling the Take-offs",
   "tier": 0,
-  "dir": "Mock_A02/2",
+  "dir": "Mock_A02/3",
   "samples": 4,
   "scoring": "all"
  },

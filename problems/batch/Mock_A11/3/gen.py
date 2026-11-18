@@ -2,7 +2,7 @@
 import os, random
 
 random.seed(1402)
-MAXQ, MAXT, MAXS, MAXTSUM = 100000, 10, 5000, 400000
+MAXQ, MAXT, MAXS, MAXTSUM = 200000, 10, 5000, 1000000
 tests = []
 rnd = random.random
 
@@ -95,8 +95,10 @@ add([(1, 2, [1, 1]), (2, 2, [1, 1]), (1, 1, [1, 1]), (3, 5, [1, 1])])
 for maxs, q in [(12, 300), (40, 300), (120, 200), (300, 100)]:
     add([query(maxs, rng="small") for _ in range(q)])
 add([query(60, shape=lopsided, rng="small") for _ in range(200)])
-# hidden: big. Every one is heavy: L near 1, R near S = 5000 and Q = min(10^5, 4 * 10^5 / t), so a loop over
-# k = L..R for each query (sum of (t + 1)(R - L + 1) steps, up to 2.5 * 10^9) cannot finish in time.
+# hidden: big. Every one is heavy: L near 1, R near S = 5000 and Q = min(2 * 10^5, 10^6 / t), so a loop over
+# k = L..R for each query (sum of (t + 1)(R - L + 1) steps, up to 6 * 10^9) cannot finish in time.
+# t >= 5 on almost every query (with Q <= 2 * 10^5, smaller t is too light), and mostly short lines
+# (one or two big departments, the rest small) so that 9 tests fit in the 40 MB cap for all test inputs.
 
 
 def heavy(t, total=MAXS, shape=None, lmax=1, rlow=MAXS):
@@ -116,24 +118,23 @@ def equal(total, t):
     return [total // t + (1 if i < total % t else 0) for i in range(t)]
 
 
+def twobig(total, t):
+    """two big departments and t - 2 small ones (short lines: the inputs must fit in 40 MB)"""
+    small = [ri(1, 3) for _ in range(t - 2)]
+    return split(total - sum(small), 2) + small
+
+
 BIG = [
-    (14100, lambda: many(lambda: heavy(ri(2, 4), MAXS - ri(0, 100)), MAXQ)),
-    (14101, lambda: many(lambda: heavy(4), MAXQ)),
-    (14102, lambda: many(lambda: heavy(3), qfor(3))),
-    (14103, lambda: many(lambda: heavy(10), qfor(10))),
-    (14104, lambda: many(lambda: heavy(8, shape=lopsided), qfor(8))),
-    (14105, lambda: many(lambda: heavy(5, shape=equal, lmax=3), qfor(5))),
-    (14106, lambda: many(lambda: heavy(3, MAXS - ri(0, 30), lmax=10, rlow=4990), qfor(3))),
-    (14107, lambda: many(lambda: heavy(6, lmax=3), qfor(6))),
-    (14108, lambda: many(lambda: heavy(7, MAXS - ri(0, 50)), qfor(7))),
+    (14103, lambda: many(lambda: heavy(10, shape=twobig), qfor(10))),
     (14109, lambda: many(lambda: heavy(10, shape=lopsided, lmax=2), qfor(10))),
-    (14110, lambda: many(lambda: heavy(2), MAXQ)),
-    (14111, lambda: [(1, MAXS, [MAXS // 2, MAXS - MAXS // 2])] + many(lambda: heavy(4, lmax=50), MAXQ - 1)),
-    (14112, lambda: many(lambda: heavy(3, shape=lopsided, lmax=5), qfor(3))),
+    (14104, lambda: many(lambda: heavy(8, shape=lopsided), qfor(8))),
     (14113, lambda: many(lambda: heavy(9, MAXS - ri(0, 10), rlow=4900), qfor(9))),
     (14114, lambda: many(lambda: heavy(ri(3, 10), MAXS - ri(0, 5)), 2 * MAXTSUM // 13)),
-    (14115, lambda: many(lambda: heavy(4, shape=equal), MAXQ)),
-    (14116, lambda: many(lambda: heavy(5, MAXS - ri(0, 100), lmax=20, rlow=4950), qfor(5))),
+    (14112, lambda: many(lambda: heavy(5, shape=lopsided, lmax=5), qfor(5))),
+    (14111, lambda: [(1, MAXS, [MAXS // 2, MAXS - MAXS // 2])]
+     + many(lambda: heavy(5, shape=lopsided, lmax=50), qfor(5) - 1)),
+    (14100, lambda: many(lambda: heavy(6, MAXS - ri(0, 50), shape=lopsided), qfor(6))),
+    (14105, lambda: many(lambda: heavy(10, shape=equal, lmax=3), qfor(10))),
 ]
 for seed, make in BIG:
     random.seed(seed)

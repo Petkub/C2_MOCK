@@ -15,6 +15,7 @@ that gen.py rebuilds and progress.json are never written into the repo.
    (hashes, backups, restart, create-only set files), and must refuse bad hashes, bad paths and no network.
 5. manifest.json is up to date.
 """
+import re
 import contextlib
 import functools
 import http.server
@@ -170,14 +171,20 @@ def test_moves_70(root, tmp):
         write(os.path.join(base, *rel.split("/")), "")
     old = os.path.join(REPO, "tools", "moves", "problems_7.0.json")
     pairs = manifest.get("moves", {}).get(sha(old))
-    check(bool(pairs) and all("/old/" in d for _, d in pairs), "the manifest sends each replaced problem's file to old/",
+    slots = {s for s, _ in pairs}
+    check(bool(pairs) and any("/old/" in d for _, d in pairs)
+          and all("/old/" in d or (re.fullmatch(r"Mock_A\d\d/\d+\.cpp", d) and d.split("/")[0] == s.split("/")[0])
+                  for s, d in pairs),
+          "the manifest sends each replaced problem's file to old/ and a re-ordered problem's file to its new slot",
           str(pairs)[:300])
     if not pairs:
         return
     os.makedirs(os.path.join(jd, ".backup", "problems", "batch"), exist_ok=True)
     shutil.copy(old, os.path.join(jd, ".backup", "problems", "batch", "problems.json"))
-    untouched = pairs[0][0]                                      # an empty starter is not moved
-    written = {src: f"// 7.0 code for {src}\nint main(){{}}\n" for src, _ in pairs[1:]}
+    filled = {d for _, d in pairs}                               # slots that receive another problem's file
+    lone = [(s, d) for s, d in pairs if "/old/" in d and s not in filled]
+    untouched = lone[0][0]                                       # an empty starter is not moved
+    written = {src: f"// 7.0 code for {src}\nint main(){{}}\n" for src, _ in pairs if src != untouched}
     for src, text in written.items():
         write(os.path.join(base, *src.split("/")), text)
     keep = "Mock_A01/1.cpp" if all(s != "Mock_A01/1.cpp" for s, _ in pairs) else None
@@ -188,11 +195,11 @@ def test_moves_70(root, tmp):
     run_dir = os.path.join(base, "Mock_A01")
     code, out, _ = run_judge(["--list", "--no-color"], run_dir)
     check(code == 0 and "moved with their problems" in out, "the judge says the files moved", out[:600])
-    bad = [f"{s} -> {d}" for s, d in pairs[1:] if read(os.path.join(base, *d.split("/"))) != written[s]]
-    check(not bad, "every written file of a replaced problem is in Mock_Axx/old/", ", ".join(bad[:5]))
-    check(all(read(os.path.join(base, *s.split("/"))) == "" for s, _ in pairs),
+    bad = [f"{s} -> {d}" for s, d in pairs if s in written and read(os.path.join(base, *d.split("/"))) != written[s]]
+    check(not bad, "every written file is at its destination (old/ or the problem's new slot)", ", ".join(bad[:5]))
+    check(all(read(os.path.join(base, *s.split("/"))) == "" for s in slots - filled),
           "each replaced slot holds an empty starter for its new problem")
-    check(not os.path.exists(os.path.join(base, *pairs[0][1].split("/"))), "an untouched starter is not moved")
+    check(not os.path.exists(os.path.join(base, *lone[0][1].split("/"))), "an untouched starter is not moved")
     check((not keep or read(os.path.join(base, *keep.split("/"))) == "// kept\n") and read(track_b) == "// track B code\n",
           "files of problems that stay (Track A and Track B) are not touched")
     check(not glob.glob(os.path.join(base, "Mock_*", "README_MOVED.txt")), "no current set folder gets README_MOVED.txt")

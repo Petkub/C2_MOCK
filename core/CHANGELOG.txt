@@ -1,9 +1,11 @@
 POSN Practice Judge - changes
 
 7.1  แทนโจทย์ Track A 21 ข้อด้วยโจทย์ใหม่ที่คุณภาพสูงกว่า (ข้อเดิมซ้ำกับโจทย์ที่มีเฉลยเผยแพร่แล้ว เช่น NOI Singapore,
-     CSES, AtCoder): A1/3, A1/4, A2/2, A2/5, A3/1, A3/2, A4/2, A4/6, A5/4, A6/1, A6/5, A7/6, A8/5, A8/6, A9/1, A9/3,
-     A9/5, A10/5, A10/6, A11/6, A12/3; ชุดทดสอบแข็งขึ้นใน A2/3, A3/4, A3/6, A6/4, A7/3, A10/3, A11/3, A12/4.
-     Track B ไม่เปลี่ยน. A file you wrote for a replaced problem moves once to that set's old/ folder
+     CSES, AtCoder): A1/3, A1/4, A2/3, A2/5, A3/1, A3/2, A4/2, A4/6, A5/4, A6/1, A6/5, A7/6, A8/5, A8/6, A9/1, A9/3,
+     A9/5, A10/5, A10/6, A11/6, A12/3; ชุดทดสอบแข็งขึ้นใน A2/2, A3/4, A3/6, A6/4, A7/3, A10/3, A11/3, A12/4.
+     Boxes Within Boxes ย้ายจาก A2/3 เป็น A2/2 (เรียงตามความยาก; ไฟล์ของคุณย้ายตามไปด้วย);
+     A11/3 ขอบเขตใหม่ Q <= 200 000 และผลรวม t <= 1 000 000. Track B ไม่เปลี่ยน.
+     A file you wrote for a replaced problem moves once to that set's old/ folder
      (Mock_A01/old/3_<Title>.cpp) and an empty starter for the new problem takes its place; nothing you wrote
      is deleted or overwritten.
 7.0  แบ่งเป็น 2 ชุด: Track A ระดับข้อสอบจริง 12 ชุด (Mock_A01 ... Mock_A12) และ Track B ยาก/เกินหลักสูตร 8 ชุด (Mock_B01 ... Mock_B08);
