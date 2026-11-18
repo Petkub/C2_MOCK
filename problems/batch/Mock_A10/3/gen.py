@@ -69,29 +69,33 @@ add(arr(50, 100), rq(50, 3000))
 add(arr(300, MAXA), rq(300, 3000) + shortq(300, 1000))
 add(arr(2000, 1000), rq(2000, 2000))
 add(arr(5000, MAXA), longq(5000, 1000, slack=50))
-# hidden: large values (sums far above 2^31)
-M = 100000
-add([MAXA] * M, [(1, M, pick((2, 3))) for _ in range(MAXQ)])
-add(arr(M, MAXA, MAXA - 1000), longq(M, MAXQ, (2, 3, 5, 7)))
-add(arr(M, MAXA), rq(M, MAXQ))
-add([pick((1, MAXA)) for _ in range(M)], longq(M, MAXQ, (1, 2, 4)))
-# hidden: the largest N and Q (long ranges, small k)
+# hidden: values near 1e9 at the largest N (sums far above 2^31, long ranges, small k)
 N, Q = MAXN, MAXQ
-A9, A99, A999 = arr(N, 9), arr(N, 99), arr(N, 999)
+
+
+def giants(n, share, base=9):
+    """mostly small values (<= base) with a share of giants near 1e9"""
+    return [ri(MAXA - 10 ** 6, MAXA) if rnd() < share else ri(1, base) for _ in range(n)]
+
+
+add([MAXA] * N, [(ri(1, 3), N - ri(0, 2), pick((1, 2))) for _ in range(Q)])
+add(giants(N, 0.05), longq(N, Q, (1, 2, 3)))
+add(giants(N, 0.05), longq(N, Q, (2, 3, 5, 7)))
+add([pick((1, 9, MAXA)) if i % 16 == 0 else ri(1, 9) for i in range(N)], longq(N, Q, (1, 2, 4)))
+# hidden: the largest N and Q (long ranges, small k)
+A9, A99 = arr(N, 9), arr(N, 99)
 add(A9, longq(N, Q, (2,)))
 add(A99, longq(N, Q, (2, 3)))
 add(A9, longq(N, Q))
-add(A999[:N - 37], longq(N - 37, Q, (1, 2)))
-add(A99, rq(N, Q))
-add(A9, rq(N, Q, (2,)))
-add(A999, longq(N, Q, (4, 5, 9, 10)))
-add(arr(N, 9, 5), [(ri(1, 10), N - ri(0, 9), ri(1, 10)) for _ in range(Q)])
+add(A99[:N - 37], longq(N - 37, Q, (1, 2)))
+add(giants(N, 0.04, 99), rq(N, Q // 2) + longq(N, Q // 2, (1, 2)))
+add(giants(N, 0.05), rq(N, Q // 2, (2,)) + longq(N, Q // 2, (2, 3)))
+add(A9, longq(N, Q, (4, 5, 9, 10)))
 add(A99, longq(N, Q // 2, (2, 3)) + shortq(N, Q // 2))
 add([1 + 8 * (i % 2) for i in range(N)], longq(N, Q, (2, 3, 5, 7)))
-add(A9, [(ri(1, 30), N, ri(1, 10)) for _ in range(Q)])
+add(giants(N, 0.03), [(ri(1, 30), N, ri(1, 10)) for _ in range(Q)])
 add(A99, [(1, ri(N - 30, N), ri(2, 4)) for _ in range(Q)])
-add(A999, longq(N, Q, (3, 4, 5, 6), slack=5000))
-add(A9, longq(N, Q, (2, 6, 10), slack=20000))
+add(arr(N, 999), longq(N, Q, (3, 4, 5, 6, 2, 10), slack=20000))
 add(arr(N, 99, 90), longq(N, Q, (2, 3, 4)))
 add(A99[::-1], longq(N, Q, ALLK, slack=100))
 

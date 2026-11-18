@@ -1,196 +1,138 @@
-# Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-import os, random
-from itertools import accumulate
+# Writes tests/NN.in for this problem. Samples first (01..04), then hidden tests.
+# Integers only (big tests are rebuilt on students' machines and checked by SHA-256).
+import heapq, os, random
 
-random.seed(1204023)
+random.seed(510517)
 rnd = random.random
-MAXNK, MAXV = 200_000, 10 ** 9
+MAXN, MAXA, MAXX = 200000, 10 ** 9, 10 ** 15
 tests = []
 
 
-def ri(lo, hi):
-    """uniform integer in [lo, hi] (faster than randint, still deterministic)"""
-    return lo + int(rnd() * (hi - lo + 1))
+def ri(a, b):
+    return a + int(rnd() * (b - a + 1))
 
 
-def add(s, Q):
-    """s = starting power of each kind, Q = list of quests, each one row: requirement A then reward B (2K numbers)"""
-    n, k = len(Q), len(s)
-    assert 1 <= n and 1 <= k and n * k <= MAXNK
-    assert 0 <= min(s) and max(s) <= MAXV
-    assert set(map(len, Q)) == {2 * k}
-    assert 0 <= min(map(min, Q)) and max(map(max, Q)) <= MAXV
-    if k <= 20:
-        body = "\n".join(map(" ".join(["%d"] * (2 * k)).__mod__, map(tuple, Q)))
-    else:
-        body = "\n".join([" ".join(map(str, r)) for r in Q])
-    tests.append(f"{n} {k}\n" + " ".join(map(str, s)) + "\n" + body + "\n")
+def best(a, k):
+    """best score with level k (same rule as sol.cpp): deepest card L, leave the k - 1 most negative above it"""
+    h, left, pre, ans = [], 0, 0, 0
+    for x in a:
+        pre += x
+        if pre - left > ans:
+            ans = pre - left
+        if x < 0 and k > 1:
+            heapq.heappush(h, -x)
+            left += x
+            if len(h) > k - 1:
+                left += heapq.heappop(h)
+    return ans
 
 
-def addq(s, Q):
-    """the same with quests written as pairs (A, B)"""
-    add(s, [A + B for A, B in Q])
+def add(a, x):
+    n = len(a)
+    assert 1 <= n <= MAXN and 1 <= x <= MAXX
+    assert all(-MAXA <= v <= MAXA for v in a)
+    tests.append(f"{n} {x}\n" + " ".join(map(str, a)) + "\n")
 
 
-def place(Q, order):
-    """order: 'fwd' = as built, 'rev' = reversed, 'rand' = shuffled"""
-    if order == "rev":
-        Q.reverse()
-    elif order == "rand":
-        random.shuffle(Q)
-    return Q
+def add_k(a, k0):
+    """X chosen so that the answer is k0 (or the start of the flat part of best() that ends at k0)"""
+    add(a, best(a, k0))
 
 
-def blockers(P, cnt, G, k, exact=False):
-    """quests that can never be done: one kind needs more than the final power P (exactly P + 1 when exact)"""
-    Q = []
-    free = [j for j in range(k) if P[j] < MAXV]           # kinds where more than the final power is allowed
-    for _ in range(cnt):
-        A = [int(rnd() * (x + 1)) for x in P]
-        j = free[int(rnd() * len(free))]
-        A[j] = P[j] + 1 if exact else min(MAXV, P[j] + ri(1, 3 * G))
-        Q.append(A + [int(rnd() * (G + 1)) for _ in range(k)])
-    return Q
+def add_all(a, extra=0):
+    """X = the sum of all positive cards (+ extra)"""
+    add(a, max(1, sum(v for v in a if v > 0) + extra))
 
 
-def chain(s, m, gate, noise, G, order, nblock=0, slack=False, extra=0.0):
-    """m quests that can only be done one at a time in one fixed order: quest t needs the reward of quest t - 1 in
-    its gate kind (gate: 'first', 'last', 'rand'). The other kinds need: noise = 'zero' -> 0, 'tight' -> the
-    current power, 'rand' -> random up to the current power. slack: the gate need is anywhere above the power
-    before quest t - 1 (not only exactly the power). extra: chance of a random reward in a non-gate kind."""
-    k = len(s)
-    if k == 1:
-        b = [1 + int(rnd() * G) for _ in range(m)]
-        P = list(accumulate([s[0]] + b))            # P[t] = power after t quests
-        if slack:
-            a = [P[0]] + [P[t - 1] + 1 + int(rnd() * (P[t] - P[t - 1])) for t in range(1, m)]
+def uniform(n, lo, hi):
+    return [ri(lo, hi) for _ in range(n)]
+
+
+def dig(n, small, big, gap):
+    """long runs of small negative cards with a big positive card after each run"""
+    a = []
+    while len(a) < n:
+        run = ri(gap // 2, gap)
+        a.extend(-ri(1, small) for _ in range(run))
+        a.append(ri(big // 2, big))
+    return a[:n]
+
+
+def walls(n, gap):
+    """very bad cards (must be left behind) mixed with mild cards and some big ones"""
+    a = []
+    for i in range(n):
+        r = rnd()
+        if r < 0.3:
+            a.append(-ri(MAXA - 1000, MAXA))
+        elif r < 0.7:
+            a.append(ri(-1000, 1000))
+        elif i % gap == 0:
+            a.append(ri(MAXA // 2, MAXA))
         else:
-            a = P[:m]
-        Q = [[x, y] for x, y in zip(a, b)]
-        Q += blockers(P[m:], nblock, G, 1, exact=True)
-        return place(Q, order)
-    P = list(s)
-    g = [k - 1 if gate == "last" else 0 if gate == "first" else ri(0, k - 1) for _ in range(m + 1)]
-    Q = []
-    prev = None
-    for t in range(m):
-        A = [0] * k if noise == "zero" else list(P) if noise == "tight" else [int(rnd() * (x + 1)) for x in P]
-        gj = g[t]
-        if slack and prev is not None:
-            A[gj] = prev + 1 + int(rnd() * (P[gj] - prev))
-        else:
-            A[gj] = P[gj]
-        B = [0] * k
-        if extra:
-            for j in range(k):
-                if rnd() < extra:
-                    B[j] = int(rnd() * (G + 1))
-        nj = g[t + 1]
-        B[nj] = 1 + int(rnd() * G)
-        prev = P[nj]                     # the power in the next gate kind before this quest
-        P = [x + y for x, y in zip(P, B)]
-        Q.append(A + B)
-    Q += blockers(P, nblock, G, k, exact=True)
-    return place(Q, order)
-
-
-def near(s, m, G, tight, nblock, order="rand", zero=0.0):
-    """m quests planned in a random order, quest t needs a bit less than the power after the quests before it
-    (tight = largest fraction taken away); then nblock quests that can never be done. Answer = m."""
-    k = len(s)
-    P = list(s)
-    Q = []
-    for _ in range(m):
-        A = [x - int(x * rnd() * tight) for x in P]
-        B = [0 if rnd() < zero else int(rnd() * (G + 1)) for _ in range(k)]
-        P = [x + y for x, y in zip(P, B)]
-        Q.append(A + B)
-    Q += blockers(P, nblock, G, k)
-    return place(Q, order)
-
-
-def rand_inst(n, k, R, G, s=None):
-    s = s or [0] * k
-    return s, [[ri(0, R) for _ in range(k)] + [ri(0, G) for _ in range(k)] for _ in range(n)]
+            a.append(-ri(1, 10 ** 6))
+    return a
 
 
 # samples
-addq([3, 0], [([0, 2], [1, 1]), ([3, 0], [0, 2]), ([5, 4], [2, 2]), ([4, 3], [0, 5])])
-addq([0], [([4], [3]), ([0], [1]), ([1], [2]), ([7], [4]), ([3], [1])])
-addq([2, 0, 5], [([2, 1, 0], [4, 4, 4]), ([0, 0, 6], [1, 0, 0]), ([3, 0, 5], [0, 2, 0])])
-addq([1, 1, 0], [([2, 0, 0], [0, 3, 1]), ([0, 4, 0], [2, 0, 0]), ([1, 1, 1], [5, 5, 5]),
-                ([3, 3, 1], [0, 0, 2]), ([1, 0, 0], [1, 0, 0]), ([4, 4, 9], [1, 1, 1])])
-addq([2, 6], [([6, 2], [0, 1]), ([2, 7], [3, 0]), ([5, 7], [1, 4]), ([2, 6], [0, 1]),
-             ([9, 12], [2, 2]), ([8, 11], [1, 0]), ([6, 9], [0, 3])])
+add([-4, -4, 5, 7, -3, -4, 4], 12)
+add([3, -2, 4, -7, 2], 10)
+add([-17, 17, 5, -22, 22, -21, 5, -15, 20, 8], 70)
+add([2, 3, -1, -10, 8, 1], 5)
 
 # hidden: small (brute checks these)
-addq([5], [([5], [0])])                                                   # exactly enough
-addq([0, 0, 0], [([0, 0, 1], [7, 7, 0])])                                 # nothing can be done
-add(*rand_inst(12, 3, 9, 1, [5, 5, 5]))
-s = [ri(0, 5) for _ in range(4)]
-add(s, near(s, 11, 4, 0.5, 4))
-add([0, 0], chain([0, 0], 250, "rand", "rand", 3, "rand", nblock=50, slack=True, extra=0.3))
-s = [ri(0, 50) for _ in range(5)]
-add(s, near(s, 1500, 30, 0.3, 500))
-s = [ri(0, 20) for _ in range(2000)]
-add(s, chain(s, 8, "rand", "tight", 5, "rev", nblock=2))               # few quests, many kinds
+add([MAXA], MAXA)
+add([-5], 1)
+add([0] * 9, 1)
+add([-1] * 11 + [MAXA], MAXA)                          # answer N
+add([-1] * 11 + [MAXA], MAXA - 1)
+add(uniform(12, -MAXA, MAXA), MAXA)
+a = dig(12, 5, 20, 3)
+add_k(a, 3)
+a = uniform(300, -50, 30)
+add_k(a, 40)
+a = dig(2000, 1000, MAXA, 40)
+add_k(a, 300)
+a = walls(2000, 7)
+add_k(a, 450)
 
-# hidden: big (N * K = 200 000)
-add([0], chain([0], MAXNK, "last", "zero", 5, "rev"))                   # one at a time, listed backwards
-add([0], chain([0], 160_000, "last", "zero", 3, "rand", nblock=40_000))
-s = [MAXV, 0]
-add(s, chain(s, 100_000, "last", "rand", 3, "rand", slack=True))       # kind 1 decides, kind 0 is noise
-add([0, 0], chain([0, 0], 100_000, "rand", "rand", 3, "rev", extra=0.2))
-s = [MAXV] * 3 + [0]
-add(s, chain(s, 50_000, "last", "rand", 4, "rev"))                     # the last kind decides
-s = [ri(0, 1000) for _ in range(4)]
-add(s, chain(s, 45_000, "rand", "rand", 6, "rand", nblock=5_000, slack=True, extra=0.3))
-s = [ri(0, 100) for _ in range(10)]
-add(s, chain(s, 20_000, "rand", "rand", 5, "rev"))
-s = [ri(0, 1000), ri(0, 1000)]
-add(s, near(s, 70_000, 20, 0.05, 30_000))
-s = [ri(0, 100) for _ in range(5)]
-add(s, near(s, 30_000, 10, 0.15, 10_000, zero=0.5))
-add([0], near([0], MAXNK, 8, 1.0, 0))                                  # everything can be done
-s = [ri(0, 10 ** 6), ri(0, 10 ** 6)]
-add(s, blockers(s, 100_000, 10 ** 6, 2, exact=True))                   # nothing can be done
-s = [ri(0, 30) for _ in range(5)]
-addq(s, [([ri(0, x) for x in s], [ri(0, 9) for _ in range(5)]) for _ in range(40_000)])  # all doable at once
-k = 100_000
-addq([0] * k, [([0] * k, [0] * (k - 1) + [1]), ([0] * (k - 1) + [1], [0] * k)])  # two quests, many kinds
-s = [ri(0, 9) for _ in range(10_000)]
-add(s, chain(s, 20, "rand", "rand", 9, "rand"))
-s = [ri(0, 9) for _ in range(MAXNK)]
-A = list(s)
-A[-1] += 1
-addq(s, [(A, [ri(0, 9) for _ in range(MAXNK)])])                       # one quest, one short in the last kind
-s = [0, 0, 0]
-add(s, chain(s, 50_000, "rand", "rand", 2, "rand", nblock=16_666, extra=0.5))
-P = [0]
-Q = []
-for _ in range(50_000):                                                 # large rewards (power above 2^31)
-    a = ri(0, MAXV) if rnd() < 0.8 else ri(0, 10)
-    Q.append([a, ri(MAXV // 2, MAXV)])
-add(P, Q)
-add([0, 0, 0], chain([0, 0, 0], 66_666, "rand", "tight", 3, "rand"))
-s = [MAXV, 0]
-add(s, chain(s, 100_000, "last", "rand", 2, "rev"))                    # kind 1 decides, kind 0 is noise
-s = [0, MAXV]
-add(s, chain(s, 90_000, "first", "rand", 4, "rand", nblock=10_000, slack=True))  # kind 0 decides, kind 1 is noise
-
-k = MAXNK                                                                 # one quest, one short in a middle kind
-s = [ri(0, 9) for _ in range(k)]
-A = list(s)
-A[ri(k // 3, 2 * k // 3)] += 1
-addq(s, [(A, [ri(0, 9) for _ in range(k)])])
-k = 100_000                                                               # two quests, each one short in a middle kind
-s = [ri(0, 9) for _ in range(k)]
-Q = []
-for _ in range(2):
-    A = [int(rnd() * (x + 1)) for x in s]
-    A[ri(9 * k // 20, 11 * k // 20)] += 10
-    Q.append((A, [ri(0, 9) for _ in range(k)]))
-addq(s, Q)
+# hidden: big (every answer is large or -1)
+N = MAXN
+a = uniform(N, -MAXA, MAXA)
+add_k(a, 60000)
+a = uniform(N, -MAXA, MAXA // 3)
+add_k(a, 23456)
+a = uniform(N, -MAXA, MAXA // 2)
+add_all(a)
+add_all(a, 1)                                           # -1
+a = dig(N, 1000, MAXA, 50)
+add_k(a, 30000)
+a = dig(N, 10 ** 6, MAXA, 20)
+add_k(a, 9000)
+a = dig(N, MAXA // 1000, MAXA, 200)
+add_k(a, 120000)
+a = walls(N, 5)
+add_k(a, 40000)
+a = walls(N, 11)
+add_k(a, 15000)
+a = [-1] * (N - 1) + [MAXA]                             # answer N
+add(a, MAXA)
+a = [-MAXA if i % 2 == 0 else MAXA - 1 for i in range(N)]
+add(a, MAXA // 2 * (N // 4))
+a = [-(i + 1) * 5000 if i % 3 else MAXA - i for i in range(N)]   # left-behind cards change at every step
+add_k(a, 50000)
+a = [-(N - i) * 5000 if i % 3 else ri(1, MAXA) for i in range(N)]
+add_k(a, 50000)
+a = uniform(N, -MAXA, MAXA)
+add(a, MAXX)                                            # -1
+a = dig(N, 100, MAXA, 6)
+add_k(a, 3000)
+a = uniform(N, -1000, 1000)
+add_k(a, 80000)
+a = dig(N, MAXA, MAXA, 30)
+add_k(a, 70000)
+a = [ri(-MAXA, -1) for _ in range(N)]                   # no positive card: -1
+add(a, 1)
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

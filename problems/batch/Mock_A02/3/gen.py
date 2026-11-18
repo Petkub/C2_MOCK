@@ -152,7 +152,7 @@ D = MAXL // 2
 qs = [[1] * (D - 1)]
 used = D - 1
 while used + 300 < MAXK and len(qs) < MAXQ:
-    q = [1] * ri(1, 200)
+    q = [1] * (ri(1, 200) if rnd() < 0.05 else ri(1, 4))         # mostly short: each ends on a huge box
     if rnd() < 0.3:
         q[-1] = 2
     qs.append(q)
@@ -169,12 +169,12 @@ while True:
 D = len(codes) + 1
 s = ''.join('[%d,' % c for c in codes) + '[]' + ']' * len(codes)    # [c,[c,[c,...[]...]]]
 qs, used = [], 0
-while used < MAXK - 100000 and len(qs) < MAXQ:
-    n = min(ri(1, D + 1), MAXK - 100000 - used) if rnd() < 0.002 else ri(1, 300)
+while used + 300 <= MAXK and len(qs) < MAXQ:                   # two very long commands, then mostly short ones
+    n = min(ri(D // 2, D + 1), 150000) if len(qs) < 2 else ri(1, 300) if rnd() < 0.01 else ri(1, 3)
     q = [2] * n
-    if rnd() < 0.5:
+    if rnd() < 0.2:
         q[-1] = 1
-    elif rnd() < 0.3:
+    elif rnd() < 0.4:
         q[-1] = 3
     qs.append(q)
     used += n
@@ -183,8 +183,8 @@ add(s, qs)
 codes = codes[:-1]
 s = '[' * len(codes) + '[[]' + ''.join(',%d]' % c for c in codes) + ']'   # [[[...[[]],c],c],c]
 qs, used = [], 0
-while used < MAXK - 100000 and len(qs) < MAXQ:
-    n = min(ri(1, len(codes) + 2), MAXK - 100000 - used) if rnd() < 0.002 else ri(1, 300)
+while used + 300 <= MAXK and len(qs) < MAXQ:
+    n = min(ri(len(codes) // 2, len(codes) + 2), 150000) if len(qs) < 2 else ri(1, 300) if rnd() < 0.01 else ri(1, 3)
     q = [1] * n
     if rnd() < 0.6:
         q[-1] = 2
@@ -283,8 +283,8 @@ D = (MAXL - 2) // 5
 s = '[[],' * D + '[]' + ']' * D
 qs, used = [], 0
 while len(qs) < MAXQ and used + D + 2 < MAXK:
-    n = ri(0, D) if rnd() < 0.001 else ri(0, 200)
-    q = [2] * n + [ri(1, 3)]
+    n = ri(D // 2, D) if len(qs) < 2 else ri(0, 200) if rnd() < 0.01 else ri(0, 3)
+    q = [2] * n + [ri(1, 3) if rnd() < 0.2 else ri(2, 3)]
     if rnd() < 0.3:
         q.append(1)
     qs.append(q)
@@ -310,9 +310,16 @@ add(t, qs)
 # many empty boxes and artifacts in a wide box at the bottom of a chain of 1000 boxes
 items = ['[]' if rnd() < 0.7 else str(code_mix()) for _ in range(125000)]
 s = '[' * 1000 + ','.join(items) + ']' * 1000
-qs = []
-for _ in range(450):
-    qs.append([1] * 999 + [ri(1, 125001)] + ([1] if rnd() < 0.5 else []))
+qs, used = [], 0
+for _ in range(300):                                             # long commands to late items of the wide box
+    q = [1] * 999 + [125001 - int(rnd() * rnd() * 125001)] + ([1] if rnd() < 0.5 else [])
+    qs.append(q)
+    used += len(q)
+while used + 5 <= MAXK and len(qs) < MAXQ:                       # short commands: each ends on a box of almost all S
+    q = [1] * ri(0, 3) + [ri(1, 2)]
+    qs.append(q)
+    used += len(q)
+random.shuffle(qs)
 add(s, qs)
 
 # many chains side by side: [[[[...]]],[[[...]]],...]
@@ -327,7 +334,7 @@ s = '[' + ','.join('[' * d + ']' * d for d in parts) + ']'
 qs, used = [], 0
 while len(qs) < MAXQ and used + 3001 < MAXK:
     i = ri(1, len(parts) + 1)
-    n = ri(0, parts[i - 1]) if i <= len(parts) and rnd() < 0.15 else ri(0, 3)
+    n = ri(0, parts[i - 1]) if i <= len(parts) and rnd() < 0.001 else ri(0, 3)
     qs.append([i] + [1] * n)
     used += n + 1
 add(s, qs)

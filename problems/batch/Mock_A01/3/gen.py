@@ -1,88 +1,141 @@
-import random, os, math
-random.seed(2617)
+# Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
+import os, random
+
+random.seed(130317)
+rnd = random.random
+MAXCELLS, MAXA = 300000, 10 ** 6
+tests = []
+
+
+def ri(a, b):
+    return a + int(rnd() * (b - a + 1))
+
+
+def add(K, g):
+    R, C = len(g), len(g[0])
+    assert R >= 1 and C >= 1 and R * C <= MAXCELLS
+    assert all(len(row) == C for row in g)
+    assert 1 <= K <= C
+    assert all(-MAXA <= x <= MAXA for row in g for x in row)
+    lines = [f"{R} {C} {K}"] + [" ".join(map(str, row)) for row in g]
+    tests.append("\n".join(lines) + "\n")
+
+
+def rand_grid(R, C, lo, hi):
+    return [[ri(lo, hi) for _ in range(C)] for _ in range(R)]
+
+
+def mixed(R, C, M, pos=0.5, neg=0):
+    """values in [-M, M]; each is positive with probability pos, a negative one is at most -neg"""
+    return [[ri(1, M) if rnd() < pos else -ri(neg, M) for _ in range(C)] for _ in range(R)]
+
+
+def trap_row(C, K, M):
+    """values for one row against a scan that drops a negative start: short rich blocks (shorter than K), each
+    preceded by a mildly negative stretch and followed by a very negative one, so the best tunnel keeps the stretch"""
+    row = []
+    while len(row) < C:
+        blk = ri(max(1, K // 4), max(1, K // 2))
+        row += [-ri(M // 50, M // 10) for _ in range(ri(K, 2 * K))]
+        row += [ri(M // 2, M) for _ in range(blk)]
+        row += [-ri(M // 2, M) for _ in range(ri(K, 2 * K))]
+    return row[:C]
+
+
+def shafts(g, i):
+    """best shaft sums above and below every plot of row i"""
+    R, C = len(g), len(g[0])
+    up, dn = [0] * C, [0] * C
+    for j in range(C):
+        s = 0
+        for t in range(i - 1, -1, -1):
+            s += g[t][j]
+            up[j] = max(up[j], s)
+        s = 0
+        for t in range(i + 1, R):
+            s += g[t][j]
+            dn[j] = max(dn[j], s)
+    return up, dn
+
+
+def embed(R, C, i, target, M, pos):
+    """a grid whose row i is worth `target` per plot once its best shafts are added; other rows poor"""
+    g = mixed(R, C, M, pos, M // 2)
+    up, dn = shafts(g, i)
+    for j in range(C):
+        while not -M <= target[j] - up[j] - dn[j] <= M:     # a shaft too rich: block it next to the tunnel row
+            for t in list(range(i - 1, -1, -1)) + list(range(i + 1, R)):
+                if g[t][j] != -M:
+                    g[t][j] = -M
+                    break
+            col = [[g[t][j]] for t in range(R)]
+            u, d = shafts(col, i)
+            up[j], dn[j] = u[0], d[0]
+        g[i][j] = target[j] - up[j] - dn[j]
+    return g
+
+
+def wide_traps(R, C, K, M, pos=0.1):
+    """one trap row (its value per plot counts the shafts) in a random grid"""
+    return embed(R, C, ri(0, R - 1), trap_row(C, K, M // 2), M, pos)
+
+
+def tall(R, C, M, pos):
+    """long columns: rich and poor runs, so the best shafts stop at different depths"""
+    g = [[0] * C for _ in range(R)]
+    for j in range(C):
+        i = 0
+        while i < R:
+            ln = ri(1, 4000)
+            p = pos if rnd() < 0.5 else 1 - pos
+            for t in range(i, min(R, i + ln)):
+                g[t][j] = ri(1, M) if rnd() < p else -ri(0, M)
+            i += ln
+    return g
+
+
+# samples
+add(2, [[-5, -3, 4, -6, 1], [-5, -2, 3, -6, -1], [6, -6, -5, -5, -6], [3, -2, -1, -2, -5]])
+add(3, [[-1, 2, -3, -10, -4, -1], [-2, -3, -6, 9, -3, -2], [-4, 1, -2, -12, -1, -3]])
+add(1, [[-7, -3, -9], [-4, -8, -2]])
+add(1, [[2], [-3], [4], [-1], [3]])
+add(3, [[3, -1, -4, 2, 0, -2, 5], [-6, 4, 1, -3, 7, -5, -1], [2, -7, -2, 6, -4, 3, -3],
+        [-1, 5, -6, -2, 1, -8, 4], [4, -3, 2, -5, -1, 6, -2]])
+
+# hidden: small (the brute force tries everything on these)
+add(1, [[5]])
+add(1, [[-5]])
+add(4, [[1, -2, 3, -4]])
+add(2, [[-1000000, 1000000], [1000000, -1000000]])
+add(3, rand_grid(4, 5, -3, 3))
+add(3, wide_traps(3, 9, 3, 100))
+add(5, mixed(6, 8, 10, 0.45))
+add(7, mixed(30, 40, MAXA, 0.4))
+add(12, wide_traps(8, 120, 12, MAXA))
+add(1, tall(150, 6, MAXA, 0.4))
+
+# hidden: big (R * C = 300 000, very wide or very tall)
+add(1, [[ri(-MAXA, MAXA) for _ in range(MAXCELLS)]])
+add(2000, [trap_row(MAXCELLS, 2000, MAXA)])
+add(MAXCELLS // 2, [[ri(MAXA - 1000, MAXA) for _ in range(MAXCELLS)]])     # the whole row, near 3 * 10^11
+add(500, wide_traps(2, 150000, 500, MAXA))
+add(3000, wide_traps(3, 100000, 3000, MAXA))
+add(40, mixed(3, 100000, MAXA, 0.5))
+add(30000, mixed(4, 75000, MAXA, 0.6))
+add(100, wide_traps(4, 75000, 100, MAXA))
+add(1, rand_grid(4, 75000, -MAXA, -1))                                     # every plot loses
+add(30000, rand_grid(4, 75000, -MAXA, -MAXA + 10))                        # a long tunnel that loses a lot
+add(1, tall(MAXCELLS, 1, MAXA, 0.3))
+add(1, [[ri(0, MAXA)] for _ in range(MAXCELLS)])                           # one column, near 3 * 10^11
+add(2, tall(150000, 2, MAXA, 0.35))
+add(3, [[ri(-MAXA, MAXA // 3) for _ in range(3)] for _ in range(100000)])
+add(2, tall(100000, 3, MAXA, 0.4))
+add(4, tall(75000, 4, MAXA, 0.6))
+add(3, [[ri(MAXA // 2, MAXA) for _ in range(4)] for _ in range(75000)])    # everything is worth digging
+
+for t in tests:
+    assert t.endswith("\n") and "  " not in t and " \n" not in t
 os.makedirs("tests", exist_ok=True)
-cases = []
-cases.append((2, [3, 5, 4, 8, 7, 6, 9]))
-cases.append((0, [1, 1, 2, 2, 2, 1]))
-cases.append((10, [-5, 5, -5, 5]))
-cases.append((0, [42]))
-cases.append((3, [10, 1, 2, 3, 4, 20, 21, 22, 23]))
-for _ in range(6):
-    n = random.randint(1, 15); cases.append((random.randint(0, 6), [random.randint(-6, 6) for _ in range(n)]))
-B = 10**9
-N = 100000
-def rnd(n, K, lo, hi): return (K, [random.randint(lo, hi) for _ in range(n)])
-def walk(n, K, step, start=0):
-    t = [start]
-    for _ in range(n - 1): t.append(max(-B, min(B, t[-1] + random.randint(-step, step))))
-    return (K, t)
-cases.append(rnd(3000, 100, -1000, 1000))
-cases.append(rnd(N, B, -B, B))
-cases.append(walk(N, 3000, 10))
-cases.append(walk(N, 0, 1))
-cases.append((2 * B, [random.choice([-B, B]) for _ in range(N)]))   # difference 2*10^9: whole array
-cases.append((2 * B - 1, [-B] + [0] * (N - 2) + [B]))
-cases.append((5, [i // 3 for i in range(N)]))                        # slow ramp
-cases.append((10**6, [int(10**8 * math.sin(i / 5000)) for i in range(N)]))
-for K, step in ((800, 5), (1500, 10), (160, 1), (3000, 20), (450, 3)):
-    cases.append(walk(N, K, step))
-cases.append((1, [0, 1] * (N // 2)))                                 # answer N, start 1
-cases.append((3, [5] * 10 + [0, 9] * 50 + [5] * 10))                 # two equal best windows: take the left one
-cases.append((N // 4, list(range(N))))                    # every window of length N/4+1 works
-cases.append((N // 3, list(range(N, 0, -1))))
-cases.append(walk(N, 20000, 300))
-for K, step in ((150, 1), (240, 2), (4000, 25), (30000, 200)):     # long windows everywhere (sum of window lengths ~10^9+)
-    cases.append(walk(N, K, step))
-cases.append((N // 5, [i % (N // 2) for i in range(N)]))            # sawtooth
-cases.append((N // 6, [(i * 7) % N if i % 1000 else i for i in range(N)][:0] + list(range(0, 2 * N, 2))))                          # long windows everywhere, answer in the middle
-for _ in range(3):                                          # medium random data: resetting the window on violation is wrong
-    cases.append((random.randint(3, 8), [random.randint(0, 10) for _ in range(random.randint(2000, 5000))]))
-# ---- legacy strengthening (2026-10): the brute force that stops once the best can no longer be beaten scored 95%,
-# because long windows were either the whole array or started near day 1. The new big tests have stable windows
-# of about N/2 days everywhere and the (slightly longer) best one starting after day 0.4 N, so that brute does
-# ~2 * 10^9 steps. The cases above are still generated so the unchanged tests keep their bytes; `override`
-# replaces some of them, `extra` adds tests at the end. All new data comes from R, not from `random`.
-R = random.Random(26172)
-rr = R.random
-def late(A, step, tail, s, sign=1, rand=False, jitter=0, n=N):
-    """days rise (sign 1) or fall (-1) by `step` per day (random in [0, 2 step] if rand), the last `tail` days s times
-    slower; K = (A - 1) * step, so windows are about A days long and the longest ones lie in the slow tail"""
-    t = []; x = 0.0
-    for i in range(n):
-        t.append(int(x))
-        st = step if i < n - tail else step * s
-        x += (rr() * 2 * st) if rand else st
-    if jitter:
-        t = [v + int(rr() * (2 * jitter + 1)) - jitter for v in t]
-    shift = -(max(t) + min(t)) // 2
-    return (int(round((A - 1) * step)), [sign * (v + shift) for v in t])
-override = {
-    13: late(50000, 20000, 55000, 0.9),                          # values from -10^9 to 10^9: max - min near 2 * 10^9
-    14: late(50000, 10, 52000, 0.92, rand=True),
-    18: late(48000, 1 / 3, 55000, 0.9),                          # slow ramp (steps of 1 every 3 days)
-    19: (lambda K, t: (K, [v + abs(i % 4000 - 2000) - 1000 for i, v in enumerate(t)]))(*late(50000, 1000, 54000, 0.9)),   # wavy ramp
-    20: late(50000, 5, 55000, 0.9, rand=True),
-    21: late(52000, 10, 56000, 0.93, sign=-1, rand=True),
-    22: late(45000, 1, 54000, 0.85, rand=True),
-    23: late(50000, 20, 55000, 0.9, rand=True, jitter=15),
-    24: late(53000, 3, 56000, 0.95, sign=-1, rand=True),
-    29: late(50000, 300, 55000, 0.9, rand=True),
-    30: late(49000, 2, 54000, 0.9, rand=True),
-    31: late(50000, 25, 55000, 0.9, sign=-1),
-    32: late(51000, 200, 55000, 0.92, rand=True, jitter=100),
-    33: late(50000, 7, 56000, 0.88, rand=True),
-    34: late(47000, 100, 53000, 0.9, sign=-1, rand=True, jitter=40),
-    27: (N // 2 - 1, list(range(N))),                            # every window of N/2 days works: take day 1
-    35: late(50000, 2, 60000, 0.9),          # exact slopes: every window inside the tail has the same length: take the first
-}
-extra = [
-    late(50000, 9000, 58000, 0.9, sign=-1),                      # large values, falling
-    late(52000, 50, 57000, 0.94, rand=True),
-]
-for i, (K, t) in enumerate(cases + extra, 1):
-    if i in override:
-        K, t = override[i]
-    assert 1 <= len(t) <= N and 0 <= K <= 2 * B and -B <= min(t) and max(t) <= B
-    open(f"tests/{i:02d}.in", "w").write(f"{len(t)} {K}\n" + " ".join(map(str, t)) + "\n")
-assert len(cases) + len(extra) <= 40
-print(len(cases) + len(extra), "tests")
+for i, t in enumerate(tests, 1):
+    with open(f"tests/{i:02d}.in", "w") as f:
+        f.write(t)

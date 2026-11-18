@@ -150,6 +150,14 @@ def random_case(n, m, ncomp, noise, odd=0, kind="random", lo=2):
     g.write(g.labels(noise), perm=False)
 
 
+def odd_late(g, frac):
+    """an odd edge in the group (>= 3 workers) whose least number is at position frac among those groups"""
+    cs = sorted((c for c in g.comps if len(c) >= 3), key=min)
+    c = cs[min(len(cs) - 1, int(frac * len(cs)))]
+    assert 0 not in c
+    g.odd(c)
+
+
 # samples
 add_pairs(7, "ABAAABB", [(1, 2), (2, 3), (3, 4), (5, 6), (6, 7)])
 add_pairs(4, "ABAB", [(1, 2), (2, 3), (3, 1), (3, 4)])
@@ -180,7 +188,7 @@ for s in split(3000, 1000, 2):
     pos += s
 g.comp(vs[pos:pos + 2000], MAXM - len(g.edges) - 1999)
 g.write(g.labels(0.5), perm=False)
-random_case(H, MAXM, 200, 0.0)
+random_case(N, MAXM, 25000, 0.0)               # 25000 groups, nobody moves
 g = G(N)                                       # path 1-2-...-N, edges listed from the far end
 g.comp(list(range(N)), 0, "path")
 g.edges.reverse()
@@ -200,32 +208,39 @@ g.comps.append(a + b)
 for i in range(450, 5450, 2):
     g.comp([vs[i], vs[i + 1]], 0)
 g.write(g.labels(0.45))
-g = G(H)                                       # grid 223 x 223 with holes
-R = 223
-alive = [rnd() < 0.97 for _ in range(R * R)]
-for r in range(R):
-    for c in range(R):
-        i = r * R + c
+C = 33333                                      # grid 2 x 33333 with holes, numbered by column, far edges first
+g = G(2 * C)
+alive = [rnd() < 0.99 for _ in range(2 * C)]
+for c in range(C):
+    for r in range(2):
+        i = 2 * c + r
         if not alive[i]:
             continue
         g.col[i] = (r + c) & 1
-        if c + 1 < R and alive[i + 1]:
+        if r == 0 and alive[i + 1]:
             g.edges.append((i, i + 1))
-        if r + 1 < R and alive[i + R]:
-            g.edges.append((i, i + R))
-g.comps.append([i for i in range(R * R) if alive[i]])
-g.write(g.labels(0.2))
-g = build(N, split(N, 2000, 1), N - 2000)      # forest, 2000 pairs twice
+        if c + 1 < C and alive[i + 2]:
+            g.edges.append((i, i + 2))
+g.comps.append([i for i in range(2 * C) if alive[i]])
+g.edges.reverse()
+g.write(g.labels(0.2), perm=False, order=False)
+g = build(N, split(N, 5000, 1), N - 5000)      # forest of 5000 groups, 2000 pairs twice
 g.edges = g.edges + g.edges[:2000]
 g.write(g.labels(0.25), perm=False)
-g = build(H, split(H, 300, 2), MAXM)           # all in shift A
-g.write([0] * H, perm=False)
+g = build(N, split(N, 20000, 2), MAXM)         # 20000 groups, all in shift A
+g.write([0] * N, perm=False)
+g = build(N, split(N, 50, 1000), N - 50, "path")   # 50 long paths
+g.write(g.labels(0.35), perm=False)
+g = build(60000, [6] * 10000, MAXM)            # 10000 groups of 6 with many repeated edges
+g.write(g.labels(0.3), perm=False)
 g = build(N, [2] * 3 + [1] * (N - 6), 3)      # almost everyone alone
 g.write(g.labels(0.5), perm=False)
 g = build(N, [2] * 2000 + [3] * 1000 + [1] * (N - 7000), 4000)   # pairs and triples, the rest alone
 g.write(g.labels(0.3), perm=False)
 # hidden: big, impossible
-random_case(H, MAXM, 1, 0.1, odd=1)
+g = build(N, split(N, 25000, 2), MAXM - 1)     # 25000 groups, the odd edge in the last one reached
+odd_late(g, 1.0)
+g.write(g.labels(0.1), perm=False)
 g = build(N, [3] + split(N - 3, 5000, 2), MAXM - 1)   # one triangle, the highest numbers
 tri = g.comps[0]
 g.odd(tri)
@@ -243,11 +258,37 @@ g = G(N)                                       # odd cycle of N - 1 vertices, on
 g.comp(list(range(N)), 0, "path")
 g.edges.append((1, N - 1))
 g.write(g.labels(0.3))
-g = build(H, split(H, 100, 2), MAXM - 1)        # the odd edge is the last line
-cs = [c for c in g.comps if len(c) >= 3]
-g.odd(cs[len(cs) // 2])
+g = build(N, split(N, 20000, 2), MAXM - 1)     # the odd edge is the last line, in a group reached late
+odd_late(g, 0.7)
 g.tail.append(g.edges.pop())
 g.write(g.labels(0.2), perm=False)
+L = 30001                                      # odd cycle of 30001 with the highest numbers, 15000 groups before it
+g = G(N)
+low, high = list(range(N - L)), list(range(N - L, N))
+shuffle(low)
+shuffle(high)
+pos = 0
+sizes = split(N - L, 15000, 2)
+spare = MAXM - L - (N - L - 15000)
+for s in sizes:
+    g.comp(low[pos:pos + s], spare * s // (N - L))
+    pos += s
+g.comp(high, 0, "path")
+g.edges.append((high[0], high[-1]))
+g.write(g.labels(0.2), perm=False)
+L = 49999                                      # worker 1 in a dense group, 30001 alone, then an odd cycle of 49999
+g = G(N)
+dense = list(range(20000))
+shuffle(dense)
+g.comp(dense, MAXM - 19999 - L)
+cyc = list(range(N - L, N))
+shuffle(cyc)
+g.comp(cyc, 0, "path")
+g.edges.append((cyc[0], cyc[-1]))
+g.write(g.labels(0.3), perm=False)
+g = build(N, split(N, 40, 1000), N - 41, "path")   # 40 long paths, an odd edge in the last one reached
+odd_late(g, 1.0)
+g.write(g.labels(0.25), perm=False)
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

@@ -1,196 +1,253 @@
-# Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-# A graph is three lists (A, B, C): road i joins A[i] and B[i] with score C[i]. Big graphs are built on internal
-# ids 0..V-1 with the start at id 0, then relabelled at random (id 0 becomes point 1); the roads are shuffled (mix)
-# or the list starts at a random place, and every other road is written in the other direction.
-import os, random
+# Writes tests/NN.in for this problem. Samples first (01..04), then hidden tests.
+# Integers only (no floating point): big tests are rebuilt on the students' machines and checked by SHA-256.
+import heapq, os, random
 
-random.seed(72014)
-rnd = random.random
-MAXV, MAXE, MAXC = 50000, 100000, 100000
-V, E = MAXV, MAXE
-tests = []
+random.seed(95017)
+_bits = random.getrandbits
 
 
 def ri(a, b):
-    return a + int(rnd() * (b - a + 1))
+    """an integer in [a, b] (b - a < 2^40); the tiny modulo bias does not matter for tests"""
+    return a + _bits(48) % (b - a + 1)
 
 
-def rl(n, a, b):
-    """n random integers in [a, b]"""
-    w = b - a + 1
-    return [a + int(rnd() * w) for _ in range(n)]
+MAXN, MAXM, MAXQ, MAXW, MAXX = 50000, 100000, 50000, 10 ** 6, 10 ** 12
+tests = []
 
 
-def shuffled(a):
-    keys = [rnd() for _ in a]
-    return [a[i] for i in sorted(range(len(a)), key=keys.__getitem__)]
+def stair(n, edges):
+    """f[k] = least rain with an umbrella of strength k, k = 0 .. d1(N) (0-indexed vertices, home n-1)"""
+    g = [[] for _ in range(n)]
+    for u, v, w in edges:
+        g[u].append((v, w))
+        g[v].append((u, w))
+    d1 = [-1] * n
+    d1[0] = 0
+    order = [0]
+    for x in order:
+        for y, _ in g[x]:
+            if d1[y] < 0:
+                d1[y] = d1[x] + 1
+                order.append(y)
+    assert min(d1) >= 0                                  # connected
+    INF = 1 << 62
+    dn = [INF] * n
+    dn[n - 1] = 0
+    pq = [(0, n - 1)]
+    while pq:
+        d, x = heapq.heappop(pq)
+        if d != dn[x]:
+            continue
+        for y, w in g[x]:
+            if d + w < dn[y]:
+                dn[y] = d + w
+                heapq.heappush(pq, (d + w, y))
+    D = d1[n - 1]
+    f = [dn[0]] * (D + 1)
+    for v in range(n):
+        if d1[v] <= D:
+            f[d1[v]] = min(f[d1[v]], dn[v])
+    for k in range(1, D + 1):
+        f[k] = min(f[k], f[k - 1])
+    assert f[D] == 0
+    return f
 
 
-PERM_V = shuffled(list(range(1, MAXV)))    # one random order of destinations, reused by every big test
-LAB = [1] + shuffled(list(range(2, MAXV + 1)))   # one random relabelling, reused by every big test
-PERM_E = shuffled(list(range(MAXE)))       # one random order of roads
+def queries(f, q, mode="mix"):
+    """q tolerances aimed at the steps of f (exact values, one below, inside a gap, the extremes)"""
+    D = len(f) - 1
+    xs = []
+    for _ in range(q):
+        if mode == "top":                                # answer >= 1 but X is large
+            k = ri(1, min(D, 3))
+        else:
+            k = ri(0, D)
+        c = ri(0, 9)
+        if c <= 2:
+            x = f[k]
+        elif c <= 4:
+            x = f[k] - 1
+        elif c <= 7:
+            x = ri(f[k + 1] if k < D else 0, f[k])
+        elif c == 8:
+            x = ri(0, f[0] + 5)
+        else:
+            x = ri(0, 1) * MAXX if mode != "top" else f[1]
+        xs.append(max(0, x))
+    return xs
 
 
-def write(v, A, B, C, qs):
-    lines = ["%d %d %d" % (v, len(A), len(qs))]
-    lines += map("%d %d %d".__mod__, zip(A, B, C))
-    lines += map(str, qs)
+def add(n, edges, xs, relabel=True, checked=False):
+    m = len(edges)
+    assert 2 <= n <= MAXN and n - 1 <= m <= MAXM
+    assert 1 <= len(xs) <= MAXQ
+    us = [e[0] for e in edges]
+    vs = [e[1] for e in edges]
+    ws = [e[2] for e in edges]
+    assert min(us) >= 0 and min(vs) >= 0 and max(us) < n and max(vs) < n
+    assert all(u != v for u, v in zip(us, vs)) and 1 <= min(ws) and max(ws) <= MAXW
+    assert len({u * n + v if u < v else v * n + u for u, v in zip(us, vs)}) == m      # simple graph
+    assert all(0 <= x <= MAXX for x in xs)
+    if not checked:
+        stair(n, edges)                                  # asserts connectivity
+    lab = list(range(n))
+    if relabel:
+        mid = lab[1:n - 1]
+        random.shuffle(mid)
+        lab = [0] + mid + [n - 1]
+        edges = edges[:]
+        random.shuffle(edges)
+    lines = ["%d %d" % (n, m)]
+    flip = format(random.getrandbits(m), "b").zfill(m) if relabel else "0" * m
+    for (u, v, w), c in zip(edges, flip):
+        if c == "1":
+            u, v = v, u
+        lines.append("%d %d %d" % (lab[u] + 1, lab[v] + 1, w))
+    lines.append(str(len(xs)))
+    lines += [str(x) for x in xs]
     tests.append("\n".join(lines) + "\n")
 
 
-def check(v, A, B, C, qs):
-    assert 2 <= v <= MAXV and v - 1 <= len(A) <= MAXE and len(A) == len(B) == len(C)
-    assert min(A) >= 1 and min(B) >= 1 and max(A) <= v and max(B) <= v
-    assert min(C) >= 0 and max(C) <= MAXC
-    assert all(map(int.__ne__, A, B))
-    assert 1 <= len(qs) <= v - 1 and min(qs) >= 2 and max(qs) <= v
+def add_q(n, edges, q, mode="mix", relabel=True):
+    add(n, edges, queries(stair(n, edges), q, mode), relabel, True)   # stair() asserted connectivity
 
 
-def add_raw(v, roads, qs):
-    """small tests written by hand, labels 1..V"""
-    A, B, C = map(list, zip(*roads))
-    check(v, A, B, C, qs)
-    p = list(range(v + 1))
-    for a, b in zip(A, B):
-        while p[a] != a:
-            a = p[a]
-        while p[b] != b:
-            b = p[b]
-        p[a] = b
-    assert len({x for x in range(1, v + 1) if p[x] == x}) == 1   # connected
-    write(v, A, B, C, qs)
+class G:
+    def __init__(self, n):
+        self.n, self.e, self.s = n, [], set()
+
+    def edge(self, u, v, w):
+        if u == v:
+            return False
+        key = u * self.n + v if u < v else v * self.n + u
+        if key in self.s:
+            return False
+        self.s.add(key)
+        self.e.append((u, v, w))
+        return True
 
 
-def add(v, g, qs=None, mix=False):
-    """g = (A, B, C) on internal ids, start = 0; qs = internal ids (default: every other point once, shuffled)"""
-    A, B, C = g
-    # every id x >= 1 has a road to a smaller id, so every point is linked to the start
-    assert set(map(max, A, B)) >= set(range(1, v))
-    lab = LAB if v == MAXV else [1] + shuffled(list(range(2, v + 1)))
-    if mix:                                # roads in a random order
-        assert len(A) == MAXE
-        A, B, C = (list(map(x.__getitem__, PERM_E)) for x in (A, B, C))
-    else:                                  # start the list of roads at a random place
-        s = ri(0, len(A) - 1)
-        A, B, C = A[s:] + A[:s], B[s:] + B[:s], C[s:] + C[:s]
-    A = list(map(lab.__getitem__, A))
-    B = list(map(lab.__getitem__, B))
-    A[::2], B[::2] = B[::2], A[::2]
-    if qs is None:
-        qs = [x for x in PERM_V if x < v]
-    qs = list(map(lab.__getitem__, qs))
-    check(v, A, B, C, qs)
-    write(v, A, B, C, qs)
+def chain_chords(n, K, extra, wlo, whi, factor):
+    """a path 0 - 1 - ... - n-1 of light roads, plus chords (i, i+d), d <= K, that save roads but cost more rain"""
+    g = G(n)
+    for i in range(n - 1):
+        g.edge(i, i + 1, ri(wlo, whi))
+    while len(g.e) < n - 1 + extra:
+        d = ri(2, min(K, n - 1))
+        i = ri(0, n - 1 - d)
+        g.edge(i, i + d, min(MAXW, d * ri(wlo, whi) * ri(factor[0], factor[1]) // 4 + ri(1, whi)))
+    return g.e
 
 
-def join(*gs):
-    return tuple(sum((list(g[k]) for g in gs), []) for k in range(3))
+def grid(R, C, wmax, rainy_mid):
+    """an R x C grid; with rainy_mid the middle rows are much wetter than the border"""
+    g = G(R * C)
+    for r in range(R):
+        for c in range(C):
+            for r2, c2 in ((r + 1, c), (r, c + 1)):
+                if r2 < R and c2 < C:
+                    if rainy_mid and 0 < min(r, r2) and max(r, r2) < R - 1 and 0 < c < C - 1:
+                        w = ri(wmax // 2, wmax)
+                    else:
+                        w = ri(1, wmax // 50 + 1)
+                    g.edge(r * C + c, r2 * C + c2, w)
+    return g.e
 
 
-def tree(v, reach, cl, ch):
-    """the parent of id i is one of the `reach` ids before it; scores in [cl, ch]"""
-    return ([i - 1 - int(rnd() * (i if i < reach else reach)) for i in range(1, v)], list(range(1, v)),
-            rl(v - 1, cl, ch))
+def deep_tree(n, back, extra, span, wmax):
+    """vertex v hangs from one of the `back` previous vertices, plus `extra` short local edges"""
+    g = G(n)
+    for v in range(1, n):
+        g.edge(ri(max(0, v - back), v - 1), v, ri(1, wmax))
+    while len(g.e) < n - 1 + extra:
+        u = ri(0, n - 2)
+        g.edge(u, min(n - 1, u + ri(2, span)), ri(1, wmax))
+    return g.e
 
 
-def extra(v, k, cl, ch, base=0):
-    """k random roads among ids base..base+v-1, scores in [cl, ch]"""
-    A = [int(rnd() * v) for _ in range(k)]
-    B = [int(rnd() * v) for _ in range(k)]
-    for i in range(k):
-        if A[i] == B[i]:
-            B[i] = (A[i] + 1 + int(rnd() * (v - 1))) % v
-    if base:
-        A = [a + base for a in A]
-        B = [b + base for b in B]
-    return A, B, rl(k, cl, ch)
+def two_routes(A, B, links, extra_n, wcheap, wdear):
+    """a long dry route of A roads and a short wet route of B roads from 0 to home, cross links between them,
+    plus extra_n more vertices hanging off as side streets"""
+    n = A + B - 1 + extra_n
+    home = n - 1
+    g = G(n)
+    a = [0] + list(range(1, A)) + [home]                     # A roads
+    b = [0] + list(range(A, A + B - 1)) + [home]             # B roads
+    for i in range(A):
+        g.edge(a[i], a[i + 1], ri(1, wcheap))
+    for i in range(B):
+        g.edge(b[i], b[i + 1], ri(wdear // 2, wdear))
+    cnt = 0
+    while cnt < links:
+        i = ri(1, A - 1)
+        j = min(B - 1, max(1, i * B // A + ri(-2, 2)))     # aligned links: no shortcut in roads
+        cnt += g.edge(a[i], b[j], ri(1, wdear))
+    for v in range(A + B - 1, n - 1):
+        g.edge(ri(0, v - 1), v, ri(1, wdear))
+    return n, g.e
 
 
-def graph(v, e, reach, cl, ch):
-    return join(tree(v, reach, cl, ch), extra(v, e - v + 1, cl, ch))
+def random_graph(n, m, wmax):
+    g = G(n)
+    for v in range(1, n):
+        g.edge(ri(0, v - 1), v, ri(1, wmax))
+    while len(g.e) < m:
+        g.edge(ri(0, n - 1), ri(0, n - 1), ri(1, wmax))
+    return g.e
+
+
+def raw(n, es, xs):
+    add(n, [(u - 1, v - 1, w) for u, v, w in es], xs, relabel=False)
 
 
 # samples
-add_raw(4, [(1, 2, 7), (1, 3, 4), (2, 3, 9), (2, 4, 3), (3, 4, 8)], [4, 3])
-add_raw(4, [(1, 2, 5), (2, 3, 2), (1, 4, 3), (4, 3, 6), (2, 4, 1)], [3, 2])
-add_raw(4, [(1, 2, 4), (2, 3, 10), (3, 1, 6), (3, 4, 0)], [4, 2])
-add_raw(3, [(2, 1, 40), (3, 2, 70), (1, 3, 50), (2, 3, 45)], [2, 3])
-add_raw(5, [(1, 2, 1), (1, 3, 8), (3, 4, 6), (2, 4, 9), (4, 5, 5)], [5, 2])
+raw(5, [(1, 2, 4), (2, 3, 1), (3, 5, 6), (2, 4, 2), (4, 5, 3)], [8, 0, 9])
+raw(6, [(1, 2, 7), (2, 3, 7), (3, 6, 7), (1, 4, 1), (4, 5, 1), (5, 6, 30)], [21, 15, 7, 6])
+raw(2, [(1, 2, 1000000)], [999999, 1000000, 0, 1000000000000])
+raw(6, [(1, 2, 300000), (2, 3, 300000), (3, 4, 300000), (4, 5, 300000), (5, 6, 300000), (1, 6, 1000000)],
+    [1000000, 999999, 600000, 0])
 
-# hidden: small (brute checks these)
-add_raw(2, [(2, 1, 0)], [2])
-add_raw(2, [(1, 2, 31), (2, 1, 87), (1, 2, 87), (2, 1, 5)], [2])                 # parallel roads
-n = 100
-add(n, (list(range(n)), [(i + 1) % n for i in range(n)], rl(n, 0, 1000)), rl(50, 1, n - 1))   # one cycle
-add(500, graph(500, 4000, 500, 0, 20), rl(100, 1, 499))
-add(2000, graph(2000, 8000, 30, 0, MAXC))
-add(3000, tree(3000, 3000, 0, MAXC))                                              # a tree
-add(1000, graph(1000, 5000, 1000, 0, 0))                                          # every score 0
-add(1500, graph(1500, 1500, 5, 0, MAXC))                                          # long and thin
+# hidden: small (brute.cpp checks these)
+for t in range(10):
+    n = ri(5, 10) if t < 7 else ri(25, 45)
+    if t % 3 == 0:
+        e = chain_chords(n, 3, ri(0, n - 2), 1, 9, (2, 8))
+    elif t % 3 == 1:
+        e = random_graph(n, ri(n - 1, min(n * (n - 1) // 2, 2 * n)), [5, 30, MAXW][t % 3])
+    else:
+        e = deep_tree(n, 2, ri(0, min(3, n - 3)), 3, 20)
+    add_q(n, e, ri(5, 12))
 
-# hidden: big
-add(V, graph(V, E, V, 0, MAXC), mix=True)
-add(V, graph(V, E, 50, 0, MAXC))
-add(V, graph(V, E, V, 0, 10))                                                     # many equal scores
-# a long path of good roads (the answer drops slowly along it) plus many poor shortcuts
-path = (list(range(V - 1)), list(range(1, V)), [MAXC - i // 3 for i in range(1, V)])
-add(V, join(path, extra(V, E - V + 1, 0, 30000)))
-# a path of good roads with the start in the middle (ids fall towards the start)
-order = list(range(V - 1, 0, -2)) + list(range(0, V, 2))
-path = (order[:-1], order[1:], rl(V - 1, 50000, MAXC))
-add(V, join(path, extra(V, E - V + 1, 0, 49999)))
-# grid 200 x 250, random scores; then scores that grow away from the start in a corner
-R, C = 200, 250
-GA = [r * C + c for r in range(R) for c in range(C - 1)] + list(range(V - C))
-GB = [r * C + c + 1 for r in range(R) for c in range(C - 1)] + list(range(C, V))
-add(V, (GA, GB, rl(len(GA), 0, MAXC)))
-add(V, (GA, GB, [min(MAXC, (a // C + a % C) * 200 + int(rnd() * 3001)) for a in GA]))
-# a star of poor roads from the start + good roads among the others
-add(V, join(([0] * (V - 1), list(range(1, V)), rl(V - 1, 0, 1000)), extra(V, E - V + 1, 1001, MAXC)))
-# two random halves joined by a few poor roads
-h = V // 2
-t1, t2 = tree(h, h, 0, MAXC), tree(V - h, V - h, 0, MAXC)
-t2 = ([a + h for a in t2[0]], [b + h for b in t2[1]], t2[2])
-cross = ([ri(0, h - 1) for _ in range(5)], [h] + rl(4, h, V - 1), rl(5, 0, 20000))
-rest = E - (V - 2) - 5
-add(V, join(t1, t2, cross, extra(h, rest // 2, 0, MAXC), extra(V - h, rest - rest // 2, 0, MAXC, h)))
-# many parallel roads: every tree road three times
-t = tree(V, 200, 0, MAXC)
-add(V, join(t, (t[0], t[1], rl(V - 1, 0, MAXC)), (t[0][:E - 2 * (V - 1)], t[1][:E - 2 * (V - 1)], rl(E - 2 * (V - 1), 0, MAXC))))
-# repeated destinations
-add(V, graph(V, E, 1000, 0, MAXC), rl(V - 1, 1, V - 1))
-# a caterpillar: a spine of good roads, leaves hanging on it, poor shortcuts
-sp = V // 5
-spine = (list(range(sp - 1)), list(range(1, sp)), rl(sp - 1, 60000, MAXC))
-leaves = (rl(V - sp, 0, sp - 1), list(range(sp, V)), rl(V - sp, 0, MAXC))
-add(V, join(spine, leaves, extra(V, E - V + 1, 0, 59999)))
-# improvements reach one gate later and later: a chain of excellent roads from the start, each chain point
-# has a road to the gate whose score grows along the chain; behind the gate is a long line of excellent roads
-K = V // 2
-chain = (list(range(K)), list(range(1, K + 1)), [MAXC] * K)                  # ids 0..K
-gate = (list(range(1, K + 1)), [K + 1] * K, list(range(1, K + 1)))          # chain point i -> gate K+1, score i
-line = (list(range(K + 1, V - 1)), list(range(K + 2, V)), [MAXC] * (V - K - 2))
-g = join(chain, gate, line)
-add(V, join(g, extra(V, E - len(g[0]), 0, 0)), mix=True)
-# the same with a random tree of good roads behind the gate
-gate = (list(range(1, K + 1)), [K + 1] * K, [2 * i for i in range(1, K + 1)])
-behind = tree(V - K - 1, V, MAXC - 100, MAXC)
-behind = ([a + K + 1 for a in behind[0]], [b + K + 1 for b in behind[1]], behind[2])
-g = join(chain, gate, behind)
-add(V, join(g, extra(V, E - len(g[0]), 0, 1)), mix=True)
-# a shorter chain to the gate and a random graph of good roads behind it
-K = V // 3
-chain = (list(range(K)), list(range(1, K + 1)), [MAXC] * K)
-gate = (list(range(1, K + 1)), [K + 1] * K, [3 * i + ri(0, 2) for i in range(1, K + 1)])
-behind = tree(V - K - 1, V, 90000, MAXC)
-behind = ([a + K + 1 for a in behind[0]], [b + K + 1 for b in behind[1]], behind[2])
-g = join(chain, gate, behind)
-add(V, join(g, extra(V - K - 1, E - len(g[0]), 90000, MAXC, K + 1)), mix=True)
-# a deep random tree of good roads plus poor shortcuts
-add(V, join(tree(V, 3, 50000, MAXC), extra(V, E - V + 1, 0, 49999)))
+# hidden: medium
+add_q(3000, random_graph(3000, 6000, MAXW), 3000)
+add_q(2000, chain_chords(2000, 6, 1500, 1, 1000, (3, 9)), 2000)
 
-assert 25 <= len(tests) <= 35
+# hidden: big (every one has a long BFS distance from 1 to N)
+add_q(MAXN, chain_chords(MAXN, 8, MAXM - MAXN + 1, 1, 30, (3, 9)), MAXQ)
+add_q(MAXN, chain_chords(MAXN, 20, MAXM - MAXN + 1, 10000, 200000, (4, 6)), MAXQ, "top")
+add_q(MAXN, chain_chords(MAXN, 5, MAXM - MAXN + 1, MAXW // 2, MAXW, (4, 4)), MAXQ)      # rain near 5 * 10^10
+add_q(MAXN, chain_chords(MAXN, 50, 30000, 1, 100, (2, 12)), MAXQ)
+add_q(MAXN, grid(100, 500, MAXW, True), MAXQ)
+add_q(MAXN, grid(200, 250, MAXW, False), MAXQ, "top")
+add_q(MAXN, grid(50, 1000, 1000, True), MAXQ)
+add_q(MAXN, deep_tree(MAXN, 3, MAXM - MAXN + 1, 6, MAXW), MAXQ)
+add_q(MAXN, deep_tree(MAXN, 10, 20000, 40, MAXW), MAXQ, "top")
+add_q(MAXN, deep_tree(MAXN, 1, MAXM - MAXN + 1, 4, MAXW), MAXQ)
+n, e = two_routes(30000, 1500, 2000, MAXN - 31499, 20, MAXW)
+add_q(n, e, MAXQ)
+n, e = two_routes(45000, 5000, 40000, MAXN - 49999, 3, 5000)
+add_q(n, e, MAXQ, "top")
+n, e = two_routes(20000, 20000, 50000, MAXN - 39999, MAXW, MAXW)
+add_q(n, e, MAXQ)
+add_q(MAXN, chain_chords(MAXN, 3, 0, MAXW, MAXW, (4, 4)), MAXQ)                         # one long wet street
+add_q(MAXN, chain_chords(MAXN, 12, MAXM - MAXN + 1, 1, MAXW, (1, 3)), MAXQ, "top")
+add_q(MAXN, deep_tree(MAXN, 2, 50000, 4, 1), MAXQ)                                      # every road rains 1
+add_q(MAXN, grid(250, 200, 50, False), MAXQ)
+add_q(MAXN, chain_chords(MAXN, 4, MAXM - MAXN + 1, 300000, 600000, (3, 5)), MAXQ)
+
+for t in tests:
+    assert t.endswith("\n") and "  " not in t and " \n" not in t
 os.makedirs("tests", exist_ok=True)
 for i, t in enumerate(tests, 1):
-    with open(f"tests/{i:02d}.in", "w") as f:
+    with open("tests/%02d.in" % i, "w") as f:
         f.write(t)

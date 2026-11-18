@@ -1,96 +1,148 @@
-import random, os
-from operator import lt, itemgetter
-g0, g1 = itemgetter(0), itemgetter(1)
-random.seed(2611)
+# Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
+# Integer-only randomness (random.Random.randint), so every platform builds the same files.
+import os, random
+
+r = random.Random(90107)
+MAXN = MAXQ = 100000
+MAXA, MAXB, MAXK = 10 ** 9, 10 ** 9, 10 ** 15
+tests = []
+
+
+def ri(a, b):
+    return r.randint(a, b)
+
+
+def intervals(a, b):
+    out, p, s = [], 0, 0
+    for x, y in zip(a, b):
+        p += x
+        s += y
+        out.append((p - s, p + s))
+    return out
+
+
+def add(a, b, k):
+    n, q = len(a), len(k)
+    assert 1 <= n <= MAXN and 1 <= q <= MAXQ and len(b) == n
+    assert all(-MAXA <= x <= MAXA for x in a)
+    assert all(0 <= x <= MAXB for x in b)
+    assert all(-MAXK <= x <= MAXK for x in k)
+    tests.append(f"{n} {q}\n{' '.join(map(str, a))}\n{' '.join(map(str, b))}\n{' '.join(map(str, k))}\n")
+
+
+def targets(a, b, q, mix):
+    """q targets; mix = weights of (inside, endpoint, endpoint +- 1, gap of the union, anywhere, far away)"""
+    iv = intervals(a, b)
+    lo_all = min(l for l, h in iv)
+    hi_all = max(h for l, h in iv)
+    srt = sorted(iv)
+    gaps, reach = [], srt[0][1]
+    for l, h in srt[1:]:
+        if l > reach + 1:
+            gaps.append((reach + 1, l - 1))
+        reach = max(reach, h)
+    kinds = []
+    for kind, w in enumerate(mix):
+        kinds += [kind] * w
+    out = []
+    while len(out) < q:
+        kind = kinds[ri(0, len(kinds) - 1)]
+        l, h = iv[ri(0, len(iv) - 1)]
+        if kind == 0:
+            if h - l < 2:
+                continue
+            v = ri(l + 1, h - 1)
+        elif kind == 1:
+            v = l if ri(0, 1) else h
+        elif kind == 2:
+            v = l - 1 if ri(0, 1) else h + 1
+        elif kind == 3:
+            if not gaps:
+                continue
+            g = gaps[ri(0, len(gaps) - 1)]
+            v = ri(g[0], g[1])
+        elif kind == 4:
+            v = ri(lo_all - 10, hi_all + 10)
+        else:
+            v = ri(-MAXK, lo_all - 1) if ri(0, 1) else ri(hi_all + 1, MAXK)
+        if -MAXK <= v <= MAXK:
+            out.append(v)
+    return out
+
+
+# samples (every target is outside all intervals or on an end of one)
+add([4, 7, -9, 6, 3], [0, 0, 0, 0, 0], [9, -3, 11])
+add([5, -8, 10], [1, 2, 0], [2, 13])
+add([-3, -3, 10, 2, -20, 1], [0, 1, 0, 2, 1, 0], [-10, 25, -4, 0])
+add([-10 ** 9], [5], [10 ** 15, -10 ** 15])
+add([2, 2, 2, -15, 30, -1, -1, 0], [0, 1, 0, 1, 0, 2, 0, 3], [8, 30, -20, 26, 11, 0])
+
+# hidden: small (the brute simulates every position)
+add([7], [0], [7])
+add([0], [3], [-5, -3, -1, 0, 2, 3, 4])
+add([0, 0, 0, 0], [0, 1, 0, 2], list(range(-5, 6)))
+for _ in range(5):
+    n = ri(3, 8)
+    a = [ri(-12, 12) for _ in range(n)]
+    b = [ri(0, 2) for _ in range(n)]
+    add(a, b, targets(a, b, ri(10, 30), [3, 2, 2, 3, 3, 0]))
+a = [9, 8, 10, -40, 9, 12, 7, 9]
+b = [1, 0, 0, 0, 1, 0, 0, 0]
+add(a, b, targets(a, b, 30, [3, 1, 2, 4, 2, 0]))
+
+
+# hidden: max size (N = Q = 100 000)
+N, Q = MAXN, MAXQ
+
+
+def walk(lo, hi, n=N):
+    return [ri(lo, hi) for _ in range(n)]
+
+
+a, b = walk(-MAXA, MAXA), walk(0, 99)                         # random walk, narrow intervals, huge sums
+add(a, b, targets(a, b, Q, [3, 1, 2, 3, 1, 0]))
+a, b = walk(-MAXA, MAXA), [0] * N                             # single points
+add(a, b, targets(a, b, Q, [0, 2, 3, 4, 1, 0]))
+a, b = walk(0, 60000), walk(0, 9)                             # rising, gaps between the intervals
+add(a, b, targets(a, b, Q, [4, 1, 1, 4, 0, 0]))
+a, b = walk(-60000, 0), walk(0, 9)                            # falling
+add(a, b, targets(a, b, Q, [4, 1, 1, 4, 0, 0]))
+a, b = [0] * N, walk(0, 30000)                                # nested intervals around 0
+add(a, b, targets(a, b, Q, [3, 1, 1, 0, 1, 3]))
+a, b = walk(-1000, 1000), walk(0, 1)                          # dense, small values
+add(a, b, targets(a, b, Q, [2, 2, 2, 3, 1, 3]))
+a = [(MAXA if i % 2 == 0 else -MAXA + ri(0, 3)) for i in range(N)]   # zigzag, drifting slowly
+b = walk(0, 2)
+add(a, b, targets(a, b, Q, [3, 1, 2, 3, 1, 0]))
+a = [MAXA] * N                                                # extreme sums near 10^14
+b = [MAXB if i % 50 == 0 else 0 for i in range(N)]
+add(a, b, targets(a, b, Q, [3, 1, 2, 0, 1, 3]))
+a, b = [-MAXA] * N, walk(0, 1000)                             # far negative, targets beyond both ends
+add(a, b, targets(a, b, Q, [3, 1, 1, 3, 0, 2]))
+a, b = walk(30000, 90000), walk(0, 1)                         # rising, overlapping intervals
+add(a, b, targets(a, b, Q, [3, 1, 1, 4, 1, 1]))
+a = walk(-50000, 50000)
+b = [ri(0, 50) if ri(0, 999) else ri(10 ** 3, 10 ** 4) for _ in range(N)]   # a few wide jumps of the width
+add(a, b, targets(a, b, Q, [3, 1, 1, 3, 1, 1]))
+a, b = walk(-MAXA, MAXA), walk(0, 99)                         # the same target many times
+k = targets(a, b, 50, [3, 1, 1, 3, 0, 0])
+add(a, b, [k[ri(0, 49)] for _ in range(Q)])
+a, b = walk(1, 9), [0] * N                                    # rising slowly, B = 0: every point a gap of < 10
+add(a, b, targets(a, b, Q, [0, 2, 3, 4, 1, 0]))
+a = [ri(-MAXA, MAXA) if i < 1000 else ri(-3, 3) for i in range(N)]   # big moves first, then small
+b = walk(0, 5)
+add(a, b, targets(a, b, Q, [4, 1, 1, 3, 1, 0]))
+a, b = walk(-20000, 25000), walk(0, 4)                        # slow random drift
+add(a, b, targets(a, b, Q, [4, 1, 2, 3, 0, 0]))
+a, b = walk(-5000, 5000), walk(0, 100)                        # mostly overlapping intervals
+add(a, b, targets(a, b, Q, [2, 1, 2, 4, 1, 3]))
+a = walk(-MAXA, MAXA)
+b = [ri(0, 10 ** 6) for _ in range(N)]                        # the widths grow fast
+add(a, b, targets(a, b, Q, [2, 1, 2, 2, 1, 3]))
+
+for t in tests:
+    assert t.endswith("\n") and "  " not in t and " \n" not in t
 os.makedirs("tests", exist_ok=True)
-cases = []
-cases.append([(1, 5), (3, 8), (4, 6)])
-cases.append([(0, 4), (6, 10), (2, 8)])   # 2026-11 port: ordinary sample (old one is the last test)
-cases.append([(1, 2), (2, 3), (5, 9)])
-cases.append([(0, 1000000000)])
-cases.append([(2, 7), (1, 9), (3, 4), (3, 4)])
-for _ in range(6):
-    n = random.randint(1, 8); I = []
-    for _ in range(n):
-        l = random.randint(0, 30); I.append((l, l + random.randint(1, 15)))
-    cases.append(I)
-N, B = 50000, 10**9
-def rnd(n, span, lmax):
-    I = []
-    for _ in range(n):
-        l = random.randint(0, span - 1); I.append((l, min(span, l + random.randint(1, lmax))))
-    return I
-cases.append(rnd(3000, 5000, 100))
-cases.append(rnd(N, B, B))
-cases.append(rnd(N, B, 10**4))
-cases.append(rnd(N, 1000, 1000))                       # heavy overlap on small coordinates
-cases.append([(0, B)] * N)                             # everything at depth N
-cases.append([(i, B - i) for i in range(N)])           # nested
-cases.append([(i * 5000, i * 5000 + 5000) for i in range(N)])   # touching, never overlapping
-cases.append([tuple(x * 10**8 for x in sorted(random.sample(range(11), 2))) for _ in range(N)])   # many equal endpoints
-cases.append(rnd(N, 10**6, 10))
-cases.append([(i, i + 1) for i in range(N // 2)] + [(i, i + 2) for i in range(N // 2)])
-for span, lmax in ((10**9, 10**9), (10**5, 50), (10**9, 10**6), (5000, 5000)):
-    cases.append(rnd(random.randint(30000, 50000), span, lmax))
-cases.append(rnd(100000, B, B))
-cases.append(rnd(100000, 10**6, 100))
-for idx in range(11, len(cases)):
-    mx = max(r for _, r in cases[idx])
-    if mx <= 10**6 and idx % 2 == 0:
-        f = 10**9 // mx
-        cases[idx] = [(l * f, r * f) for l, r in cases[idx]]
-# ---- legacy strengthening (2026-10): the big tests were mostly N = 5 * 10^4, where O(N^2) programs still run in
-# about a second. The same families are rebuilt at N = 10^5, and new tests where most people are present most of
-# the time (filling every compressed piece of every interval costs ~10^10 steps there).
-# Families with few distinct times (where N hardly matters) keep their N = 5 * 10^4 tests.
-# The cases above are still generated and shuffled so the unchanged tests keep their bytes; `override` replaces
-# some of them, `extra` adds tests at the end. All new data comes from R, not from `random`.
-R = random.Random(26112)
-rr = R.random
-M = 100000
-def ri(a, b): return a + int(rr() * (b - a + 1))
-def rnd2(n, span, lmax, f=1):
-    I = []
-    for _ in range(n):
-        l = int(rr() * span); I.append((l * f, min(span, l + 1 + int(rr() * lmax)) * f))
-    return I
-def shuf(I):
-    R.shuffle(I)
-    return I
-def sorted_points(n, lo, hi):
-    """n distinct sorted times in [lo, hi)"""
-    return sorted(R.sample(range(lo, hi), n))
-override = {
-    13: rnd2(M, B, B),
-    14: rnd2(M, B, 10**4),
-    17: shuf([(i, B - i) for i in range(M)]),            # nested
-    18: shuf([(i * 10000, i * 10000 + 10000) for i in range(M)]),   # touching, never overlapping
-    20: rnd2(M, 10**6, 10),
-    21: shuf([(i, i + 1) for i in range(M // 2)] + [(i, i + 2) for i in range(M // 2)]),
-    22: rnd2(M, 10**9, 10**9),
-    23: rnd2(M, 10**5, 50, 10**4),
-    24: rnd2(M, 10**9, 10**6),
-    25: rnd2(M, 5000, 5000, 2 * 10**5),
-}
-extra = []
-L, Rt = sorted_points(M, 0, B // 2), sorted_points(M, B // 2 + 1, B + 1)
-extra.append(shuf(list(zip(L, Rt[::-1]))))                       # random nested, all endpoints distinct
-L, Rt = sorted_points(M, 0, 10**8), sorted_points(M, 9 * 10**8, B + 1)
-R.shuffle(Rt); extra.append(list(zip(L, Rt)))                    # all long, crossing
-L = sorted_points(M, 0, B // 2)
-extra.append(shuf([(l, l + B // 2) for l in L]))                 # sliding: every interval half the day
-extra.append(shuf([(l, B) for l in sorted_points(M, 0, B)]))     # all stay until the end
-extra.append([(ri(0, B // 3), ri(2 * B // 3, B)) for _ in range(M)])
-extra.append(shuf([(ri(0, 10**6), B - ri(0, 10**6)) for _ in range(M // 2)] + rnd2(M // 2, B, B)))
-extra.append([(lambda l: (l, l + ri(B // 4, B - l)))(ri(0, 3 * B // 4 - 1)) for _ in range(M)])
-extra.append([(0, 10), (0, 10)])                # old sample 2 (identical intervals), now hidden
-for i, I in enumerate(cases + extra, 1):
-    if i <= len(cases):
-        random.shuffle(I) if i > 5 else None
-    if i in override:
-        I = override[i]
-    Ls, Rs = list(map(g0, I)), list(map(g1, I))
-    assert 1 <= len(I) <= 100000 and min(Ls) >= 0 and max(Rs) <= B and all(map(lt, Ls, Rs))
-    open(f"tests/{i:02d}.in", "w").write(f"{len(I)}\n" + "".join(f"{l} {r}\n" for l, r in I))
-assert len(cases) + len(extra) <= 40
-print(len(cases) + len(extra), "tests")
+for i, t in enumerate(tests, 1):
+    with open(f"tests/{i:02d}.in", "w") as f:
+        f.write(t)

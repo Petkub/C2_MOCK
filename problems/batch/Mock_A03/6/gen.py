@@ -79,6 +79,37 @@ def mixed_scale(n):
     return d
 
 
+def hot(n, share, blo, alo=MAXA // 2):
+    """a big block of fast-cooling dishes with large a (so (k + 1) * b passes 2^31 for long served lists),
+    the rest uniform"""
+    m = int(n * share)
+    d = [(ri(alo, MAXA), ri(blo, MAXB)) for _ in range(m)]
+    d += uniform(n - m)
+    random.shuffle(d)
+    return d
+
+
+def anti_hot(n):
+    """like anti, but most dishes sit near the top of both ranges"""
+    d = []
+    for _ in range(n):
+        t = random.random() ** 0.1
+        a = int(t * MAXA * random.uniform(0.7, 1.0))
+        b = int(t * MAXB * random.uniform(0.8, 1.0))
+        d.append((min(MAXA, a), min(MAXB, b)))
+    return d
+
+
+def ratio_hot(n):
+    """a = q * b with big b and a few rates q (many equal ratios), no noise"""
+    qs = [ri(600, 1000) for _ in range(5)]
+    d = []
+    for _ in range(n):
+        b = ri(MAXB // 2, MAXB)
+        d.append((min(MAXA, random.choice(qs) * b), b))
+    return d
+
+
 # samples
 add([(10, 3), (8, 1), (9, 4), (1, 5)])
 add([(2, 5), (3, 3), (0, 1)])
@@ -87,7 +118,6 @@ add([(7, 2)])
 add([(12, 4), (7, 1), (9, 3), (5, 2), (11, 4), (30, 10), (4, 1), (8, 3)])
 # hidden: small (the subset DP of brute.cpp checks these)
 add([(0, 0)])
-add([(5, 6)])
 add(uniform(8, 0, 100, 0, 30))
 add(uniform(12, 0, 1000, 0, 200))
 add([(ri(0, 50), ri(0, 10)) for _ in range(15)])
@@ -100,19 +130,19 @@ add(anti(400))
 add(ratio_ties(500))
 # hidden: big, N = 5000
 add(uniform(MAXN))
-add(uniform(MAXN))
-add(uniform(MAXN, MAXA // 2, MAXA))
+add(hot(MAXN, 0.6, MAXB * 9 // 10))                                     # many dishes served at k > 2147
+add(uniform(MAXN, MAXA // 2, MAXA, MAXB // 2, MAXB))
 add(uniform(MAXN, 0, MAXA, 0, MAXB // 10))
-add(uniform(MAXN, 0, MAXA // 10, 0, MAXB // 100))
 add(anti(MAXN))
-add(anti(MAXN))
+add(anti_hot(MAXN))
 add(ratio_ties(MAXN))
+add(ratio_hot(MAXN))
 add(levels(MAXN, [MAXB, MAXB // 2, MAXB // 5, MAXB // 20, 1000, 0]))
 add(levels(MAXN, [ri(0, MAXB) for _ in range(40)]))
 add(traps(MAXN))
-add(traps(MAXN))
+add(traps(MAXN // 2) + hot(MAXN // 2, 1.0, MAXB * 8 // 10))
 add(mixed_scale(MAXN))
-add(mixed_scale(MAXN))
+add(hot(MAXN, 0.9, MAXB * 6 // 10, MAXA * 9 // 10))
 add(uniform(MAXN // 2) + [(ri(0, MAXA), 0) for _ in range(MAXN // 2)])
 add([(ri(MAXA - MAXA // 10, MAXA), MAXB) for _ in range(MAXN)])        # equal b, all near the maximum
 add([(MAXA, MAXB)] * MAXN)                                              # everything equal

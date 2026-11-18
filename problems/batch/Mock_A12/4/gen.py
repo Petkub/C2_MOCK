@@ -53,7 +53,7 @@ def pdist(n, edges, s):
     return d
 
 
-def queries(n, edges, count, near_src=6, span=None):
+def queries(n, edges, count, near_src=6, span=None, far=0):
     """random queries: about 30% with k up to 10^9, a few with s = t or tiny k, the others with k up to span;
     then about a quarter of them replaced by queries exactly at / 2 below the shortest walk of each parity
     from a few sources"""
@@ -83,6 +83,8 @@ def queries(n, edges, count, near_src=6, span=None):
             else:
                 k = 2 * int(rnd() * (span // 2 + 1)) + p
             qs[int(rnd() * count)] = (s, t, k)
+    if far:
+        far_queries(n, edges, qs, far)
     has_road = [False] * (n + 1)
     for u, v in edges:
         has_road[u] = has_road[v] = True
@@ -90,6 +92,65 @@ def queries(n, edges, count, near_src=6, span=None):
     for _ in range(min(50, 5 * len(lonely))):        # towns without roads: s = t with an even k > 0
         v = lonely[int(rnd() * len(lonely))]
         qs[int(rnd() * count)] = (v, v, 2 + 2 * int(rnd() * (MAXK // 2)))
+    return qs
+
+
+def pad(e, m, part=None):
+    """fill up to m roads by repeating random roads (from the list part if given): same shape, more work"""
+    src = part if part else list(e)
+    e = list(e)
+    while len(e) < m:
+        e.append(src[ri(0, len(src) - 1)])
+    return e
+
+
+def far_queries(n, edges, qs, share, nsrc=40):
+    """replace about share of the queries by queries whose goal (t, parity of k) is reached last from s or never
+    (another component, or the wrong parity in a bipartite part): s from the largest component. A search per query
+    that stops at the goal then explores (almost) the whole component every time."""
+    rnd = random.random
+    g = [[] for _ in range(n + 1)]
+    for u, v in edges:
+        g[u].append(v)
+        g[v].append(u)
+    seen, best = [False] * (n + 1), []
+    for v in range(1, n + 1):                       # largest component
+        if not seen[v]:
+            comp, st = [v], [v]
+            seen[v] = True
+            while st:
+                u = st.pop()
+                for w in g[u]:
+                    if not seen[w]:
+                        seen[w] = True
+                        comp.append(w)
+                        st.append(w)
+            if sum(len(g[u]) for u in comp) > sum(len(g[u]) for u in best):     # the most roads
+                best = comp
+    srcs = random.sample(best, min(nsrc, len(best)))
+    per = max(1, int(len(qs) * share) // len(srcs))
+    slots = random.sample(range(len(qs)), per * len(srcs))
+    for s in srcs:
+        d = pdist(n, edges, s)
+        reach = sorted((d[x], x) for x in range(2, 2 * n + 2) if d[x] >= 0)
+        top = [x for _, x in reach[len(reach) - max(1, len(reach) // 25):]]     # the last 4% reached
+        never = [x for x in range(2, 2 * n + 2) if d[x] < 0]
+        for _ in range(per):
+            if never and (not top or rnd() < 0.5):
+                x = never[int(rnd() * len(never))]
+                k = 2 * int(rnd() * (MAXK // 2)) + (x & 1) if rnd() < 0.5 else 2 * int(rnd() * (n + 1)) + (x & 1)
+            else:
+                x = top[int(rnd() * len(top))]
+                r = rnd()
+                if r < 0.3:
+                    k = d[x]
+                elif r < 0.6:
+                    k = d[x] - 2 if d[x] >= 2 else d[x]
+                elif r < 0.8:
+                    k = d[x] + 2 * int(rnd() * (n + 1))
+                else:
+                    k = d[x] + 2 * int(rnd() * ((MAXK - d[x]) // 2 + 1))
+            qs[slots.pop()] = (s, x >> 1, k)
     return qs
 
 
@@ -175,6 +236,8 @@ def components(sizes, kinds, m_total):
                 if i != j and (i - j) % 2 == 1:
                     e.append((vs[i], vs[j]))
         base += sz
+    if budget is None:                              # only the roads of the components themselves
+        return base, e
     while len(e) < budget:                          # repeat existing roads (multi-edges)
         e.append(e[ri(0, len(e) - 1)])
     assert base <= MAXN
@@ -213,53 +276,51 @@ n = 31
 e = [(i, i % n + 1) for i in range(1, n + 1)]                    # one odd cycle of 31 towns
 e = relabel(n, e)
 add(n, e, queries(n, e, 300, 5))
-# hidden: big
-N, M, Q = MAXN, MAXM, MAXQ
+# hidden: big. Every big test has M = 8000 roads (sparse shapes get repeated roads) and most queries have a
+# goal state that is reached last or never, so one search per query (slow.cpp) explores the whole component.
+N, M, Q, F = MAXN, MAXM, MAXQ, 0.85
 for odd, lone in ((True, 4), (False, 0), (True, 0)):
     e = long_path(N - lone, M, odd)
     e = relabel(N, e)                                           # towns without roads get random numbers
-    add(N, e, queries(N, e, Q))
+    add(N, e, queries(N, e, Q, far=F))
 e = relabel(N, connected_random(N - 3, M))
-add(N, e, queries(N, e, Q, span=40))
-e = connected_random(N, N + 5)
+add(N, e, queries(N, e, Q, span=40, far=F))
+e = pad(connected_random(N, N + 5), M)                          # a tree + 6 roads, each road repeated ~5 times
 e = relabel(N, e)
-add(N, e, queries(N, e, Q, span=200))
+add(N, e, queries(N, e, Q, span=200, far=F))
 e = bipartite_random(N, M)
 e = relabel(N, e)
-add(N, e, queries(N, e, Q, span=40))
-e = relabel(N, bipartite_random(N - 2, N + 200))
-add(N, e, queries(N, e, Q, span=300))
-e = grid(30, 50)
+add(N, e, queries(N, e, Q, span=40, far=F))
+e = relabel(N, pad(bipartite_random(N - 2, N + 200), M))
+add(N, e, queries(N, e, Q, span=300, far=F))
+e = pad(grid(30, 50), M)
 e = relabel(N, e)
-add(N, e, queries(N, e, Q, span=200))
-e = relabel(N, grid(30, 49, 1))                                 # 30 towns without roads
-add(N, e, queries(N, e, Q, span=200))
-e = grid(15, 100, 2)
+add(N, e, queries(N, e, Q, span=200, far=F))
+e = relabel(N, pad(grid(30, 49, 1), M))                         # 30 towns without roads
+add(N, e, queries(N, e, Q, span=200, far=F))
+e = pad(grid(15, 100, 2), M)
 e = relabel(N, e)
-add(N, e, queries(N, e, Q, span=300))
+add(N, e, queries(N, e, Q, span=300, far=F))
 e = [(i, i % 1499 + 1) for i in range(1, 1500)] + [(1499, 1500)]  # odd cycle of 1499 towns + a tail
 e += [e[ri(0, 1499)] for _ in range(M - len(e))]
 e = relabel(N, e)
-add(N, e, queries(N, e, Q, span=3000))
+add(N, e, queries(N, e, Q, span=3000, far=F))
 e = [(i, i % 1500 + 1) for i in range(1, 1501)]                   # even cycle of 1500 towns
 e += [e[ri(0, 1499)] for _ in range(M - len(e))]
 e = relabel(N, e)
-add(N, e, queries(N, e, Q, span=3000))
-n, e = components([450, 1, 375, 1, 300, 225, 148], "bioipob", M)
-e = relabel(n, e)
-add(n, e, queries(n, e, Q, span=900))
-n, e = components([750, 749, 1], "obi", M)
-e = relabel(n, e)
-add(n, e, queries(n, e, Q, span=1500))
-n, e = components([525, 525, 450], "pob", M)
-e = relabel(n, e)
-add(n, e, queries(n, e, Q, span=1100))
-n, e = components([1] * 750 + [750], "i" * 750 + "o", M)           # many isolated towns
-e = relabel(n, e)
-add(n, e, queries(n, e, Q, span=1500))
-e = long_path(N, 1499 + 50, False) + [(1, 3)]                    # triangle at one end only
+add(N, e, queries(N, e, Q, span=3000, far=F))
+# several components: the spare roads repeat roads of one big component (a ~ b: its town range)
+for sizes, kinds, a, b, span in (([450, 1, 375, 1, 300, 225, 148], "bioipob", 452, 826, 900),
+                                 ([750, 749, 1], "obi", 1, 750, 1500),
+                                 ([525, 525, 450], "pob", 526, 1050, 1100),
+                                 ([1] * 750 + [750], "i" * 750 + "o", 751, 1500, 1500)):   # many isolated towns
+    n, e = components(sizes, kinds, None)
+    e = pad(e, M, [(u, v) for u, v in e if a <= u <= b])
+    e = relabel(n, e)
+    add(n, e, queries(n, e, Q, span=span, far=F))
+e = pad(long_path(N, 1499 + 50, False) + [(1, 3)], M)           # triangle at one end only
 e = relabel(N, e)
-add(N, e, queries(N, e, Q))
+add(N, e, queries(N, e, Q, far=F))
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

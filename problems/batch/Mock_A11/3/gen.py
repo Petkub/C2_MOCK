@@ -95,27 +95,45 @@ add([(1, 2, [1, 1]), (2, 2, [1, 1]), (1, 1, [1, 1]), (3, 5, [1, 1])])
 for maxs, q in [(12, 300), (40, 300), (120, 200), (300, 100)]:
     add([query(maxs, rng="small") for _ in range(q)])
 add([query(60, shape=lopsided, rng="small") for _ in range(200)])
-# hidden: big
+# hidden: big. Every one is heavy: L near 1, R near S = 5000 and Q = min(10^5, 4 * 10^5 / t), so a loop over
+# k = L..R for each query (sum of (t + 1)(R - L + 1) steps, up to 2.5 * 10^9) cannot finish in time.
+
+
+def heavy(t, total=MAXS, shape=None, lmax=1, rlow=MAXS):
+    """one heavy query: t departments with the given total, L in [1, lmax], R in [rlow, MAXS]"""
+    s = (shape or split)(total, t) if t > 1 else [total]
+    for i in range(len(s) - 1, 0, -1):
+        j = ri(0, i)
+        s[i], s[j] = s[j], s[i]
+    return (ri(1, lmax), ri(rlow, MAXS), s)
+
+
+def qfor(t):
+    return min(MAXQ, MAXTSUM // t)
+
+
+def equal(total, t):
+    return [total // t + (1 if i < total % t else 0) for i in range(t)]
+
+
 BIG = [
-    (14100, lambda: many(lambda: (1, MAXS, split(MAXS - ri(0, 100), ri(2, 4))), MAXQ)),
-    (14101, lambda: many(lambda: (1, MAXS, split(MAXS, 4)), MAXQ)),
-    (14102, lambda: [(1, MAXS, [MAXS - 1, 1]) for _ in range(MAXQ // 2)] + [(1, MAXS, [MAXS]) for _ in range(MAXQ // 2)]),
-    (14103, lambda: many(lambda: query(MAXS, tmin=2, tmax=4), MAXQ)),
-    (14104, lambda: many(lambda: query(MAXS, tmin=8, shape=lopsided), 40000)),
-    (14105, lambda: many(lambda: query(MAXS, tmax=1), MAXQ)),
-    (14106, lambda: many(lambda: (ri(1, 2500), MAXS, split(MAXS, 2)), MAXQ)),
-    (14107, lambda: [(k, k, [2500, 2500]) for k in range(1, MAXS + 1)] * 20),
-    (14108, lambda: many(lambda: query(MAXS, tmin=10), 40000)),
-    (14109, lambda: many(lambda: query(ri(2, MAXS), rng="small"), MAXQ)),
-    (14110, lambda: [(ri(1, 10), ri(4990, MAXS), [1] * 10) for _ in range(MAXQ // 4)]
-                    + many(lambda: query(MAXS, tmin=3, tmax=3), MAXQ * 3 // 4)),
-    (14111, lambda: many(lambda: (1, MAXS, split(MAXS, ri(2, 10))), 40000)),
-    (14112, lambda: [(L, L + ri(0, 3), split(MAXS, 2)) for L in [ri(2000, 3000) for _ in range(MAXQ)]]),
-    (14113, lambda: many(lambda: (ri(1, 5), MAXS, lopsided(MAXS - ri(0, 20), ri(2, 3))), MAXQ)),
-    (14114, lambda: [(ri(1, 5), ri(1, 5) + 5, split(ri(4500, MAXS), ri(2, 4)))
-                     for _ in range(MAXQ)]),
-    (14115, lambda: many(lambda: (ri(1, 10), ri(4900, MAXS), split(MAXS - ri(0, 30), ri(2, 3))), MAXQ)),
-    (14116, lambda: [(1, MAXS, [MAXS // 2, MAXS - MAXS // 2])] + many(lambda: query(MAXS, tmin=2), MAXQ - 1)),
+    (14100, lambda: many(lambda: heavy(ri(2, 4), MAXS - ri(0, 100)), MAXQ)),
+    (14101, lambda: many(lambda: heavy(4), MAXQ)),
+    (14102, lambda: many(lambda: heavy(3), qfor(3))),
+    (14103, lambda: many(lambda: heavy(10), qfor(10))),
+    (14104, lambda: many(lambda: heavy(8, shape=lopsided), qfor(8))),
+    (14105, lambda: many(lambda: heavy(5, shape=equal, lmax=3), qfor(5))),
+    (14106, lambda: many(lambda: heavy(3, MAXS - ri(0, 30), lmax=10, rlow=4990), qfor(3))),
+    (14107, lambda: many(lambda: heavy(6, lmax=3), qfor(6))),
+    (14108, lambda: many(lambda: heavy(7, MAXS - ri(0, 50)), qfor(7))),
+    (14109, lambda: many(lambda: heavy(10, shape=lopsided, lmax=2), qfor(10))),
+    (14110, lambda: many(lambda: heavy(2), MAXQ)),
+    (14111, lambda: [(1, MAXS, [MAXS // 2, MAXS - MAXS // 2])] + many(lambda: heavy(4, lmax=50), MAXQ - 1)),
+    (14112, lambda: many(lambda: heavy(3, shape=lopsided, lmax=5), qfor(3))),
+    (14113, lambda: many(lambda: heavy(9, MAXS - ri(0, 10), rlow=4900), qfor(9))),
+    (14114, lambda: many(lambda: heavy(ri(3, 10), MAXS - ri(0, 5)), 2 * MAXTSUM // 13)),
+    (14115, lambda: many(lambda: heavy(4, shape=equal), MAXQ)),
+    (14116, lambda: many(lambda: heavy(5, MAXS - ri(0, 100), lmax=20, rlow=4950), qfor(5))),
 ]
 for seed, make in BIG:
     random.seed(seed)

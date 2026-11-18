@@ -7,14 +7,6 @@
   "samples": 4,
   "scoring": "all"
  },
- "2": {
-  "title": "อุณหภูมิคงที่",
-  "en": "Stable Temperature",
-  "tier": 0,
-  "dir": "Mock_A01/3",
-  "samples": 4,
-  "scoring": "all"
- },
  "3": {
   "title": "สเปรดชีตที่อ้างถึงกันเป็นวง",
   "en": "Spreadsheet With Loops",
@@ -39,27 +31,11 @@
   "samples": 4,
   "scoring": "all"
  },
- "7": {
-  "title": "คนในออฟฟิศ",
-  "en": "Office Hours",
-  "tier": 0,
-  "dir": "Mock_A09/1",
-  "samples": 4,
-  "scoring": "all"
- },
  "8": {
   "title": "หุ่นยนต์เลี้ยวน้อยครั้ง",
   "en": "Robot With Few Turns",
   "tier": 0,
   "dir": "Mock_A07/4",
-  "samples": 4,
-  "scoring": "all"
- },
- "10": {
-  "title": "รถไฟเที่ยวสุดท้าย",
-  "en": "Last Train",
-  "tier": 0,
-  "dir": "Mock_A08/6",
   "samples": 4,
   "scoring": "all"
  },
@@ -207,27 +183,11 @@
   "samples": 5,
   "scoring": "all"
  },
- "31": {
-  "title": "ช่วงหารลงตัว",
-  "en": "Divisible Segments",
-  "tier": 0,
-  "dir": "Mock_A02/2",
-  "samples": 4,
-  "scoring": "all"
- },
  "32": {
   "title": "มรดกสามส่วนเท่ากัน",
   "en": "Three Heirs",
   "tier": 0,
   "dir": "Mock_A04/4",
-  "samples": 4,
-  "scoring": "all"
- },
- "33": {
-  "title": "ความยากของเส้นทางเดินป่า",
-  "en": "Hiking Difficulty",
-  "tier": 0,
-  "dir": "Mock_A07/6",
   "samples": 4,
   "scoring": "all"
  },
@@ -293,14 +253,6 @@
   "tier": 0,
   "dir": "Mock_B01/3",
   "samples": 5,
-  "scoring": "all"
- },
- "49": {
-  "title": "เกาะใหญ่ที่สุดหลังถมทะเล",
-  "en": "Biggest Island After One Fill",
-  "tier": 0,
-  "dir": "Mock_A04/2",
-  "samples": 4,
   "scoring": "all"
  },
  "50": {
@@ -399,14 +351,6 @@
   "samples": 4,
   "scoring": "all"
  },
- "70": {
-  "title": "กระดานภารกิจ",
-  "en": "Quest Board",
-  "tier": 0,
-  "dir": "Mock_A10/5",
-  "samples": 4,
-  "scoring": "all"
- },
  "71": {
   "title": "เส้นทางเดียวผ่านทุกคน",
   "en": "One Road Past Everyone",
@@ -415,28 +359,12 @@
   "samples": 5,
   "scoring": "all"
  },
- "73": {
-  "title": "ช่วงด่านที่เล่นผ่านได้",
-  "en": "Playable Stage Ranges",
-  "tier": 0,
-  "dir": "Mock_A02/5",
-  "samples": 4,
-  "scoring": "all"
- },
  "74": {
   "title": "แสงวาบของดาว",
   "en": "Star Flares",
   "tier": 0,
   "dir": "Mock_B02/1",
   "samples": 5,
-  "scoring": "all"
- },
- "76": {
-  "title": "พลิกกองพัสดุ",
-  "en": "Flipping Parcel Stacks",
-  "tier": 0,
-  "dir": "Mock_A08/5",
-  "samples": 4,
   "scoring": "all"
  },
  "77": {
@@ -455,30 +383,6 @@
   "samples": 4,
   "scoring": "all"
  },
- "79": {
-  "title": "สัญญาณเตือนถังพักน้ำ",
-  "en": "Tank Level Alarm",
-  "tier": 0,
-  "dir": "Mock_A09/3",
-  "samples": 4,
-  "scoring": "all"
- },
- "80": {
-  "title": "คูน้ำรูปตัว L",
-  "en": "L-Shaped Ditch",
-  "tier": 0,
-  "dir": "Mock_A12/3",
-  "samples": 4,
-  "scoring": "all"
- },
- "81": {
-  "title": "แปะมือระหว่างทาง",
-  "en": "High Fives on the Trail",
-  "tier": 0,
-  "dir": "Mock_A10/6",
-  "samples": 4,
-  "scoring": "all"
- },
  "82": {
   "title": "นับคำตอบ nonogram",
   "en": "Nonogram Count",
@@ -492,14 +396,6 @@
   "en": "Ramping Up Production",
   "tier": 0,
   "dir": "Mock_A01/2",
-  "samples": 4,
-  "scoring": "all"
- },
- "86": {
-  "title": "กบบนใบบัว",
-  "en": "Frogs on Lily Pads",
-  "tier": 0,
-  "dir": "Mock_A01/4",
   "samples": 4,
   "scoring": "all"
  },
@@ -527,22 +423,6 @@
   "samples": 4,
   "scoring": "all"
  },
- "90": {
-  "title": "บันทึกการทดสอบเชือก",
-  "en": "Rope Test Log",
-  "tier": 0,
-  "dir": "Mock_A03/1",
-  "samples": 4,
-  "scoring": "all"
- },
- "91": {
-  "title": "ขายผ้าทอ",
-  "en": "Selling Woven Cloth",
-  "tier": 0,
-  "dir": "Mock_A03/2",
-  "samples": 4,
-  "scoring": "all"
- },
  "92": {
   "title": "จัดกะทำงานใหม่",
   "en": "Reassigning Shifts",
@@ -556,30 +436,6 @@
   "en": "Free Stalls Around the Market",
   "tier": 0,
   "dir": "Mock_A04/1",
-  "samples": 4,
-  "scoring": "all"
- },
- "94": {
-  "title": "โรงงานหุ่นยนต์สองรุ่น",
-  "en": "Two Robot Models",
-  "tier": 0,
-  "dir": "Mock_A04/6",
-  "samples": 4,
-  "scoring": "all"
- },
- "95": {
-  "title": "แผ่นกดกลางทางเดิน",
-  "en": "Robots on Pressure Plates",
-  "tier": 0,
-  "dir": "Mock_A06/1",
-  "samples": 4,
-  "scoring": "all"
- },
- "96": {
-  "title": "บัตรคำใบ้ล่าสมบัติ",
-  "en": "Treasure Hunt Clues",
-  "tier": 0,
-  "dir": "Mock_A06/5",
   "samples": 4,
   "scoring": "all"
  },
@@ -607,14 +463,6 @@
   "samples": 4,
   "scoring": "all"
  },
- "101": {
-  "title": "ทริปค้างคืน",
-  "en": "Overnight Trip Plans",
-  "tier": 0,
-  "dir": "Mock_A05/4",
-  "samples": 4,
-  "scoring": "all"
- },
  "102": {
   "title": "บันทึกลานจอดรถ",
   "en": "Parking Lot Logs",
@@ -623,27 +471,11 @@
   "samples": 4,
   "scoring": "all"
  },
- "103": {
-  "title": "ปั่นจักรยานใต้ร่มไม้",
-  "en": "Shady Bike Routes",
-  "tier": 0,
-  "dir": "Mock_A09/5",
-  "samples": 4,
-  "scoring": "all"
- },
  "105": {
   "title": "แก้ข้อความก่อนส่ง",
   "en": "Fixing a Message",
   "tier": 0,
   "dir": "Mock_A11/4",
-  "samples": 4,
-  "scoring": "all"
- },
- "106": {
-  "title": "แบ่งสวนมะม่วงกับมังคุด",
-  "en": "Splitting the Orchard",
-  "tier": 0,
-  "dir": "Mock_A11/6",
   "samples": 4,
   "scoring": "all"
  },
@@ -956,6 +788,174 @@
   "en": "Member Codes",
   "tier": 0,
   "dir": "Mock_B08/6",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "146": {
+  "title": "อุโมงค์เหมืองพลอย",
+  "en": "Tunnels of the Gem Mine",
+  "tier": 0,
+  "dir": "Mock_A01/3",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "147": {
+  "title": "ร้านแจกขนมชิม",
+  "en": "Free Tasting Stalls",
+  "tier": 0,
+  "dir": "Mock_A01/4",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "148": {
+  "title": "เลื่อนเวลาขึ้นบิน",
+  "en": "Rescheduling the Take-offs",
+  "tier": 0,
+  "dir": "Mock_A02/2",
+  "samples": 4,
+  "scoring": "all"
+ },
+ "149": {
+  "title": "สเกตบอร์ดบนเนินเขา",
+  "en": "Skateboarding on the Hillside",
+  "tier": 0,
+  "dir": "Mock_A02/5",
+  "samples": 4,
+  "scoring": "all"
+ },
+ "150": {
+  "title": "ปั๊มลมลูกโป่ง",
+  "en": "Balloon Pumps",
+  "tier": 0,
+  "dir": "Mock_A03/1",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "151": {
+  "title": "แบตเตอรี่เสริมของโดรน",
+  "en": "Spare Drone Batteries",
+  "tier": 0,
+  "dir": "Mock_A03/2",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "152": {
+  "title": "ด่านลาวา",
+  "en": "The Lava Level",
+  "tier": 0,
+  "dir": "Mock_A04/2",
+  "samples": 4,
+  "scoring": "all"
+ },
+ "153": {
+  "title": "ที่นั่งสุดท้าย",
+  "en": "The Last Seats",
+  "tier": 0,
+  "dir": "Mock_A04/6",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "154": {
+  "title": "ล่องเรือเปลี่ยนบริษัท",
+  "en": "Switching Boat Companies",
+  "tier": 0,
+  "dir": "Mock_A05/4",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "155": {
+  "title": "หุ่นยนต์ถูพื้น",
+  "en": "The Floor-Mopping Robot",
+  "tier": 0,
+  "dir": "Mock_A06/1",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "156": {
+  "title": "ตะลุยด่านถึงบอส",
+  "en": "Fighting Through to the Boss",
+  "tier": 0,
+  "dir": "Mock_A06/5",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "157": {
+  "title": "เกมลูกแก้วชิงรางวัล",
+  "en": "The Marble Prize Board",
+  "tier": 0,
+  "dir": "Mock_A07/6",
+  "samples": 4,
+  "scoring": "all"
+ },
+ "158": {
+  "title": "เดินแรลลี่สี่ฐาน",
+  "en": "The Four-Station Rally",
+  "tier": 0,
+  "dir": "Mock_A08/5",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "159": {
+  "title": "ทางจักรยานทางเดียว",
+  "en": "One-Way Bike Lanes",
+  "tier": 0,
+  "dir": "Mock_A08/6",
+  "samples": 4,
+  "scoring": "all"
+ },
+ "160": {
+  "title": "หมากบนเส้นจำนวน",
+  "en": "On the Edge",
+  "tier": 0,
+  "dir": "Mock_A09/1",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "161": {
+  "title": "ค่าจ้างกับการบ้าน",
+  "en": "Wages and Homework",
+  "tier": 0,
+  "dir": "Mock_A09/3",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "162": {
+  "title": "ร่มกระดาษ",
+  "en": "The Paper Umbrella",
+  "tier": 0,
+  "dir": "Mock_A09/5",
+  "samples": 4,
+  "scoring": "all"
+ },
+ "163": {
+  "title": "หยิบไพ่จากกอง",
+  "en": "Drawing From the Pile",
+  "tier": 0,
+  "dir": "Mock_A10/5",
+  "samples": 4,
+  "scoring": "all"
+ },
+ "164": {
+  "title": "เก็บการ์ดไปแล้วกลับ",
+  "en": "Cards There and Back",
+  "tier": 0,
+  "dir": "Mock_A10/6",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "165": {
+  "title": "โคมไฟริมคลอง",
+  "en": "Lanterns Along the Canal",
+  "tier": 0,
+  "dir": "Mock_A11/6",
+  "samples": 5,
+  "scoring": "all"
+ },
+ "166": {
+  "title": "จัดแถวถ่ายรูปกีฬาสี",
+  "en": "Sports Day Photo Line",
+  "tier": 0,
+  "dir": "Mock_A12/3",
   "samples": 5,
   "scoring": "all"
  }

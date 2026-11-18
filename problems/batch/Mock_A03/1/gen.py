@@ -1,12 +1,9 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-# Most tests come from hidden strengths Y (c = min(Y_a, Y_b), always consistent); a "bad" record
-# (c smaller than both final lower bounds) is inserted before the first record of one of its ropes,
-# so checking each record right after reading it does not see the contradiction.
 import os, random
 
-random.seed(1219019)
+random.seed(31021)
 rnd = random.random
-MAXN, MAXM, MAXC = 10 ** 5, 10 ** 5, 10 ** 9
+MAXN, MAXV, MAXD = 200000, 10 ** 18, 10 ** 12
 tests = []
 
 
@@ -14,107 +11,93 @@ def ri(a, b):
     return a + int(rnd() * (b - a + 1))
 
 
-def add(n, recs):
-    m = len(recs)
-    assert 2 <= n <= MAXN and 1 <= m <= MAXM
-    for a, b, c in recs:
-        assert 1 <= a <= n and 1 <= b <= n and a != b and 1 <= c <= MAXC
-    tests.append(f"{n} {m}\n" + "".join(f"{a} {b} {c}\n" for a, b, c in recs))
+def add(S, d, t, shuffle=False):
+    t = list(t)
+    if shuffle:
+        random.shuffle(t)
+    n = len(t)
+    assert 1 <= n <= MAXN
+    assert 0 <= S <= MAXV and 1 <= d <= MAXD
+    assert all(0 <= x <= MAXV for x in t)
+    tests.append(f"{n} {S} {d}\n{' '.join(map(str, t))}\n")
 
 
-def pair(n):
-    a = ri(1, n)
-    b = ri(1, n - 1)
-    return a, (b if b < a else b + 1)
-
-
-def from_y(y, pairs):
-    """records consistent with strengths y[1..n]"""
-    return [(a, b, min(y[a], y[b])) for a, b in pairs]
-
-
-def rand_pairs(n, m, lo=1, hi=None):
-    """m random pairs among ropes lo..hi"""
-    hi = n if hi is None else hi
-    k = hi - lo + 1
+def from_levels(S, d, levels, off=None):
+    """child with level c arrives at S + c * d + offset (0 <= offset < d), so it can use c rounds of a pump"""
     out = []
-    for _ in range(m):
-        a, b = pair(k)
-        out.append((a + lo - 1, b + lo - 1))
+    for c in levels:
+        o = off() if off else ri(0, d - 1)
+        out.append(S + c * d + o)
     return out
 
 
-def low(n, recs):
-    x = [1] * (n + 1)
-    for a, b, c in recs:
-        x[a] = max(x[a], c)
-        x[b] = max(x[b], c)
-    return x
-
-
-def bad(n, recs, hidden=True):
-    """insert one contradicting record; hidden: placed before the first record of one of its ropes"""
-    x = low(n, recs)
-    while True:
-        u, v = pair(n)
-        if min(x[u], x[v]) >= 2:
-            break
-    c = ri(1, min(x[u], x[v]) - 1)
-    if hidden:
-        first = next((j for j, r in enumerate(recs) if r[0] == u or r[1] == u), len(recs))
-        pos = ri(0, first)
-    else:
-        pos = len(recs)
-    return recs[:pos] + [(u, v, c) if rnd() < 0.5 else (v, u, c)] + recs[pos:]
-
-
-def ys(n, lo, hi):
-    return [0] + [ri(lo, hi) for _ in range(n)]
-
-
-N, M = MAXN, MAXM
 # samples
-add(4, [(1, 2, 3), (1, 3, 7), (3, 4, 5), (2, 4, 3)])
-add(3, [(1, 2, 5), (1, 3, 5), (2, 3, 3)])
-add(5, [(1, 2, 4), (2, 4, 8), (3, 5, 2), (4, 5, 6), (1, 5, 4), (2, 3, 2)])
-add(4, [(1, 2, 6), (3, 4, 2), (2, 3, 6), (1, 4, 2), (1, 3, 4)])
-add(5, [(1, 2, 10), (2, 3, 10), (3, 4, 7), (4, 5, 7), (2, 1, 10)])
-# hidden: small (brute checks these)
-add(2, [(2, 1, MAXC)])
-add(2, [(1, 2, 7), (2, 1, 7), (1, 2, 7)])
-add(2, [(1, 2, 7), (2, 1, 9)])                                       # -1, the same pair twice
-add(7, from_y(ys(7, 1, 20), rand_pairs(7, 5, 1, 5)))                 # ropes 6, 7 untested
-add(6, bad(6, from_y(ys(6, 1, 30), rand_pairs(6, 6))))              # -1, hidden
-add(8, from_y(ys(8, 1, 4), rand_pairs(8, 7)))                       # ties
-# hidden: medium
-add(1000, from_y(ys(1000, 1, 10), rand_pairs(1000, 2000)))
-add(3000, bad(3000, from_y(ys(3000, 1, MAXC), rand_pairs(3000, 4000))))
-add(N, [(ri(1, N // 2), ri(N // 2 + 1, N), ri(MAXC - 10 ** 6, MAXC))])  # one record
-# hidden: big
-add(N, from_y(ys(N, 1, MAXC), rand_pairs(N, M)))                    # some ropes untested
-y = ys(N, 1, MAXC)
-add(N, from_y(y, [(i, i + 1) if rnd() < 0.5 else (i + 1, i) for i in range(1, N)] + rand_pairs(N, 1)))
-y = ys(N, 1, MAXC)
-y[1] = MAXC
-add(N, from_y(y, [(1, i) if rnd() < 0.5 else (i, 1) for i in range(2, N + 1)] + rand_pairs(N, 1)))  # star
-add(N, from_y(ys(N, 1, MAXC), rand_pairs(N, M, 1, N // 2)))         # half of the ropes untested
-add(N, from_y(ys(N, 1, 10), rand_pairs(N, M)))                      # small values, many ties
-add(300, from_y(ys(300, 1, MAXC), rand_pairs(300, M)))              # many repeated pairs
-add(N, [p + (MAXC,) for p in rand_pairs(N, M)])                     # all c equal
-add(N, [p + (1,) for p in rand_pairs(N, M)])
-y = [0] + [MAXC - ri(0, 3) for _ in range(N)]
-add(N, from_y(y, rand_pairs(N, M)))                                 # values almost equal
-# -1, the contradiction appears only after later records
-add(N, bad(N, from_y(ys(N, 1, MAXC), rand_pairs(N, M - 1))))
-add(N, bad(N, from_y(ys(N, 1, 100), rand_pairs(N, M - 1))))
-y = ys(N, 1, MAXC)
-add(N, bad(N, from_y(y, [(i, i + 1) for i in range(1, N)])))       # a path
-add(200, bad(200, from_y(ys(200, 1, MAXC), rand_pairs(200, M - 1))))
-add(N, bad(N, [p + (MAXC,) for p in rand_pairs(N, M - 1)]))
-# -1, seen as soon as the bad record is read
-add(N, bad(N, from_y(ys(N, 1, MAXC), rand_pairs(N, M - 1)), hidden=False))
-recs = from_y(ys(N, 1, MAXC), rand_pairs(N, M - 1, 1, 60000))      # many ropes untested
-add(N, bad(N, recs))
+add(10, 5, [18, 15, 21, 20, 27])
+add(4, 10, [20, 13, 30])
+add(7, 2, [9, 18, 14, 30, 25])
+add(8, 6, [27, 15, 16, 29, 21, 21, 29, 26])
+add(999999999999, 10 ** 12, [1999999999999, 3000000000000, 2999999999999])
+
+# hidden: small (brute matches children to pump rounds on these)
+add(5, 3, [8])                                          # exactly S + d
+add(5, 3, [7])                                          # one minute short
+add(0, 1, [1, 1, 1, 1, 1, 1, 1, 1])                     # everyone at the first round
+add(20, 4, [3, 30, 40, 50, 60])                         # a child before the staff arrives
+add(0, 7, from_levels(0, 7, [1, 2, 2, 3, 3, 3, 4, 5], lambda: 6), True)   # offsets d - 1
+add(3, 5, from_levels(3, 5, [1, 1, 2, 2, 2, 3, 3, 3], lambda: 0), True)   # arrivals exactly on a round
+add(10 ** 18 - 9 * 10 ** 12, 10 ** 12, from_levels(10 ** 18 - 9 * 10 ** 12, 10 ** 12, [1, 1, 2, 3, 3, 4, 7, 8]), True)
+add(6, 9, from_levels(6, 9, [2, 2, 2, 2, 2, 2, 2, 2]), True)
+add(1, 4, from_levels(1, 4, [1, 1, 1, 2, 5, 6, 7, 8]), True)
+add(100, 1000, [99 + 1000] + from_levels(100, 1000, [1, 2, 3, 4, 5, 6]), True)
+
+
+# hidden: big (every answer is large or -1)
+def big_s():
+    return ri(0, 10 ** 9)
+
+
+N = MAXN
+S, d = big_s(), ri(10 ** 6, 10 ** 9)
+add(S, d, from_levels(S, d, [1] * N), True)                                   # everyone in round 1: M = N
+S, d = big_s(), ri(10 ** 6, 10 ** 9)
+add(S, d, from_levels(S, d, [1] * (N // 4) + [2] * (N - N // 4)), True)        # M = N / 2
+S, d = big_s(), ri(10 ** 6, 10 ** 9)
+add(S, d, from_levels(S, d, [ri(1, 4) for _ in range(N)]), True)
+S, d = big_s(), ri(10 ** 6, 10 ** 9)
+add(S, d, from_levels(S, d, [ri(1, 3) for _ in range(N)], lambda: d - 1), True)  # offsets d - 1
+S, d = big_s(), ri(10 ** 6, 10 ** 9)
+add(S, d, from_levels(S, d, [ri(1, 3) for _ in range(N)], lambda: 0), True)      # exactly on a round
+S, d = big_s(), ri(10 ** 6, 10 ** 9)
+A = 61234
+add(S, d, from_levels(S, d, [(k + A - 1) // A for k in range(1, N + 1)]), True)  # staircase, M = A
+S, d = big_s(), ri(10 ** 6, 10 ** 9)
+A = 45000
+lv = [(k + A - 1) // A for k in range(1, N + 1)]
+lv[2 * A] = 2                                     # one child a round earlier: M = A + 1
+add(S, d, from_levels(S, d, lv, lambda: ri(d - 3, d - 1)), True)
+S, d = big_s(), ri(10 ** 6, 10 ** 9)
+lv = [1] * 1000 + [2] * 99000 + [ri(3, 1000) for _ in range(N - 100000)]     # tight in the middle
+add(S, d, from_levels(S, d, lv), True)
+S, d = big_s(), ri(10 ** 6, 10 ** 9)
+lv = [ri(1, 2) for _ in range(N - 1)] + [0]                                    # one child at S + d - 1
+add(S, d, from_levels(S, d, lv[:-1]) + [S + d - 1], True)
+S, d = ri(10 ** 8, 10 ** 9), ri(10 ** 6, 10 ** 7)
+add(S, d, from_levels(S, d, [ri(1, 3) for _ in range(N - 1)]) + [ri(0, S - 1)], True)   # before the staff
+S, d = big_s(), 1
+add(S, d, from_levels(S, d, [ri(1, 6) for _ in range(N)]), True)               # d = 1
+S, d = big_s(), ri(10 ** 6, 10 ** 9)
+add(S, d, sorted(from_levels(S, d, [ri(1, 5) for _ in range(N)])))             # sorted
+S, d = big_s(), ri(10 ** 6, 10 ** 9)
+add(S, d, sorted(from_levels(S, d, [ri(1, 5) for _ in range(N)]), reverse=True))   # reverse sorted
+S, d = big_s(), ri(10 ** 6, 10 ** 9)
+add(S, d, from_levels(S, d, [1] * 40000 + [ri(1, 40) for _ in range(N - 40000)]), True)
+S, d = big_s(), ri(2, 9)
+add(S, d, from_levels(S, d, [ri(1, 2) for _ in range(N)]), True)               # small d
+N2 = 150000                                                                    # values near 10^18
+S, d = MAXV - 4 * MAXD, MAXD
+add(S, d, from_levels(S, d, [ri(1, 3) for _ in range(N2)], lambda: ri(MAXD - 1000, MAXD - 1)), True)
+S, d = MAXV - 2 * MAXD - 1, MAXD
+add(S, d, [S + MAXD + ri(0, MAXD - 1) for _ in range(N2 - 1)] + [MAXV], True)  # M = N - 1
 
 for t in tests:
     assert t.endswith("\n") and "  " not in t and " \n" not in t

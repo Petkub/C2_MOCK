@@ -97,6 +97,46 @@ N = MAXN
 L26 = "abcdefghijklmnopqrstuvwxyz"
 
 
+# v7.1: ten weak max tests were replaced by tests with both about 10^5..4*10^5 highlighted runs and
+# 3*10^7..4*10^7 occurrences, so that inserting the brackets one by one (string::insert, O(N * runs)) and storing
+# every occurrence then sorting them (also over 256 MB) both fail. The old tests keep their random draws (skip),
+# the new ones use their own generator, so the other tests stay the same.
+rk = random.Random(71064)
+
+
+def skip(*a):
+    pass
+
+
+def blocks(n, letter, lo, hi, gaps, inner="", p_inner=0.0):
+    """blocks of `letter` (sometimes an `inner` letter) of length lo..hi, each followed by one gap from `gaps`"""
+    out, size = [], 0
+    while size < n:
+        b = "".join(rk.choice(inner) if rk.random() < p_inner else letter for _ in range(rk.randint(lo, hi)))
+        b += rk.choice(gaps)
+        out.append(b)
+        size += len(b)
+    t = "".join(out)[:n]
+    return t if t[-1] == letter else t[:-1] + letter
+
+
+def ablock_words(n, lo, hi, other, p_other):
+    """words of mostly 'a' (length lo..hi) separated by single spaces, exactly n characters"""
+    out, size = [], 0
+    while size <= n:
+        w = "".join(rk.choice(other) if rk.random() < p_other else "a" for _ in range(rk.randint(lo, hi)))
+        out.append(w)
+        size += len(w) + 1
+    return fix_ends(" ".join(out)[:n])
+
+
+def fill(ws, pool):
+    """the keywords ws, then copies of the short keywords in pool up to 50 keywords"""
+    ws = list(ws)
+    while len(ws) < MAXK and sum(map(len, ws)) + max(map(len, pool)) <= MAXL:
+        ws.append(rk.choice(pool))
+    return ws
+
 
 def sprinkle(t, ch, rate):
     return fix_ends("".join(ch if random.random() < rate else c for c in t))
@@ -108,7 +148,8 @@ add(fix_ends(("ab " * N)[:N]), ["ab"])                                          
 add(fix_ends(("ab " * N)[:N]), ["ab", "b?a"])                                                # one run
 add(("abcd" * N)[:N], ["ab", "cd"])                                                          # touching runs
 add(fix_ends(("abc " * N)[:N]), ["ab", "c", "bc"])                                            # touching, many runs
-t = rtext(N, L26, 0.15); add(t, cap([pat(L26, 3, 1) for _ in range(50)]))
+t = rtext(N, L26, 0.15); skip(t, cap([pat(L26, 3, 1) for _ in range(50)]))
+add(blocks(N, "a", 1, 7, "b"), fill(["aa", "aaa", "aaaa"], ["a"]))                              # 200000 runs
 # v6.0.2: this test was replaced; its random draws stay so that the later tests stay the same
 t = rtext(N, L26, 0.0); cap([pat(L26, 2, 0) for _ in range(50)])
 # every keyword occurs at every position: about 5 * 10^7 occurrences in all
@@ -117,19 +158,29 @@ for L in range(1, 6):
     pats = ["".join(p) for p in itertools.product("a?", repeat=L)]
     ws += [pats[(3 * i + L) % len(pats)] for i in range(10)]
 add("a" * N, ws)
-t = rtext(N, "ab", 0.0); add(t, cap([pat("ab", random.randint(7, 9), random.randint(0, 1)) for _ in range(30)]))
-t = rtext(N, "ab", 0.08); add(t, cap([pat("ab", random.randint(3, 10), 1) for _ in range(35)]))
-t = rtext(N, "abcd", 0.1); add(t, cap([pat("abcd", random.randint(4, 6), random.randint(0, 2)) for _ in range(50)]))
+t = rtext(N, "ab", 0.0); skip(t, cap([pat("ab", random.randint(7, 9), random.randint(0, 1)) for _ in range(30)]))
+add(blocks(N, "a", 1, 6, ["c", "c", "c", "bc"]), fill(["aab", "a?b", "aa"], ["a"]))                 # aab beats a later a
+t = rtext(N, "ab", 0.08); skip(t, cap([pat("ab", random.randint(3, 10), 1) for _ in range(35)]))
+add(ablock_words(N, 1, 7, "b", 0.05), fill(["ab", "ba", "aba", "aa"], ["a"]))             # words, spaces
+t = rtext(N, "abcd", 0.1); skip(t, cap([pat("abcd", random.randint(4, 6), random.randint(0, 2)) for _ in range(50)]))
+add(blocks(N, "z", 1, 6, ["x", "x", "yx"]), fill(["zzy", "zz", "zzz"], ["z"]))
 t = words_text(N, VOCAB); add(t, ["school", "spain", "cannot", "banana", "tea", "s?a"])
-t = words_text(N, VOCAB); add(t, ["a?c", "e?t", "n?s", "t?c", "n?n"])                          # across spaces
-t = words_text(N, ["x", "y", "z", "xy", "yz", "zx", "xyz"]); add(t, cap(from_text(t, 30, 6, 9, 0.1)))
+t = words_text(N, VOCAB); skip(t, ["a?c", "e?t", "n?s", "t?c", "n?n"])
+t = fix_ends("".join("a" if rk.random() < 0.74 else rk.choice("bcdefghij") for _ in range(N)))
+add(t, fill(["ja", "aa", "aaa", "aaaa"], ["a"]))                                          # random gap letters
+t = words_text(N, ["x", "y", "z", "xy", "yz", "zx", "xyz"]); skip(t, cap(from_text(t, 30, 6, 9, 0.1)))
+add(blocks(N, "a", 1, 7, "cd", "b", 0.1), fill(["ab", "ba", "aab", "bb"], ["a"]))     # b inside blocks
 t = sprinkle("a" * N, "b", 0.003)
 add(t, cap(["a" * m for m in (30, 60, 90)] + ["a" * 40 + "?" + "a" * 20]))                     # long matches, gaps
 t = sprinkle(("aab" * N)[:N], "c", 0.01)
-add(t, cap(["aab" * 15 + "aac"] * 4 + ["aac", "caa"]))                                        # long partial matches
-t = sprinkle(rtext(N, "a", 0.0), "b", 0.05); add(t, cap(["a" * 30 + "?" * 10] * 5 + ["b?b", "ab"]))
-t = rtext(N, L26, 0.05); add(t, cap(from_text(t, 40, 3, 3, 0.0) + [pat(L26, 2, 1) for _ in range(6)]))
-t = rtext(N, "ab", 0.0); add(t, cap(from_text(t, 30, 3, 12, 0.0)))                           # many lengths overlap
+skip(t, cap(["aab" * 15 + "aac"] * 4 + ["aac", "caa"]))
+add(blocks(N, "a", 1, 5, "c", "b", 0.12), fill(["a?b", "b?a", "a?a?b", "aa"], ["a"]))         # ? inside
+t = sprinkle(rtext(N, "a", 0.0), "b", 0.05); skip(t, cap(["a" * 30 + "?" * 10] * 5 + ["b?b", "ab"]))
+add(ablock_words(N, 1, 7, "a", 0.0), fill(["aa", "aaa", "aaaaa"], ["a"]))                       # a-words, spaces
+t = rtext(N, L26, 0.05); skip(t, cap(from_text(t, 40, 3, 3, 0.0) + [pat(L26, 2, 1) for _ in range(6)]))
+add(blocks(N, "a", 1, 3, "b"), fill(["aa"], ["a"]))                                             # 333000 runs
+t = rtext(N, "ab", 0.0); skip(t, cap(from_text(t, 30, 3, 12, 0.0)))
+add(blocks(N, "q", 1, 6, ["s", "s", "rs"], "r", 0.05), fill(["qqr", "rq", "qq", "qrq"], ["q"]))
 t = words_text(N, ["ab", "ba", "abc", "cab", "bca", "cc", "a", "b", "c", "abcab"])                # many runs, mixed lengths
 add(t, cap(["ab", "c?b", "?ca", "abca", "b?b", "cab?", "a?c?b"]))
 

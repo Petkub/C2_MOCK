@@ -1,109 +1,79 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-# A test = an N x M board of integers, N * M <= 200 000, |a| <= 10^9.
+# Integers only: every random value comes from getrandbits / randrange (no floating point).
 import os, random
 
-random.seed(803)
-rnd = random.random
-MAXNM, MAXV = 200000, 10 ** 9
+r = random.Random(31203)
+MAXN = 500000
 tests = []
 
-
-def ri(a, b):
-    return a + int(rnd() * (b - a + 1))
-
-
-def add_rows(rows):
-    n, m = len(rows), len(rows[0])
-    assert n >= 1 and m >= 1 and n * m <= MAXNM
-    assert all(len(r) == m for r in rows)
-    assert all(-MAXV <= x <= MAXV for r in rows for x in r)
-    tests.append(f"{n} {m}\n" + "".join(" ".join(map(str, r)) + "\n" for r in rows))
+# a byte b (0..255) becomes a teacher if b < t0, a red student if b < t0 + t1, else a blue student
+TABLES = {}
 
 
-def add(n, m, flat):
-    assert len(flat) == n * m
-    add_rows([flat[i * m:(i + 1) * m] for i in range(n)])
+def seg(n, t0, t1):
+    """n people at random; teacher with chance t0/256, red with chance t1/256, blue otherwise"""
+    key = (t0, t1)
+    if key not in TABLES:
+        TABLES[key] = bytes(48 if b < t0 else 49 if b < t0 + t1 else 50 for b in range(256))
+    raw = r.getrandbits(8 * n).to_bytes(n, "little") if n else b""
+    return raw.translate(TABLES[key]).decode()
 
 
-def unif(k, lo, hi):
-    """k values uniform in lo..hi"""
-    w = hi - lo + 1
-    return [lo + int(rnd() * w) for _ in range(k)]
+def rep(s, k):
+    return s * k
 
 
-def plant(n, m, flat, r, c, r2, c2, lo, hi):
-    """overwrite the cells of the channel with corner (r, c) and ends r2, c2 (0-based) by values in lo..hi"""
-    for i in range(min(r, r2), max(r, r2) + 1):
-        flat[i * m + c] = ri(lo, hi)
-    for j in range(min(c, c2), max(c, c2) + 1):
-        flat[r * m + j] = ri(lo, hi)
+def add(s):
+    n = len(s)
+    assert 1 <= n <= MAXN
+    assert set(s) <= set("012")
+    tests.append("%d\n%s\n" % (n, " ".join(s)))
 
 
-def one_line(n, m, flat, row, lo, hi):
-    """row >= 0: that row gets values in lo..hi; row < 0: column -row-1 does"""
-    if row >= 0:
-        for j in range(m):
-            flat[row * m + j] = ri(lo, hi)
-    else:
-        c = -row - 1
-        for i in range(n):
-            flat[i * m + c] = ri(lo, hi)
+# samples
+add("20102")
+add("220112")
+add("102002")
+add("0102011")
+add("201102101011")
 
+# hidden: small (brute runs BFS on N <= 9)
+add("0")
+add("1")
+add("21")
+add("000")
+add("2121")
+add("200001")
+add("021021021")
+add(seg(9, 100, 78))
+add(seg(300, 85, 85))
+add(seg(2000, 30, 113))
+add(seg(1500, 128, 64) + seg(1500, 128, 0) + seg(1500, 128, 128))
 
-# ---- samples ----
-add_rows([[3, -2, 5, -1, 4], [-6, 1, -3, 2, -5], [4, -1, 7, 6, 1], [-2, 8, -4, -3, 2]])
-add_rows([[5, -3, 2], [-1, 4, -2], [6, -7, 3], [2, 1, -4]])
-add_rows([[-4, 9, -1, 3, -8, 6], [2, -5, 7, -2, 4, -1]])
-add_rows([[-2, 9, 8, -5, 2, 6], [9, -7, -9, 6, -1, 8], [-2, -3, 6, 8, 8, 6]])
-add_rows([[-58, 12, -390, -777, -805], [-540, -323, -145, 187, 271], [-631, -712, -159, -617, 22],
-          [-223, 445, 600, 515, 168], [296, -613, 308, -829, -864]])
-
-# ---- hidden: small and medium (brute checks these) ----
-add_rows([[-MAXV]])
-add_rows([[MAXV, MAXV]])
-add(3, 3, unif(9, -50, -1))                                        # every cell negative
-add(6, 7, unif(42, -20, 15))
-add(1, 20, unif(20, -MAXV, MAXV))
-add(20, 1, unif(20, -MAXV, MAXV))
-add(15, 20, unif(300, -MAXV, MAXV))
-add(120, 150, unif(18000, -MAXV // 2, MAXV))                       # long arms
-add(4, 5000, unif(20000, -MAXV, MAXV))
-
-# ---- hidden: big (N * M = 200 000) ----
-N = MAXNM
-add(1, N, unif(N, -MAXV, MAXV))
-add(N, 1, unif(N, -MAXV // 10 * 9, MAXV))
-add(2, N // 2, unif(N, -MAXV, MAXV))
-add(N // 2, 2, unif(N, -10 ** 4, -1))                              # every cell negative
-add(4, N // 4, unif(N, -MAXV, MAXV // 10 * 9))
-add(N // 4, 4, unif(N, -10 ** 6, 10 ** 6))
-add(8, N // 8, unif(N, -MAXV, MAXV))
-add(N // 8, 8, unif(N, -10 ** 5, 10 ** 5 + 3000))
-add(400, 500, unif(N, -MAXV // 2, MAXV))                          # whole row + whole column
-add(500, 400, unif(N, -MAXV, MAXV // 2))                          # short arms
-add(200, 1000, unif(N, MAXV - 10 ** 6, MAXV))                     # every cell close to 10^9
-add(1000, 200, unif(N, -MAXV, -1))                                # every cell negative
-f = unif(N, -10 ** 6, -1)
-one_line(100, 2000, f, 37, -3 * 10 ** 5, 10 ** 6)
-add(100, 2000, f)                                                 # one good row: a straight channel
-f = unif(N, -10 ** 6, -1)
-one_line(2000, 100, f, -64, -3 * 10 ** 5, 10 ** 6)
-add(2000, 100, f)                                                 # one good column
-f = unif(N, -10 ** 4, 3000)
-plant(250, 800, f, 210, 640, 30, 90, 0, 10 ** 4)
-add(250, 800, f)                                                  # arms up and left
-f = unif(N, -10 ** 4, 3000)
-plant(800, 250, f, 120, 200, 760, 15, 0, 10 ** 4)
-add(800, 250, f)                                                  # arms down and left
-f = unif(300 * 666, -MAXV, MAXV // 3)
-plant(300, 666, f, 250, 100, 20, 600, MAXV // 2, MAXV)
-add(300, 666, f)                                                  # arms up and right (N * M = 199 800)
-add(10, N // 10, unif(N, -MAXV, MAXV))
-add(N // 20, 20, unif(N, -100, 100))
+# hidden: big (every big test has at least 100 000 teachers)
+add(seg(MAXN, 86, 85))                                            # uniform mix
+add(seg(MAXN, 128, 64))                                           # many teachers
+add(seg(MAXN, 210, 23))                                           # mostly teachers
+add(seg(MAXN // 2, 64, 0) + seg(MAXN // 2, 64, 192))              # blues + teachers, then reds + teachers
+add(seg(200000, 0, 0) + seg(100000, 256, 0) + seg(200000, 0, 256))  # 200 000 blues, teachers, 200 000 reds
+add(seg(150000, 0, 256) + seg(200000, 256, 0) + seg(150000, 0, 0))  # already in order
+add(seg(MAXN // 4, 60, 190) + seg(MAXN // 2, 60, 6) + seg(MAXN // 4, 60, 190))
+add(seg(MAXN // 4, 60, 6) + seg(MAXN // 2, 60, 190) + seg(MAXN // 4, 60, 6))
+add(seg(MAXN // 3, 96, 150) + seg(MAXN // 3, 96, 80) + seg(MAXN - 2 * (MAXN // 3), 96, 10))
+add(rep("201", MAXN // 3) + "02")                                 # periodic
+add(rep("2001", MAXN // 4))                                       # teachers with equal choices
+add(rep("1020", MAXN // 4))
+add(seg(MAXN, 100, 140))
+add(seg(MAXN, 100, 16))
+add("".join(seg(10000, 77, (i * 37) % 179) for i in range(MAXN // 10000)))   # many blocks
+add("2" * 250000 + "0" * 100000 + "1" * 150000)                  # huge answer
+add(seg(MAXN, 140, 58))
 
 for t in tests:
+    if len(t) > 100000:
+        assert t.count("0") >= 100000
     assert t.endswith("\n") and "  " not in t and " \n" not in t
 os.makedirs("tests", exist_ok=True)
 for i, t in enumerate(tests, 1):
-    with open(f"tests/{i:02d}.in", "w") as f:
+    with open("tests/%02d.in" % i, "w") as f:
         f.write(t)

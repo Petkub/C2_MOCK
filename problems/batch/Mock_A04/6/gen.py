@@ -1,170 +1,109 @@
 # Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
-# A row is (s, a, b): s parts in stock, a parts per robot of model 1, b parts per robot of model 2.
-# Most big tests are a few "core" rows that decide the answer plus many "filler" rows; many tests have
-# totals where t * a or t * b no longer fits in 64 bits, and close_costs() keeps only cores where the usual
-# ternary searches over the number of model-1 robots give a wrong total.
 import os, random
 
-random.seed(2023416)
+random.seed(70406)
 rnd = random.random
-MAXN, MAXS, MAXA = 50000, 10 ** 18, 10 ** 9
+MAXN, MAXC = 100000, 10 ** 9
 tests = []
 
 
-def ri(lo, hi):
-    return lo + int(rnd() * (hi - lo + 1))
+def ri(a, b):
+    return a + int(rnd() * (b - a + 1))
 
 
-def add(rows, shuffle=True):
-    rows = list(rows)
+def add(xs, hs, k, shuffle=True):
+    xs, hs = list(xs), list(hs)
     if shuffle:
-        n = len(rows)
-        # small tests: a full shuffle; big tests: only the first rows (the core rows) go to random places
-        for i in range(n - 1 if n <= 2000 else 64):
-            j = i + int(rnd() * (n - i))
-            rows[i], rows[j] = rows[j], rows[i]
-    assert 1 <= len(rows) <= MAXN
-    for s, a, b in rows:
-        assert 1 <= s <= MAXS and 1 <= a <= MAXA and 1 <= b <= MAXA
-    tests.append("%d\n" % len(rows) + "".join("%d %d %d\n" % r for r in rows))
+        random.shuffle(xs)
+        random.shuffle(hs)
+    n, m = len(xs), len(hs)
+    assert 1 <= n <= MAXN and 1 <= m <= MAXN
+    assert 1 <= k <= min(n, m)
+    assert all(1 <= v <= MAXC for v in xs)
+    assert all(1 <= a <= b <= MAXC for a, b in hs)
+    lines = ["%d %d %d" % (n, m, k), " ".join(map(str, xs))]
+    lines += ["%d %d" % h for h in hs]
+    tests.append("\n".join(lines) + "\n")
 
 
-def through(p, q, a, b, slack):
-    """a row that allows p robots of model 1 with q of model 2 and a little more (slack)"""
-    return (min(MAXS, p * a + q * b + slack), a, b)
+def route(C, maxlen):
+    a = ri(1, C)
+    return (a, min(C, a + ri(0, maxlen)))
 
 
-def near_point(n, p, q, amax, slackmax):
-    """n rows that all pass close to the point (p, q)"""
-    return [through(p, q, ri(1, amax), ri(1, amax), ri(0, slackmax)) for _ in range(n)]
+def rand_test(n, m, k, C, maxlen):
+    add([ri(1, C) for _ in range(n)], [route(C, maxlen) for _ in range(m)], k)
 
 
-def filler(n, amax, smin):
-    """rows that only matter for very large totals: small a, b and a big stock"""
-    return [(ri(smin, MAXS), ri(1, amax), ri(1, amax)) for _ in range(n)]
+def fifo_trap(n, m, k, C, noise=0.1, D=0):
+    """pairs: a long route starting just left of a short one; the visitor at the short one must not take the long one"""
+    xs, hs = [], []
+    while len(xs) + 2 <= n and len(hs) + 2 <= m:
+        c = ri(1, C - D - 3)
+        w = ri(D + 2, max(D + 2, min(C - c, ri(1, 3) * 10 ** ri(1, 8))))
+        hs.append((c, c + w))
+        s = ri(c + 1, c + 1 + min(w - 1, 5))
+        hs.append((s, s))
+        xs.append(min(C, s + ri(0, D)))
+        xs.append(min(C, ri(s + D + 1, c + w + D)))
+    while len(xs) < n:
+        xs.append(ri(1, C))
+    while len(hs) < m:
+        hs.append(route(C, int(C * noise)) if rnd() < 0.5 else route(C, 10))
+    add(xs, hs, k)
 
 
-def crossing(p, q, big, slack):
-    """two steep rows through (p, q): one cheap for model 1, one cheap for model 2"""
-    return [through(p, q, ri(1, 3), ri(big // 2, big), ri(0, slack)),
-            through(p, q, ri(big // 2, big), ri(1, 3), ri(0, slack))]
+def crowd_trap(n, m, k, C, group):
+    """crowds of visitors around few routes: many visitors reach a route, but each route seats one"""
+    xs, hs = [], []
+    while len(hs) < m:
+        hs.append(route(C, ri(0, 50)))
+    centres = random.sample(hs, max(1, min(m, n // group)))
+    while len(xs) < n:
+        a, b = centres[ri(0, len(centres) - 1)]
+        xs.append(max(1, min(C, ri(a - 20, b + 20))))
+    add(xs, hs, k)
 
 
-def only_cheap(n, ans, bmax):
-    """every row has a <= b, so model 1 alone is best; one row allows exactly ans robots and only just"""
-    a0 = ri(1, 1000)
-    rows = [((ans + 1) * a0 - ri(1, a0), a0, ri(a0 + 2, bmax))]
-    for _ in range(n - 1):
-        a = ri(1, bmax)
-        rows.append(((ans + 1) * a + ri(0, a), a, min(MAXA, a + ri(0, bmax))))
-    return rows
-
-
-def ternary_fails(rows):
-    """True if each of three common ternary searches over the number of model-1 robots miss the best total"""
-    def f(p):
-        return p + min((s - p * a) // b for s, a, b in rows)
-
-    def search(rule):
-        lo, hi = 0, min(s // a for s, a, b in rows)
-        while hi - lo > 2:
-            m1, m2 = lo + (hi - lo) // 3, hi - (hi - lo) // 3
-            lo, hi = rule(lo, hi, m1, m2, f(m1), f(m2))
-        return max(f(p) for p in range(lo, hi + 1))
-
-    rules = [lambda lo, hi, m1, m2, f1, f2: (m1 + 1, hi) if f1 < f2 else (lo, m2),
-             lambda lo, hi, m1, m2, f1, f2: (m1, hi) if f1 <= f2 else (lo, m2),
-             lambda lo, hi, m1, m2, f1, f2: (m1 + 1, hi) if f1 < f2 else (lo, m2 - 1)]
-    got = [search(r) for r in rules]
-    # the true best total: the largest t for which some p works, found from the rows directly
-    lo, hi = 0, min(s // min(a, b) for s, a, b in rows)
-    while lo < hi:
-        t = (lo + hi + 1) // 2
-        kl, kh = 0, t
-        for s, a, b in rows:
-            if a >= b:
-                kh = min(kh, (s - t * b) // (a - b)) if a > b else (kh if t * b <= s else -1)
-            else:
-                kl = max(kl, -((s - t * a) // (b - a)) + t)
-        if kl <= kh:
-            lo = t
-        else:
-            hi = t - 1
-    return all(g != lo for g in got)
-
-
-def close_costs(n, amax, mult, d):
-    """a few rows where the two models cost almost the same decide the answer; the rest are filler"""
-    while True:
-        p, q = ri(mult // 10, mult), ri(mult // 10, mult)
-        core = []
-        for _ in range(6):
-            b = ri(amax // 2, amax - d)
-            a = b - ri(1, d) if rnd() < 0.5 else b + ri(1, d)
-            core.append((min(MAXS, p * a + q * b + ri(0, b)), a, b))
-        if ternary_fails(core):
-            return core + filler(n - len(core), 3, MAXS // 2)
-
-
-aux = random.Random(68)   # the filler of precision_trap() has its own stream
-
-
-def precision_trap(t, big, q):
-    """at t robots the smallest number of model-1 robots is (t * big - s) / (big - 1) = t - q + 1 / (big - 1), just
-    above t - q, while the other core row allows at most t - q of them: t is impossible, t - 1 is the answer.
-    In 64-bit floating point the ratio rounds to t - q, so t looks possible."""
-    core = [(q * (big - 1) + t - 1, 1, big), (2 * t - q, 2, 1)]
-    return core + [(97 * 10 ** 16 + int(aux.random() * 3 * 10 ** 16), 1 + int(aux.random() * 2), 1 + int(aux.random() * 2))
-                   for _ in range(N - 2)]
-
-
-N = MAXN
 # samples
-add([(24, 5, 2), (33, 2, 4), (30, 4, 1)], False)
-add([(30, 4, 3), (20, 2, 3)], False)
-add([(120, 2, 8), (182, 7, 1), (68, 2, 4), (132, 3, 2)], False)
-add([(5, 2, 7), (100, 1, 1), (3, 4, 4)], False)
-add([(262803281, 988, 635), (518691364, 859, 115), (820922582, 895, 165), (271154377, 876, 705),
-     (145944372, 408, 898)], False)
-# hidden: small (brute checks these)
-add([(11, 5, 2)])                                                   # one row, only model 2
-add([(ri(1, 300), ri(1, 12), ri(1, 12)) for _ in range(8)])
-add([(ri(100, 2000), ri(1, 30), ri(1, 30)) for _ in range(30)])
-add(near_point(40, 37, 52, 20, 3))
-add(near_point(2000, 600, 250, 50, 10) + filler(200, 50, 10 ** 5))
-add([(ri(10 ** 4, 10 ** 5), ri(1, 50), ri(1, 50)) for _ in range(2000)] + [(ri(1, 6), 7, 9)])   # answer 0
-# hidden: big values, few rows
-add([(MAXS, 1, 1)])
-add(crossing(ri(10 ** 8, 5 * 10 ** 8), ri(10 ** 8, 5 * 10 ** 8), MAXA, 10 ** 9))
-add([(MAXS - ri(0, 10 ** 6), MAXA, ri(1, 5)), (MAXS - ri(0, 10 ** 6), ri(1, 5), MAXA), (MAXS, 2, 3)])
-add([(MAXS - 1, 1, 1), (MAXS, 2, 1)])
-# hidden: big (N = 50000)
-add(near_point(N, ri(10 ** 8, 4 * 10 ** 8), ri(10 ** 8, 4 * 10 ** 8), MAXA, MAXA))
-add([(ri(5 * 10 ** 17, MAXS), ri(1, 10), ri(MAXA // 10, MAXA)) for _ in range(N)])   # model 1 uses few parts
-add(near_point(N, ri(10 ** 16, 10 ** 17), ri(10 ** 16, 10 ** 17), 4, 3))
-add([(ri(9 * 10 ** 17, MAXS), ri(1, 3), ri(MAXA // 2, MAXA)) for _ in range(N)])   # model 1 uses few parts
-add(crossing(ri(10 ** 8, 4 * 10 ** 8), ri(10 ** 8, 4 * 10 ** 8), MAXA, 10 ** 8) + filler(N - 2, 9, 9 * 10 ** 17))
-add(crossing(ri(10 ** 6, 10 ** 7), ri(10 ** 8, 10 ** 9), MAXA, 10 ** 6) + filler(N - 2, 9, 5 * 10 ** 17))
-add(crossing(ri(10 ** 2, 10 ** 3), ri(10 ** 2, 10 ** 3), MAXA, 10 ** 9) + filler(N - 2, 1000, 10 ** 17))
-add([(ri(MAXS // 2, MAXS), ri(1, MAXA), ri(1, MAXA)) for _ in range(N)])
-# (test 24 used to be the line below; its rows are still drawn so the later tests keep the same random stream)
-_ = [(ri(MAXS // 2, MAXS), ri(1, 10), ri(1, 10)) for _ in range(N)]
-add(precision_trap(326397517784163999, 911391326, 293841254))     # k from a ratio just above an integer
-p, q = ri(10 ** 17, 2 * 10 ** 17), ri(10 ** 17, 2 * 10 ** 17)
-add([through(p, q, 2, 1, ri(0, 1)), through(p, q, 1, 2, ri(0, 1))] + filler(N - 2, 1, 6 * 10 ** 17))
-x = ri(10 ** 5, 10 ** 6)
-add([(ri(10 ** 12, MAXS), x, x) for _ in range(N)])                 # both models need the same parts
-add(only_cheap(N, ri(10 ** 11, 10 ** 12), 10 ** 6))                # model 1 is never worse, one row decides
-add([(s, b, a) for s, a, b in only_cheap(N, ri(10 ** 8, 10 ** 9), 10 ** 4)])   # model 2 is never worse
-add([(ri(1, MAXA - 1), MAXA, MAXA)] + near_point(N - 1, 3 * 10 ** 8, 2 * 10 ** 8, MAXA, 10 ** 8))   # answer 0
-for amax, mult, d in [(MAXA, 10 ** 9, 1000), (MAXA, 10 ** 9, 30), (10 ** 7, 10 ** 11, 100), (10 ** 9, 10 ** 9, 10 ** 4),
-                      (10 ** 6, 10 ** 12, 10)]:
-    add(close_costs(N, amax, mult, d))                              # the two models cost almost the same
-add([(s, b, a) for s, a, b in precision_trap(465392386453165566, 910813867, 360400983)])   # the same trap for the number of model-2 robots
+add([2, 6, 7, 15], [(4, 8), (10, 12), (1, 1)], 3, False)
+add([5, 5, 5], [(5, 5), (5, 9), (1, 1), (20, 30)], 3, False)
+add([10, 20, 30], [(1, 3), (14, 16), (24, 25), (40, 45), (100, 200)], 2, False)
+add([3, 8, 8, 8, 12, 30], [(9, 11), (1, 4), (25, 27), (13, 13)], 4, False)
+add([1000000000, 1, 500000000], [(400000000, 450000000), (999999990, 999999999)], 2, False)
 
-for t in tests:
-    assert t.endswith("\n") and "  " not in t and " \n" not in t
+# hidden: small (the brute force checks these)
+add([7], [(7, 7)], 1)
+add([1], [(1000000000, 1000000000)], 1)
+add([1000000000, 1000000000], [(1, 1), (1, 1), (2, 3)], 2)
+add([4, 50], [(1, 100), (4, 4)], 2)
+add([5, 9, 30, 31], [(1, 40), (5, 5), (9, 9), (12, 31)], 4)
+add([10, 10, 10, 10, 10], [(3, 4), (10, 10), (11, 13), (30, 30), (1, 1)], 4)
+rand_test(8, 9, 1, 60, 20)
+crowd_trap(300, 250, 160, 10 ** 6, 8)
+fifo_trap(400, 300, 250, 10 ** 5, 0.1, 30)
+fifo_trap(200, 380, 200, MAXC)
+
+# hidden: big
+N = MAXN
+rand_test(N, N, N, MAXC, 1000)                       # every visitor must ride
+rand_test(N, N, N // 2, 10 ** 8, 1000)
+rand_test(N, N, N // 10, MAXC, 0)                    # one-point routes, a tenth must ride
+fifo_trap(N, N, N, MAXC, 0.1, 1000)
+fifo_trap(N, N, N * 9 // 10, MAXC, 0.3, 50)
+fifo_trap(N, N, N // 2, 10 ** 8, 0.1, 7)
+fifo_trap(N, N // 2 + 10, N // 2, MAXC, 0.1, 100000)
+crowd_trap(N, N, N, MAXC, 4)
+crowd_trap(N, N, N * 3 // 4, 10 ** 8, 20)
+crowd_trap(N, N // 2, N // 2, MAXC, 2)
+add([MAXC] * N, [(1, ri(1, 1000)) for _ in range(N)], N)                 # everyone walks almost 10^9
+add([ri(1, 10 ** 8) for _ in range(N)], [(1, 10 ** 8)] * N, N)                 # every route covers the road
+add([50000000] * N, [route(10 ** 8, 100) for _ in range(N)], N)            # all visitors at one spot
+add([ri(1, MAXC) for _ in range(N)], [(v, v) for v in (ri(1, 10 ** 8) for _ in range(N))], N)   # one-point routes
+add(range(1, N + 1), [(MAXC - N + 1, MAXC)] + [(j, j) for j in range(2, N + 1)], N)   # sorted, one far route
+rand_test(N, N, N, 10 ** 6, 5)
+
 os.makedirs("tests", exist_ok=True)
 for i, t in enumerate(tests, 1):
-    with open(f"tests/{i:02d}.in", "w") as f:
+    with open("tests/%02d.in" % i, "w") as f:
         f.write(t)
