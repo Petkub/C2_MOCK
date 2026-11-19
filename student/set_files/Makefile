@@ -1,5 +1,5 @@
-# Linux / macOS, inside this Mock folder:
-#   make      judge the whole set (1.cpp ... 6.cpp)
+# Linux / macOS, inside this set folder (Mock_A01 ...):
+#   make      judge the whole set (problem folders 1 ... 6)
 #   make 3    judge problem 3 only
 #   make progress   show solved problems
 PYTHON ?= python3
@@ -9,7 +9,7 @@ all:
 	@$(JUDGE)
 
 1 2 3 4 5 6:
-	@$(JUDGE) $@.cpp
+	@$(JUDGE) $@
 
 progress:
 	@$(JUDGE) --progress

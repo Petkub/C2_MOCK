@@ -1,33 +1,37 @@
 #!/usr/bin/env python3
 """
 Write manifest.json: the version (file VERSION) and the SHA-256 of every file the student package gets inside
-Judge/, the managed package files outside Judge/ (Mock_K.pdf, Makefile, judge.bat, README.txt, Guide.pdf,
-Progress.md, .vscode/: replaced on the students' computers when they change) and the create-only files
-(Mock_K/N.cpp templates: added only when missing, never replaced).
+Judge/, the managed package files outside Judge/ (the PDFs, Makefile, judge.bat, README.txt, Guide.pdf,
+Progress.md, .vscode/: replaced on the students' computers when they change) and the create-only files (the empty
+code file of every problem: added only when missing, never replaced).
 Judge/updater.py on the students' computers compares this file with what they have.
 
   python3 tools/build_manifest.py            write manifest.json (run after changing core/, problems/, student/)
   python3 tools/build_manifest.py --check    exit 1 if manifest.json or a bundle is stale (used by CI)
 
-It also writes bundles/<folder>.zip: every shipped file of one problem folder (problems/batch/<folder>/), so the
-updater fetches a new set of problems in a few requests. A bundle is rewritten only when its content changes.
+It also writes bundles/<folder>.zip: every shipped file of one set (problems/batch/<folder>/), so the updater
+fetches a new set of problems in a few requests. A bundle is rewritten only when its content changes.
 
-Manifest format 1 (what updaters before 2.3 understand):
-  {"version": "1.0",
+The package layout (one folder per problem) is in tools/layout.py.
+
+Format:
+  {"version": "7.2",
    "sources": {"problems/": "problems/", "": "core/"},        Judge/ path prefix -> repo folder
-   "files": {"judge.py": "<sha256>", "problems/batch/Mock_1/1/01.in": "<sha256>", ...},
-   "managed": {"Mock_1/Mock_1.pdf": ["<sha256>", "student/Mock_1/Mock_1.pdf"], "README.txt": [...], ...},
-   "create_only": {"Mock_1/1.cpp": ["<sha256>", "student/set_files/template.cpp"], ...},
-   "bundles": {"bundles/Mock_1.zip": {"sha256": "<sha256>", "prefix": "problems/batch/Mock_1/"}, ...}}
-Format 2 (when tools/legacy_manifest.json exists, the last release that old updaters read): the format-1 manifest
-goes under "full", and the top level is the legacy view for old updaters: the legacy release's entries that did
-not change, plus the new judge.py and updater.py. An old judge (one file per request) therefore downloads just
-those two files, and the new updater then installs "full".
+   "files": {"judge.py": "<sha256>", "problems/batch/Mock_A01/1/01.in": "<sha256>", ...},
+   "managed": {"Mock_A01/Mock_A01.pdf": ["<sha256>", "student/Mock_A01/Mock_A01.pdf"],
+               "Mock_A01/3/3_<Title>.pdf": ["<sha256>", "student/Mock_A01/3/3_<Title>.pdf"],
+               "Mock_A01/3/Makefile": ["<sha256>", "student/set_files/Makefile_problem"], ...},
+   "create_only": {"Mock_A01/3/A01-3.cpp": ["<sha256>", "student/set_files/template.cpp"], ...},
+   "bundles": {"bundles/Mock_A01.zip": {"sha256": "<sha256>", "prefix": "problems/batch/Mock_A01/"}, ...},
+   "moves": {"<sha256 of an earlier release's problems.json>": [["Mock_A01/3/A01-3.cpp", "Mock_A02/5/A02-5.cpp"], ...]}}
 
-"moves" (in "full"): {sha256 of an older release's problems.json: [[from, to], ...]}. tools/moves/problems_<v>.json
-are those files (exact bytes of the releases 6.0 and 6.0.2); a problem is the same problem when its English title
-is the same, so its student file goes from its old Mock_K/N.cpp to the new one; a problem no longer in the sets
-goes to Mock_K/old/N_<Title>.cpp. Judge/updater.py follow_moves() applies them once (see there).
+"moves" (for releases after 7.2, the first one students get): tools/moves/problems_<v>.json is the problems.json of
+release <v> (exact bytes; save it there when a later release moves, replaces or re-titles problems). A problem is
+the same problem when its English title is the same (RENAMED maps an old title to a new one), so its code file goes
+to the problem's new folder; a problem that is no longer in the sets (replaced by a new problem) goes to
+<its old set folder>/old/<n>_<Title>.cpp. Judge/updater.py follow_moves() applies them once.
+A re-titled problem's old PDF needs no list: the updater retires a managed PDF that the new manifest dropped when
+its bytes are still the installed ones.
 """
 import hashlib
 import json
@@ -36,14 +40,15 @@ import os
 import sys
 import zipfile
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import layout  # noqa: E402
+
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MANIFEST = os.path.join(REPO, "manifest.json")
 SOURCES = {"problems/": "problems/", "": "core/"}
 SKIP_NAMES = {"__pycache__", ".DS_Store", "progress.json", "progress.json.tmp", ".update_check"}
 SKIP_SUFFIXES = (".pyc",)
 BUNDLES = "bundles"
-LEGACY = os.path.join(REPO, "tools", "legacy_manifest.json")
-BOOTSTRAP = ("judge.py", "updater.py")      # what an old updater must take so that this updater does the rest
 STALE = []                                  # bundles that --check found out of date
 
 
@@ -91,10 +96,34 @@ def load_sets():
         return json.load(f)
 
 
+def load_problems():
+    with open(os.path.join(REPO, "problems", "batch", "problems.json"), encoding="utf-8") as f:
+        return json.load(f)
+
+
 def set_files():
-    """Create-only files (the N.cpp templates of every set) as (package path, repo-relative source path)."""
-    return [(f"Mock_{s['set']}/{i}.cpp", "student/set_files/template.cpp")
+    """Create-only files (the empty code file of every problem) as (package path, repo-relative source path)."""
+    return [(layout.code_path(s, i), "student/set_files/template.cpp")
             for s in load_sets() for i in range(1, len(s["problems"]) + 1)]
+
+
+def problem_pdfs():
+    """Every problem's own PDF as (package path, repo-relative source path); it must exist in student/."""
+    meta = load_problems()
+    out = []
+    for s in load_sets():
+        for i, pid in enumerate(s["problems"], 1):
+            rel = layout.pdf_path(s, i, meta[str(pid)]["en"])
+            if not os.path.exists(os.path.join(REPO, "student", *rel.split("/"))):
+                raise SystemExit(f"missing student/{rel}: run C2_MOCK_SRC build.py all (it writes the problem PDFs)")
+            out.append((rel, "student/" + rel))
+    return out
+
+
+# True: every problem folder also gets Makefile and judge.bat, so `make` / double-clicking judge.bat judges the problem
+# from its own folder (the same decision as C2_PRACTICE). False: a problem folder holds only its .cpp and its PDF; then
+# judge from the set folder (make 3) or with Ctrl+Shift+B.
+PROBLEM_FOLDER_TOOLS = True
 
 
 def managed_files():
@@ -104,13 +133,16 @@ def managed_files():
         if os.path.exists(os.path.join(REPO, "student", *name.split("/"))):
             out.append((name, "student/" + name))
     for s in load_sets():
-        k = s["set"]
+        d = layout.set_dir(s)
         n = len(s["problems"])
-        out.append((f"Mock_{k}/Makefile", "student/set_files/Makefile" + ("" if n == 6 else f"_{n}")))
-        out.append((f"Mock_{k}/judge.bat", "student/set_files/judge.bat"))
-        if os.path.exists(os.path.join(REPO, "student", f"Mock_{k}", f"Mock_{k}.pdf")):
-            out.append((f"Mock_{k}/Mock_{k}.pdf", f"student/Mock_{k}/Mock_{k}.pdf"))
-    return out
+        out.append((f"{d}/Makefile", "student/set_files/Makefile" + ("" if n == 6 else f"_{n}")))
+        out.append((f"{d}/judge.bat", "student/set_files/judge.bat"))
+        if os.path.exists(os.path.join(REPO, "student", d, f"{d}.pdf")):
+            out.append((f"{d}/{d}.pdf", f"student/{d}/{d}.pdf"))
+        for i in range(1, n + 1) if PROBLEM_FOLDER_TOOLS else ():
+            out.append((f"{d}/{layout.slot(s, i)}/Makefile", "student/set_files/Makefile_problem"))
+            out.append((f"{d}/{layout.slot(s, i)}/judge.bat", "student/set_files/judge_problem.bat"))
+    return out + problem_pdfs()
 
 
 def with_hashes(pairs):
@@ -164,76 +196,39 @@ MOVES = os.path.join(REPO, "tools", "moves")
 RENAMED = {}                        # old English title -> new title, if a problem is renamed between releases
 
 
-def slug(title):
-    return "".join(w[:1].upper() + w[1:] for w in "".join(c if c.isalnum() else " " for c in title).split())
-
-
-def moves():
-    """{sha256 of an old problems.json: [[from, to], ...]} for every file in tools/moves/."""
-    with open(os.path.join(REPO, "problems", "batch", "problems.json"), encoding="utf-8") as f:
-        now = {e["en"]: e["dir"] for e in json.load(f).values()}
+def moves(now=None, folder=MOVES):
+    """{sha256 of an earlier problems.json: [[from, to], ...]} for every file in tools/moves/ (code file paths)."""
+    if now is None:
+        now = load_problems()
+    here = {e["en"]: layout.entry_code_path(e) for e in now.values()}
     out = {}
-    for name in sorted(os.listdir(MOVES)) if os.path.isdir(MOVES) else []:
-        path = os.path.join(MOVES, name)
+    for name in sorted(os.listdir(folder)) if os.path.isdir(folder) else []:
+        path = os.path.join(folder, name)
         with open(path, encoding="utf-8") as f:
             old = json.load(f)
         pairs = []
         for e in sorted(old.values(), key=lambda e: e["dir"]):
-            src, title = e["dir"] + ".cpp", RENAMED.get(e["en"], e["en"])
-            if title in now:
-                if now[title] != e["dir"]:
-                    pairs.append([src, now[title] + ".cpp"])
-            else:
-                k, n = e["dir"].split("/")
-                pairs.append([src, f"{k}/old/{n}_{slug(e['en'])}.cpp"])
+            src, title = layout.entry_code_path(e), RENAMED.get(e["en"], e["en"])
+            n = int(e["dir"].split("/")[1])
+            if title in here:
+                if here[title] != src:
+                    pairs.append([src, here[title]])
+            else:                                   # replaced by a new problem: park it in its set's old/
+                pairs.append([src, f"{e['dir'].split('/')[0]}/old/{layout.old_name(n, e['en'])}"])
         out[sha256_file(path)] = pairs
     return out
-
-
-def legacy_view(full):
-    """The top level of a format-2 manifest: what old updaters (one file per request) act on."""
-    with open(LEGACY, encoding="utf-8") as f:
-        base = json.load(f)
-
-    def unchanged(old, new):
-        return {rel: spec for rel, spec in old.items() if new.get(rel) == spec}
-
-    files = unchanged({rel: sha for rel, sha in base["files"].items() if rel not in BOOTSTRAP}, full["files"])
-    files.update({rel: full["files"][rel] for rel in BOOTSTRAP})
-    return {"version": base["version"], "sources": SOURCES, "files": files,
-            "managed": unchanged(base["managed"], full["managed"]),
-            "create_only": unchanged(base["create_only"], full["create_only"])}
-
-
-# path rules of the updaters before 7.0 (6.1 and older): they reject a whole manifest with another set folder name
-OLD_SET_FILE = re.compile(r"^Mock_[0-9]+/[0-9]+\.cpp$")
-OLD_MANAGED_FILE = re.compile(r"^(Mock_[0-9]+/(Makefile|judge\.bat|Mock_[0-9]+\.pdf)|Guide\.pdf|README\.txt"
-                              r"|Progress\.md|\.vscode/(tasks|settings)\.json)$")
-
-
-def bootstrap_view(full):
-    """What updaters before 7.0 read ("full"): every Judge/ file (so they install the 7.0 updater and judge), only the
-    package files their path rules accept, and "bootstrap": true so the new updater adds the rest at once."""
-    view = dict(full)
-    view["managed"] = {k: v for k, v in full["managed"].items() if OLD_MANAGED_FILE.match(k)}
-    view["create_only"] = {k: v for k, v in full["create_only"].items() if OLD_SET_FILE.match(k)}
-    view["bootstrap"] = True
-    return view
 
 
 def build(write=True):
     pairs = judge_files()
     files = {rel: sha256_file(os.path.join(REPO, src)) for rel, src in pairs}
-    full = {"version": version(), "sources": SOURCES, "files": files, "managed": with_hashes(managed_files()),
+    return {"version": version(), "sources": SOURCES, "files": files, "managed": with_hashes(managed_files()),
             "create_only": with_hashes(set_files()), "bundles": bundles(pairs, files, write), "moves": moves()}
-    if not os.path.exists(LEGACY):
-        return full
-    return dict(legacy_view(full), full=bootstrap_view(full), full_v7=full)
 
 
 def installed(manifest):
-    """The part of a manifest that the updater installs (and writes as Judge/manifest.json)."""
-    return manifest.get("full_v7", manifest.get("full", manifest))
+    """The part of a manifest that the updater installs (and writes as Judge/manifest.json): all of it."""
+    return manifest
 
 
 def dumps(manifest):
@@ -264,7 +259,7 @@ def main():
     full = installed(manifest)
     print(f"Wrote manifest.json: v{full['version']}, {len(full['files'])} files in Judge/, "
           f"{len(full['managed'])} managed and {len(full['create_only'])} create-only package files, "
-          f"{len(full['bundles'])} bundles" + (f"; {len(manifest['files'])} files for old updaters." if "full" in manifest else "."))
+          f"{len(full['bundles'])} bundles, moves from {len(full['moves'])} earlier releases.")
     return 0
 
 

@@ -3,13 +3,19 @@
 POSN Camp 2 Practice Judge
 ==========================
 
-Usage (inside a set folder, e.g. Mock_A03, with the judge in ../Judge)
-  python3 ../Judge/judge.py                    judge the whole set (1.cpp ... 6.cpp in this folder)
-  python3 ../Judge/judge.py 5.cpp              judge problem 5 of this set   (or just: python3 ../Judge/judge.py 5)
+Layout of the package: one folder per problem, holding its code file and its statement PDF
+  Mock_A03/5/A03-5.cpp               set A3, problem 5      (Mock_A03/Mock_A03.pdf = the whole set)
+
+Usage (the judge is in Judge/ next to the set folders)
+  python3 ../../Judge/judge.py                 inside a problem folder (Mock_A03/5): judge that problem
+  python3 ../Judge/judge.py                    inside a set folder (Mock_A03): judge the whole set
+  python3 ../Judge/judge.py 5                  inside a set folder: judge problem 5
+  python3 <path>/Judge/judge.py FILE.cpp       anywhere: the problem comes from the file's name (A03-5.cpp) or from
+                                               its folder (Mock_A03/5/)
 
 Usage (anywhere)
   python3 judge.py SOLUTION.cpp K-P            judge one solution for set K, problem P   (e.g. A3-5)
-  python3 judge.py --set K FOLDER              judge a whole mock exam set (files 1.cpp ... 6.cpp in FOLDER)
+  python3 judge.py --set K FOLDER              judge a whole mock exam set (FOLDER laid out like a set folder)
   python3 judge.py --set K                     show the problems of mock exam set K (e.g. --set B2)
   python3 judge.py --list                      list all sets and problems
   python3 judge.py --progress                  show which problems you have solved (--progress A3: set A3 only)
@@ -30,8 +36,8 @@ Score: share of tests passed (with subtasks: each subtask's points x share of it
 problems marked "scoring": "all" give 100 only when every test passes, else 0 (like the real exam).
 Progress: every judged solution is recorded in Judge/progress.json (best score per problem);
 --progress shows the dashboard in the terminal (--progress K: set K only).
-Sets are named by track and number (A1 ... A12, B1 ... B8; folders Mock_A01 ...); numbered sets of older versions
-(1, 2, ...; folders Mock_1 ...) still work.
+Sets are named by track and number (A1 ... A12, B1 ... B8; folders Mock_A01 ...).
+Compiled programs go to Judge/.build/ (removed after the run), never into a set or problem folder.
 """
 import glob
 import hashlib
@@ -267,6 +273,59 @@ def set_name(s, short=False):
     if s.get("supplementary"):
         return "Extra" if short else "Supplementary set"
     return set_label(s) if short and set_key(s)[0] else f"Set {set_label(s)}"
+
+
+# One folder per problem (v7.2): Mock_<set>/<n>/<set>-<n>.cpp, e.g. Mock_A03/5/A03-5.cpp. tools/layout.py in the
+# repo builds the package with the same names (the regression test compares them).
+CODE_NAME = re.compile(r"^([ABab][0-9]{1,2})-([0-9]{1,2})\.cpp$")
+
+
+def set_folder(s):
+    """The folder of a set next to Judge/: Mock_A03."""
+    return f"Mock_{s['set']}"
+
+
+def set_prefix(s):
+    """The first part of a code file's name: "A03"."""
+    return str(s["set"])
+
+
+def slot_name(s, i):
+    """The folder of problem i inside its set folder: "5"."""
+    return str(i)
+
+
+def code_name(s, i):
+    """The code file of problem i: A03-5.cpp."""
+    return f"{set_prefix(s)}-{slot_name(s, i)}.cpp"
+
+
+def code_path(folder, s, i):
+    """Where problem i's code file is inside the set folder `folder`."""
+    return os.path.join(folder, slot_name(s, i), code_name(s, i))
+
+
+def problem_of_name(name):
+    """(set, i) for a code file name such as A03-5.cpp (a3-5.cpp too), else None."""
+    m = CODE_NAME.match(name)
+    sets = load_sets()
+    k = set_index(m.group(1), sets) if m else None
+    if k is None or not 1 <= int(m.group(2)) <= len(sets[k - 1]["problems"]):
+        return None
+    return sets[k - 1], int(m.group(2))
+
+
+def problem_of_folder(folder):
+    """(set, i) when folder is a problem folder (Mock_A03/5), else None."""
+    d = os.path.abspath(folder).rstrip("/\\")
+    base = os.path.basename(d)
+    if not base.isdecimal():
+        return None
+    k = mock_set_of(os.path.dirname(d))
+    s = load_sets()[k - 1] if k is not None else None
+    if s is None or not 1 <= int(base) <= len(s["problems"]):
+        return None
+    return s, int(base)
 
 
 def student_layout():
@@ -521,7 +580,7 @@ STARTER_BODY = "cin.tie(0);ios::sync_with_stdio(0);return0;}"
 
 
 def is_empty_source(src):
-    """True for a .cpp with nothing in it but whitespace (the starter files 1.cpp ... 6.cpp are empty)."""
+    """True for a .cpp with nothing in it but whitespace (the code files of the package are empty at first)."""
     try:
         with open(src, "rb") as f:
             data = f.read(4096)
@@ -638,7 +697,7 @@ def progress_line(st, set_no):
     solved, total, _ = totals(data, track_of(s))
     print("  " + st.bold("Progress") + f"  {set_name(s, short=True)} " + cells + st.dim("   ·   ") +
           f"solved {st.bold(str(solved))} / {total}")
-    print("  " + st.dim(f"full view: {PY} ../Judge/judge.py --progress"))
+    print("  " + st.dim(f"full view: {PY} {prog_name()} --progress"))
 
 
 def track_lines(st, data):
@@ -763,6 +822,24 @@ def compile_source(src, outdir):
                    "(<iostream>, <vector>, ...) or install GNU g++.", ""] + msg
         return None, dt, msg or [f"g++ exited with code {p.returncode}"], []
     return exe, dt, [], [ln for ln in text.splitlines() if ": warning:" in ln]
+
+
+BUILD_DIR = os.path.join(ROOT, ".build")    # Judge/.build/: compiled programs of the run in progress
+BUILD_KEEP = 24 * 3600                      # seconds; an older sub-folder was left by a run that was killed
+
+
+def make_build_dir():
+    """A fresh folder for this run's compiled program: Judge/.build/<new>, or one in the system temp folder when
+    Judge/ cannot be written. Nothing is ever compiled into a set or problem folder."""
+    try:
+        os.makedirs(BUILD_DIR, exist_ok=True)
+        for name in os.listdir(BUILD_DIR):          # left-overs of a run that was killed
+            d = os.path.join(BUILD_DIR, name)
+            if time.time() - os.path.getmtime(d) > BUILD_KEEP:
+                shutil.rmtree(d, ignore_errors=True)
+        return tempfile.mkdtemp(prefix="run_", dir=BUILD_DIR)
+    except OSError:
+        return tempfile.mkdtemp(prefix="judge_")
 
 
 def compiler_text(out, src_abs):
@@ -1368,7 +1445,7 @@ def judge_one(src, pdir, num, meta, st, tl, show_diff, stop):
         print()
         return 0
     print("  " + st.dim("Compiling ..."), end="" if st.tty else "\n", flush=True)
-    tmp = tempfile.mkdtemp(prefix="judge_")
+    tmp = make_build_dir()
     try:
         exe, ct, msg, warns = compile_source(src, tmp)
         print("\r  " if st.tty else "  ", end="")
@@ -1451,10 +1528,11 @@ def cmd_list(meta, st):
              f"{len(sets)} sets · {sum(len(s['problems']) for s in sets)} problems"], st.dim)
     for s in sets:
         print()
-        print("  " + st.bold(set_name(s)) + st.dim(f"  {s.get('level_en', '')}"))
+        print("  " + st.bold(set_name(s)) + st.dim(f"  {s.get('level_en', '')}")
+              + st.dim(f"   {set_folder(s)}/{slot_name(s, 1)} ... {slot_name(s, len(s['problems']))}"))
         for i, n in enumerate(s["problems"], 1):
             m = meta.get(n, {})
-            print(f"    {set_label(s)}-{i:<3} " + (stars(st, m['tier']) + "  " if m.get('tier') else "") + m.get('en', '?'))
+            print(f"    {code_name(s, i)[:-4]:<6} " + (stars(st, m['tier']) + "  " if m.get('tier') else "") + m.get('en', '?'))
 
 
 TEMPLATE_WORDS = ("#include <bits/stdc++.h> using namespace std; int32_t main() { "
@@ -1462,7 +1540,7 @@ TEMPLATE_WORDS = ("#include <bits/stdc++.h> using namespace std; int32_t main() 
 
 
 def is_template(src):
-    """True if src is still the untouched 1.cpp ... 6.cpp starter: empty, or the main() template of versions
+    """True if src is still the untouched starter of a problem: empty, or the main() template of versions
     before 6.0.2 (whitespace ignored)."""
     if is_empty_source(src):
         return True
@@ -1494,10 +1572,11 @@ def cmd_set(k, folder, meta, sets, st, tl, show_diff):
     if folder is None:
         print()
         if student_layout():
-            print(st.dim(f"  Save your solutions as 1.cpp ... {len(probs)}.cpp in folder Mock_{s['set']}, then run there:"))
+            print(st.dim(f"  Each problem has its folder: write problem 1 in {set_folder(s)}/{slot_name(s, 1)}/{code_name(s, 1)}"))
+            print(st.dim(f"  (... {code_name(s, len(probs))}), then run in the folder {set_folder(s)}:"))
             print(f"  {PY} ../Judge/judge.py")
         else:
-            print(st.dim(f"  Save your solutions as 1.cpp ... {len(probs)}.cpp in one folder, then run:"))
+            print(st.dim(f"  Lay FOLDER out like a set folder ({slot_name(s, 1)}/{code_name(s, 1)} ...), then run:"))
             print(f"  {PY} judge.py --set {set_label(s)} FOLDER")
         return 0
     scores = []
@@ -1505,15 +1584,16 @@ def cmd_set(k, folder, meta, sets, st, tl, show_diff):
     print("  " + st.dim("legend  ") + st.green(st.chars["ok"]) + st.dim(" accepted   ") + st.red("W") + st.dim(" wrong answer   ")
           + st.yellow("T") + st.dim(" time limit   ") + st.magenta("R") + st.dim(" runtime error   ") + st.blue("M") + st.dim(" memory"))
     for i, n in enumerate(probs, 1):
-        src = os.path.join(folder, f"{i}.cpp")
+        src = code_path(folder, s, i)
+        where = f"{slot_name(s, i)}/{code_name(s, i)}"
         print()
         rule(st, f"Problem {i} · {meta.get(n, {}).get('en', '?')}")
         if not os.path.isfile(src):
-            print("  " + st.dim(f"{i}.cpp not found - skipped (0 points)"))
+            print("  " + st.dim(f"{where} not found - skipped (0 points)"))
             scores.append(0)
             continue
         if is_template(src):
-            print("  " + st.dim(f"{i}.cpp is still empty - skipped (0 points)"))
+            print("  " + st.dim(f"{where} is still empty - skipped (0 points)"))
             scores.append(0)
             continue
         pdir, _ = find_problem(str(n), meta)
@@ -1522,7 +1602,7 @@ def cmd_set(k, folder, meta, sets, st, tl, show_diff):
             print("  " + st.red(f"Test data for problem {n} not found - skipped"))
             scores.append(0)
             continue
-        tmp = tempfile.mkdtemp(prefix="judge_")
+        tmp = make_build_dir()
         try:
             exe, _, msg, warns = compile_source(src, tmp)
             if not exe:
@@ -1564,7 +1644,7 @@ MOCK_DIR = re.compile(r"^mock[ _-]?([ab]?[0-9]+)$", re.IGNORECASE)
 
 
 def mock_set_of(folder):
-    """Position in sets.json of the set of a folder named Mock_A03 (mock-a3, Mock_3, ...), else None."""
+    """Position in sets.json of the set of a folder named Mock_A03 (mock-a3 too), else None."""
     m = MOCK_DIR.match(os.path.basename(os.path.abspath(folder).rstrip("/\\")))
     return set_index(m.group(1)) if m else None
 
@@ -1580,20 +1660,17 @@ def prog_name():
 
 
 def not_a_mock_folder(st, folder, name):
-    """The set number comes from the folder name Mock_K; explain what to do when the folder has another name."""
+    """The problem comes from the file name (A03-5.cpp) or the folders (Mock_A03/5); say what to do when neither
+    tells it."""
     base = os.path.basename(os.path.abspath(folder).rstrip("/\\"))
-    if os.path.isfile(os.path.join(folder, "README_MOVED.txt")):   # an old set folder kept after v7's reorganisation
-        print(st.red(f"'{base}' is an old set folder: it is no longer a set (see README_MOVED.txt in it)."))
-        print(st.dim("  The sets are now Mock_A01 ... Mock_A12. To judge this code against a problem there, copy it"))
-        print(st.dim("  into that set's folder, or give the problem yourself, e.g. for set A3 problem 2:"))
-        print(f"  {PY} {prog_name()} \"{name or '2.cpp'}\" A3-2")
-        return 1
-    print(st.red(f"Cannot tell which set this is: the folder '{base}' is not named like Mock_A03."))
-    print(st.dim("  Rename the folder back (Mock_A03 = set A3), or give the set yourself, e.g. for set A3:"))
+    print(st.red(f"Cannot tell which problem this is from the folder '{base}'" + (f" and the file '{name}'." if name else ".")))
+    print(st.dim("  A problem's code file is Mock_<set>/<problem>/<set>-<problem>.cpp, e.g. Mock_A03/5/A03-5.cpp."))
+    print(st.dim("  Put the file back there (do not rename the folders or the .cpp files), or give the problem yourself,"))
+    print(st.dim("  e.g. set A3, problem 5:"))
     if name is None:
         print(f"  {PY} {prog_name()} --set A3 .")
     else:
-        print(f"  {PY} {prog_name()} \"{name}\" A3-{name[:-4] if name[:-4].isdecimal() else 5}")
+        print(f"  {PY} {prog_name()} \"{name}\" A3-5")
     return 1
 
 
@@ -1653,16 +1730,6 @@ def self_update(st, argv):
         return None
 
 
-def finish_bootstrap(st):
-    """An updater before 7.0 could only install the judge itself (its path rules reject Mock_A01 ...): this run's
-    updater adds the new set folders at once, even right after the restart (JUDGE_NO_UPDATE) or a recent check."""
-    if updater is None or not hasattr(updater, "bootstrapped") or not updater.bootstrapped(ROOT):
-        return
-    r = updater.check(ROOT, notify=lambda text: print("  " + st.dim(text), flush=True))
-    if r.status == "updated":
-        print("  " + st.dim(f"Judge {r.message}: the new sets are in place"))
-
-
 MOVED = []                              # [(from, to)] moved by show_moves in this run (paths from the package folder)
 
 
@@ -1673,23 +1740,18 @@ def moved_to(path):
 
 
 def show_moves(st):
-    """After an update that reorganised the sets, the student's files follow their problems (once)."""
+    """After an update that moved or replaced problems, the student's written files follow their problems (once)."""
     if updater is None or not hasattr(updater, "follow_moves") or not student_layout():
         return
     moved = updater.follow_moves(ROOT)
-    tidied = list(getattr(updater, "TIDIED", []))
     if not moved:
-        if tidied:
-            print("  " + st.yellow(st.bold("The sets were reorganised: the new sets are Mock_A01 ... Mock_A12")))
-            for folder, what in tidied:
-                print("    " + f"{folder:<14} {'removed (only empty starters)' if what == 'removed' else '-> ' + what}")
-            print("  " + st.dim("(nothing you wrote was moved or deleted)"))
         return
-    MOVED.extend(moved)
-    print("  " + st.yellow(st.bold("The sets were reorganised: your files moved with their problems")))
-    for src, dst in moved:
-        print("    " + f"{src:<14} -> {dst}")
-    print("  " + st.dim("(nothing you wrote was deleted; an old folder that still holds your files gets README_MOVED.txt)"))
+    MOVED.extend((src, dst) for src, dst, _ in moved)
+    print("  " + st.yellow(st.bold("Problems changed in this update: your written files moved with their problems")))
+    w = max(len(src) for src, _, _ in moved)
+    for src, dst, clash in moved:
+        print("    " + f"{src:<{w}} -> {dst}" + (st.yellow("   (the planned place already held your code)") if clash else ""))
+    print("  " + st.dim("(nothing you wrote was deleted or overwritten; a replaced problem's file is in Mock_<set>/old/)"))
 
 
 def main():
@@ -1739,7 +1801,6 @@ def main():
     if code is not None:
         return code
     show_moves(st)
-    finish_bootstrap(st)
     meta = load_meta()
     if os.name != "nt":
         raise_stack_limit()     # Windows: the stack size is set when linking (compile_source)
@@ -1787,44 +1848,53 @@ def main():
             return 1
         return cmd_set(set_index(opts["--set"]), pos[0] if pos else None, meta, load_sets(), st, tl, show_diff)
     if not pos:
-        k = mock_set_of(os.getcwd())
-        if k is None:
-            if glob.glob("[1-9].cpp"):  # a set folder that was copied or renamed, e.g. "Mock_3 - Copy"
-                return not_a_mock_folder(st, os.getcwd(), None)
+        here = problem_of_folder(os.getcwd())
+        if here is not None:            # inside a problem folder (Mock_A03/5): judge its code file
+            pos = [code_name(*here)]
+        elif mock_set_of(os.getcwd()) is not None:
+            pos = ["."]                 # inside a set folder: judge the whole set
+        elif glob.glob("*.cpp"):        # e.g. a renamed folder
+            return not_a_mock_folder(st, os.getcwd(), None)
+        else:
             return usage()
-        pos = ["."]                     # run inside Mock_K: judge the whole set
     if len(pos) == 1:
         a = pos[0]
-        if a.isdecimal() and not os.path.exists(a) and mock_set_of(os.getcwd()) is not None:
-            a = pos[0] = f"{int(a)}.cpp"    # inside Mock_3: 'judge.py 5' = 'judge.py 5.cpp' (like make 5 / judge 5)
+        cwd_set = load_sets()[mock_set_of(os.getcwd()) - 1] if mock_set_of(os.getcwd()) is not None else None
+        if a.isdecimal() and not os.path.exists(a) and cwd_set is not None and 1 <= int(a) <= len(cwd_set["problems"]):
+            a = pos[0] = code_path(".", cwd_set, int(a))    # inside Mock_A03: 'judge.py 5' (like make 5 / judge 5)
+        elif a.isdecimal() and os.path.isdir(a) and cwd_set is not None and problem_of_folder(a) is not None:
+            a = pos[0] = code_path(".", *problem_of_folder(a))
+        elif os.path.isdir(a) and problem_of_folder(a) is not None:
+            a = pos[0] = os.path.join(a, code_name(*problem_of_folder(a)))      # judge.py Mock_A03/5
         k = mock_set_of(a) if os.path.isdir(a) else None
-        if k is not None:               # judge.py Mock_3  ->  --set 3 Mock_3
+        if k is not None:               # judge.py Mock_A03  ->  --set A3 Mock_A03
             if not shutil.which("g++"):
                 print(st.red("g++ not found. Please install a C++ compiler and add it to PATH."))
                 return 1
             return cmd_set(k, a, meta, load_sets(), st, tl, show_diff)
-        k = mock_set_of(os.path.dirname(os.path.abspath(a))) if os.path.isfile(a) else None
         name = os.path.basename(a)
-        if k is not None and name.lower().endswith(".cpp") and name[:-4].isdecimal():
-            pos = [a, f"{set_token(k)}-{int(name[:-4])}"]      # Mock_A03/5.cpp  ->  5.cpp A3-5
-        elif not os.path.exists(a) and (a.lower().endswith(".cpp") or mock_set_of(os.getcwd()) is not None):
+        hit = None
+        if name.lower().endswith(".cpp"):       # the name first (A03-5.cpp), then the folder (Mock_A03/5/)
+            hit = problem_of_name(name) or problem_of_folder(os.path.dirname(os.path.abspath(a)))
+        if hit is not None and os.path.isfile(a):
+            pos = [a, f"{set_label(hit[0])}-{hit[1]}"]
+            if moved_to(a):             # two problems changed places: this file now holds the other one's code
+                print("  " + st.yellow(f"Note: what you wrote in {name} just moved with its problem to {moved_to(a)}."))
+        elif not os.path.exists(a) and (a.lower().endswith(".cpp") or cwd_set is not None
+                                        or problem_of_folder(os.getcwd()) is not None):
             print(st.red(f"Source file not found: {a}"))
             dst = moved_to(a)
             if dst:
                 print(st.yellow(f"  It just moved with its problem to {dst}: open it there."))
             else:
-                print(st.dim("  Check the file name (e.g. 5.cpp, not 5.cpp.txt) and that you are in the set's folder (Mock_A03 ...)."))
+                print(st.dim("  A problem's code file is Mock_<set>/<problem>/<set>-<problem>.cpp, e.g. Mock_A03/5/A03-5.cpp"))
+                print(st.dim("  (check the name: A03-5.cpp, not A03-5.cpp.txt)."))
             return 1
         elif os.path.isfile(a) and name.lower().endswith(".cpp"):
-            if k is None:               # e.g. Mock_3 - Copy/5.cpp
-                return not_a_mock_folder(st, os.path.dirname(os.path.abspath(a)), name)
-            print(st.red(f"Cannot tell the problem number from the file name '{name}'."))   # e.g. 5_brute.cpp
-            print(st.dim(f"  Name it 1.cpp ... 6.cpp, or give the problem as K-P, e.g.:"))
-            print(f"  {PY} {prog_name()} \"{name}\" {set_token(k)}-5")
-            return 1
+            return not_a_mock_folder(st, os.path.dirname(os.path.abspath(a)), name)
         else:
             return usage("expected SOLUTION.cpp and a problem (e.g. A3-5), "
-                         "or run it inside a set folder such as Mock_A03 (files 1.cpp ... 6.cpp)")
+                         "or run it inside a problem folder such as Mock_A03/5")
     if len(pos) != 2:
         return usage("expected SOLUTION.cpp and a problem (e.g. A3-5)")
     src, parg = pos
@@ -1837,10 +1907,13 @@ def main():
             print(st.yellow(f"  It just moved with its problem to {moved_to(src)}: open it there."))
         return 1
     if student_layout() and parg.isdecimal():
-        k = mock_set_of(os.path.dirname(os.path.abspath(src)))
+        d = os.path.dirname(os.path.abspath(src))
+        k = mock_set_of(d)
+        if k is None and problem_of_folder(d) is not None:
+            k = set_index(problem_of_folder(d)[0]["set"])
         if k is None:
             return usage(f"use K-P to name a problem (e.g. A3-{parg} for set A3, problem {parg})")
-        parg = f"{set_token(k)}-{int(parg)}"     # inside Mock_A03: '5.cpp 5' means problem A3-5
+        parg = f"{set_token(k)}-{int(parg)}"     # inside Mock_A03: 'x.cpp 5' means problem A3-5
     pdir, num = find_problem(parg, meta)
     if not pdir:
         sets = load_sets()

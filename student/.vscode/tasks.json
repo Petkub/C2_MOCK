@@ -3,7 +3,7 @@
   "tasks": [
     {
       "label": "Judge this problem",
-      "detail": "Ctrl+Shift+B (Cmd+Shift+B on Mac) while editing e.g. Mock_1/3.cpp",
+      "detail": "Ctrl+Shift+B (Cmd+Shift+B on Mac) while editing e.g. Mock_A01/3/A01-3.cpp",
       "type": "process",
       "command": "python3",
       "windows": {
@@ -11,7 +11,7 @@
       },
       "args": [
         "${workspaceFolder}/Judge/judge.py",
-        "${fileBasename}"
+        "${file}"
       ],
       "options": {
         "cwd": "${fileDirname}"
@@ -29,7 +29,7 @@
     },
     {
       "label": "Judge whole set",
-      "detail": "judge every problem (1.cpp, 2.cpp, ...) of the set you are editing",
+      "detail": "judge every problem of the set you are editing",
       "type": "process",
       "command": "python3",
       "windows": {
@@ -39,7 +39,7 @@
         "${workspaceFolder}/Judge/judge.py"
       ],
       "options": {
-        "cwd": "${fileDirname}"
+        "cwd": "${fileDirname}/.."
       },
       "group": "build",
       "presentation": {

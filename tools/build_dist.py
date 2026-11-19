@@ -6,14 +6,16 @@ Build the student package.
   python3 tools/build_dist.py --out DIR        writes DIR/C2_Mock_Test/ (and DIR/C2_Mock_Test.zip)
   python3 tools/build_dist.py --no-zip         folder only
 
-Layout produced:
-  C2_Mock_Test/README.txt, Progress.md, .vscode/ from student/
+Layout produced (one folder per problem, tools/layout.py):
+  C2_Mock_Test/README.txt, Progress.md, .vscode/  from student/
   C2_Mock_Test/Judge/                             exactly the files listed in manifest.json (core/ + problems/),
-                                               plus manifest.json itself (the installed version for updater.py);
-                                               never progress.json or the big tests gen.py rebuilds
-  C2_Mock_Test/Mock_K/Mock_K.pdf                  from student/Mock_K/
-  C2_Mock_Test/Mock_K/Makefile, judge.bat         from student/set_files/
-  C2_Mock_Test/Mock_K/1.cpp ... 6.cpp             empty template (student/set_files/template.cpp)
+                                                  plus manifest.json itself (the installed version for updater.py);
+                                                  never progress.json or the big tests gen.py rebuilds
+  C2_Mock_Test/Mock_A01/Mock_A01.pdf              from student/Mock_A01/ (the whole set with its cover)
+  C2_Mock_Test/Mock_A01/Makefile, judge.bat       from student/set_files/
+  C2_Mock_Test/Mock_A01/3/A01-3.cpp               the student's code file: empty (student/set_files/template.cpp)
+  C2_Mock_Test/Mock_A01/3/3_<Title>.pdf           the problem's own PDF, from student/Mock_A01/3/
+  C2_Mock_Test/Mock_A01/3/Makefile, judge.bat     student/set_files/Makefile_problem, judge_problem.bat
 The zip holds the contents of C2_Mock_Test/ without the folder itself (see make_zip).
 The manifest is rebuilt first, so the zip and manifest.json always agree.
 """

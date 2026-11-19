@@ -1,5 +1,11 @@
 POSN Practice Judge - changes
 
+7.2  แต่ละข้ออยู่ในโฟลเดอร์ของตัวเอง (ไฟล์ .cpp + PDF ข้อนั้น): Mock_A01/3/A01-3.cpp และ Mock_A01/3/3_<ชื่อโจทย์>.pdf;
+     ไฟล์โจทย์ทั้งชุด Mock_A01/Mock_A01.pdf ยังอยู่ที่เดิม. ตรวจในโฟลเดอร์ข้อ: make / judge; ในโฟลเดอร์ชุด: make 3 / judge 3
+     (ทั้งชุด: make / judge); VS Code: Ctrl+Shift+B ขณะเปิดไฟล์ .cpp ของข้อนั้น. ห้ามเปลี่ยนชื่อโฟลเดอร์และชื่อไฟล์ .cpp.
+     Each problem has its own folder (its .cpp file + its own PDF). The judge finds the problem from the file's
+     name (A01-3.cpp) or from its folder (Mock_A01/3/); compiled programs go to Judge/.build/ and are removed after
+     the run. --list shows every problem's folder and file name.
 7.1  แทนโจทย์ Track A 21 ข้อด้วยโจทย์ใหม่ที่คุณภาพสูงกว่า (ข้อเดิมซ้ำกับโจทย์ที่มีเฉลยเผยแพร่แล้ว เช่น NOI Singapore,
      CSES, AtCoder): A1/3, A1/4, A2/3, A2/5, A3/1, A3/2, A4/2, A4/6, A5/4, A6/1, A6/5, A7/6, A8/5, A8/6, A9/1, A9/3,
      A9/5, A10/5, A10/6, A11/6, A12/3; ชุดทดสอบแข็งขึ้นใน A2/2, A3/4, A3/6, A6/4, A7/3, A10/3, A11/3, A12/4.

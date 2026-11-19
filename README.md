@@ -18,10 +18,12 @@ with Claude Code.
 core/                  what students get inside Judge/   (judge.py, updater.py, include/, README.txt, CHANGELOG.txt)
 problems/batch/        test data: Mock_K/N/01.in, 01.out, ..., gen.py, manifest.json (the problem's own test list)
                        + problems.json (problem bank) + sets.json (sets)
-student/               the rest of the student package: README.txt, Progress.md, .vscode/, Mock_K/Mock_K.pdf,
-                       set_files/ (Makefile, judge.bat, template.cpp -> 1.cpp ... 6.cpp)
+student/               the rest of the student package: README.txt, Progress.md, .vscode/, Mock_A01/Mock_A01.pdf (whole
+                       set), Mock_A01/3/3_<Title>.pdf (one problem), set_files/ (Makefile + judge.bat for a set folder,
+                       Makefile_problem + judge_problem.bat for a problem folder, template.cpp -> Mock_A01/3/A01-3.cpp)
 samples/               known-verdict programs used by the tests (expected.json says which verdict each must get)
 tests/run_regression.py          the test suite: run before every push
+tools/layout.py                  the names of the student package (folders, code files, PDFs): the one place
 tools/build_manifest.py          writes manifest.json (hashes of everything students get) and bundles/ (zips for fast updates)
 tools/update_problem_manifest.py refreshes a problem's own manifest.json after adding/changing tests
 tools/build_dist.py              builds dist/C2_Mock_Test.zip for new students
@@ -29,8 +31,25 @@ VERSION                          the version students see ("Judge v1.3")
 manifest.json                    generated, served to students by GitHub; never edit by hand
 ```
 
-What a student has: `C2_Mock_Test/Judge/` (= `core/` + `problems/` + `manifest.json`), `C2_Mock_Test/Mock_K/1.cpp ... 6.cpp`
-(their code, which the updater never touches) and `Judge/progress.json` (their best scores, never touched either).
+What a student has (7.2 is the first release students get; one folder per problem):
+
+```
+C2_Mock_Test/
+  README.txt  Progress.md  .vscode/
+  Judge/                     = core/ + problems/ + manifest.json; progress.json (their best scores, never touched)
+  Mock_A01/
+    Mock_A01.pdf             the whole set with its cover (timed practice like the real exam)
+    Makefile  judge.bat      whole set; make 3 / judge 3; make progress
+    3/
+      A01-3.cpp              their code: empty at first, created once, never replaced by the updater
+      3_<English_Title>.pdf  this problem alone
+      Makefile  judge.bat    judge this problem from its own folder
+```
+The judge finds the problem from the code file's name (`A01-3.cpp`) or from its folder (`Mock_A01/3/`); students must
+not rename either. `tools/layout.py` writes these names down once; `judge.py` and `updater.py` hold the same rules
+(the tests compare them). Every problem folder has `Makefile` and `judge.bat`; to ship only the `.cpp` and the PDF
+there, set `PROBLEM_FOLDER_TOOLS = False` in `tools/build_manifest.py` (and update the two test lines that list
+the folder contents).
 
 **Two manifests, do not mix them up.** `manifest.json` at the repo root lists every file of `Judge/` for the
 updater. `problems/batch/Mock_K/N/manifest.json` lists that problem's tests with the SHA-256 of each input and
@@ -42,7 +61,7 @@ computer (false). The judge refuses a test that is not in it.
 ```bash
 git clone https://github.com/Petkub/C2_MOCK.git
 cd C2_MOCK
-python3 tests/run_regression.py        # needs python3 and g++; ~40 s; must end with "All regression tests passed."
+python3 tests/run_regression.py        # needs python3 and g++; a few minutes; must end with "All regression tests passed."
 ```
 Optional: `gh auth login` (GitHub CLI) if you want to publish releases from the terminal.
 
@@ -65,7 +84,7 @@ Linux and Python 3.7, and fails if either kind of manifest is stale).
 Students receive it automatically: their judge checks GitHub at most every 10 minutes, GitHub caches files for
 up to 5 minutes, so everyone who is judging gets the new version within ~15 minutes; a student who opens the judge
 later gets it on that first run. To see it immediately on any installed copy:
-`python3 ../Judge/judge.py --update` (inside a `Mock_K` folder).
+`python3 ../Judge/judge.py --update` (inside a set folder such as `Mock_A01`).
 
 Add one line to `core/CHANGELOG.txt` for each version; students can read it.
 
@@ -87,23 +106,25 @@ Add one line to `core/CHANGELOG.txt` for each version; students can read it.
    `samples/expected.json`, so the bug cannot come back.
 3. Run the tests, release. If it cannot be tested on Linux (a Windows-only problem), rely on CI's Windows job.
 
-### 4c. Add a new mock set (e.g. set 16)
-Sets are written in the private `C2_MOCK_SRC` (sources of every set, ordered from easy to hard); its
-`python3 build.py all` does steps 1-4 here. By hand:
-1. Test data: `problems/batch/Mock_9/1/ ... Mock_9/6/` with `NN.in`/`NN.out` (and `gen.py` if big inputs are
+### 4c. Add a new mock set
+Sets are written in the private `C2_MOCK_SRC` (sources of every set); its `python3 build.py all` does steps 1-4
+here. By hand, for a set `A13`:
+1. Test data: `problems/batch/Mock_A13/1/ ... Mock_A13/6/` with `NN.in`/`NN.out` (and `gen.py` if big inputs are
    generated), then `python3 tools/update_problem_manifest.py --all`.
-2. `problems/batch/problems.json`: one entry per new problem (`"en"`, `"title"`, `"tier"`, `"dir": "Mock_9/1"`,
-   `"samples"`), with ids 6 (set - 1) + 1 ... + 6.
-3. `problems/batch/sets.json`: append `{"set": 9, ..., "problems": [ids in order]}`.
-4. `student/Mock_9/Mock_9.pdf` (the statement).
-5. Release. Existing students get the test data, `Mock_9/Mock_9.pdf`, `Makefile`, `judge.bat`, and the
-   updater **creates** `Mock_9/1.cpp ... 6.cpp` (templates are only ever created, never overwritten).
+2. `problems/batch/problems.json`: one entry per new problem (`"en"`, `"title"`, `"tier"`, `"dir": "Mock_A13/1"`,
+   `"samples"`, `"scoring": "all"`), each with a new id (an id stays with its problem for ever: the tracker uses it).
+3. `problems/batch/sets.json`: append `{"set": "A13", "track": "A", ..., "problems": [ids in order]}`.
+4. `student/Mock_A13/Mock_A13.pdf` (the whole set) and `student/Mock_A13/<n>/<n>_<English_Title>.pdf` for each
+   problem (the file name is `tools/layout.py` `pdf_name`; `build_manifest.py` stops if one is missing).
+5. Release. Existing students get the test data, the PDFs, `Makefile` and `judge.bat` of the set folder and of
+   each problem folder, and the updater **creates** the empty `Mock_A13/<n>/A13-<n>.cpp` (only ever created, never
+   overwritten).
 
 ### 4d. Change something students see outside Judge/ (README, Makefile, judge.bat, template, Progress.md)
 Edit it under `student/` and release. These are *managed* files: the updater replaces them on every student's
 computer when they change (the old copy goes to `Judge/.backup/_package/`), because students do not edit them.
-The only files that are never replaced are the `Mock_K/N.cpp` templates (created once, then the student's own)
-and `Judge/progress.json`.
+The only files that are never replaced are the code files `Mock_<set>/<n>/<set>-<n>.cpp` (created once, empty, then
+the student's own) and `Judge/progress.json`.
 
 ### 4e. A new zip for new students
 ```bash
@@ -113,19 +134,37 @@ gh release create v1.4 dist/C2_Mock_Test.zip --title "C2_Mock_Test v1.4"
 The link <https://github.com/Petkub/C2_MOCK/releases/latest/download/C2_Mock_Test.zip> always gives the newest
 release. You only need a new release for new students (or new sets); existing students update themselves.
 
+### 4f. Replace, re-title or move a problem (releases after 7.2)
+A student's written code must follow its problem, so the updater needs to know what the previous release looked like:
+1. **Before** changing anything, save the released `problems.json` with its exact bytes:
+   `git show v7.2:problems/batch/problems.json > tools/moves/problems_7.2.json` (one file per released version
+   that students may still have).
+2. Make the change (normally `C2_MOCK_SRC`'s `build.py all`). A problem is "the same problem" when its English
+   title is the same. If you **re-title** a problem, add `"Old Title": "New Title"` to `RENAMED` in
+   `tools/build_manifest.py`; otherwise the old title counts as a replaced problem.
+3. Release (section 3). On each student's computer, once: a written file of a moved problem goes to the problem's
+   new folder (also in another set); a written file of a replaced problem goes to `Mock_<set>/old/<n>_<OldTitle>.cpp`
+   and the slot gets an empty file again; nothing is overwritten (if the new place already holds code, the incoming
+   file goes to `old/<name>_moved.cpp`); empty files and files the student made are not touched; the old PDF of a
+   re-titled problem is moved to `Judge/.backup/_package/` when its bytes are the shipped ones. The judge prints
+   every move once. Scores in `Judge/progress.json` are kept: they are stored by problem id, so never reuse an id
+   for another problem.
+The regression section "A later release (fake 7.3 over local HTTP)" does all of this in a temporary copy.
+
 ## 5. How the self-update works (so you can trust it)
 
 - `Judge/updater.py` fetches `manifest.json` from `raw.githubusercontent.com/Petkub/C2_MOCK/main/`, compares the
   SHA-256 of every file in `Judge/`, downloads the changed ones to a temp folder, verifies each hash, compiles
   the new `.py` files and test-runs the new `judge.py --help`, and only then swaps them in. The old file is kept
   in `Judge/.backup/`.
-- Outside `Judge/` it only replaces the managed files above and creates missing `Mock_K/N.cpp` templates; it
-  never deletes anything and never touches an existing `Mock_K/N.cpp` or `Judge/progress.json`. Big tests that `gen.py` rebuilt on the student's computer are not in
+- Outside `Judge/` it only replaces the managed files above and creates missing code files
+  (`Mock_<set>/<n>/<set>-<n>.cpp`, empty); it never deletes anything and never touches `Judge/progress.json` or an
+  existing `.cpp`, except the one-time moves of section 4f. Big tests that `gen.py` rebuilt on the student's computer are not in
   the manifest and are left alone.
 - No network, a slow network (> 2 s), a bad hash, a strange path: it keeps the current version and says nothing.
   A failed update never stops a student from judging.
-- Students with a zip from **before** the updater existed (before v1.2) must download the zip once; nothing can
-  reach them otherwise. That zip also fixes the Windows bug where big tests failed their checksum.
+- 7.2 is the first release students get, so there is no code for older packages (no legacy manifest, no
+  bootstrap view, no old `Mock_K/N.cpp` layout).
 
 ## 6. Checking a student's problem report
 
@@ -142,7 +181,7 @@ release. You only need a new release for new students (or new sets); existing st
   `core/progress.json`; neither is shipped, `progress.json` is ignored by git, and the big inputs show up
   as untracked in `git status`: do not `git add` them). The judge compiles with `-O2`, which
   exposes uninitialised variables and out-of-bounds reads that pass on the student's own compile.
-- Progress: `python3 ../Judge/judge.py --progress` inside a student's `Mock_K` shows what they have solved;
+- Progress: `python3 ../Judge/judge.py --progress` inside a student's set folder shows what they have solved;
   the file is `Judge/progress.json`.
 
 ## 7. Things that go wrong, and the fix

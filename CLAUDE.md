@@ -3,6 +3,14 @@
 A terminal judge that students run on their own machines to practice for the POSN Computer Olympiad (Camp 2, no subtasks). Since v7.0 the sets come in tracks: Track A = 12 exam-level sets x 6 problems
 (`Mock_A01` ... `Mock_A12`, set names A1 ... A12, `--set A3`); Track B = 8 harder
 sets x 6 beyond the syllabus (`Mock_B01` ... `Mock_B08`, B1 ... B8, no target scores, progress counted apart). Set keys are strings ("A01"); `judge.py` helpers `set_key` / `set_label` / `set_index` / `track_of` parse them.
+**7.2 is the first release students get** (no student has an older package, so there is no code for older layouts;
+plan `C2_MOCK_SRC/plans/V7_LAYOUT.md`, teacher's override 2026-11-20: no migration). The student package has **one
+folder per problem**, the same layout as C2_PRACTICE 4.0.0: `Mock_A01/3/A01-3.cpp` (the student's code) and
+`Mock_A01/3/3_<English_Title>.pdf` (that problem's PDF); the whole set stays in `Mock_A01/Mock_A01.pdf`. Folder and
+code-file names never change; the PDF's name follows the English title (letters, digits and `_` only, at most 60
+characters). **`tools/layout.py` is the one place for these names** (build tools, and `C2_MOCK_SRC`'s build);
+`core/judge.py` and `core/updater.py` hold the same rules for the students' side, and the regression test
+(`test_layout`) compares them. Change a name in all three.
 Sibling repo `C1_MOCK` is the Camp 1 judge (same structure); fix shared bugs in both.
 Today it judges batch problems (`judge.py`). We are adding interactive and communication problems,
 and it updates itself from this GitHub repo so bugs can be fixed without re-sending zip files.
@@ -14,15 +22,14 @@ and it updates itself from this GitHub repo so bugs can be fixed without re-send
    Use `os.name == "nt"` guards like `judge.py` does. Never assume `/tmp`, `fork`, `resource`, or bash.
 3. **Never touch student code.** The updater writes only files listed in `manifest.json`: inside `Judge/`,
    plus the managed package files students do not edit (PDFs, Makefile, judge.bat, READMEs, `.vscode/`) and
-   missing `Mock_K/N.cpp` templates. It must never read, move, delete or overwrite an existing `Mock_*/*.cpp`
-   or `progress.json`. One exception (approved by the teacher 2026-11-13, v6.1): when sets are reorganised, the
-   manifest's `moves` let a student's written `Mock_K/N.cpp` follow its problem once (`follow_moves` in
-   `updater.py`): never over written code (a clash goes to `Mock_K/old/`), empty starters stay, nothing deleted.
-   v7.0 adds one more step (plan V7_TWO_TRACKS section 3): an old set folder that is no longer a set is removed
-   only when nothing of the student's is left in it (its Makefile, judge.bat, PDF and empty starters); otherwise
-   it keeps everything and gets `README_MOVED.txt` (`tidy_old_folders`).
-   Releases without a moves list (3.2 and older) get the same tidy once for every old-style `Mock_<number>` folder
-   (teacher decision 2026-11-14): nothing is moved, only starter-only folders are removed.
+   missing code files `Mock_<set>/<n>/<set>-<n>.cpp` (empty, create-only). It must never read, move, delete or
+   overwrite an existing student `.cpp` or `progress.json`, and never touch a file it did not ship. One exception
+   (approved by the teacher 2026-11-13, v6.1; the rules of C2_PRACTICE's V4_LAYOUT section 3): when a release
+   after 7.2 moves or replaces problems, the manifest's `moves` let a student's written file follow its problem
+   once (`follow_moves` in `updater.py`): by English title to `Mock_<set>/<n>/<set>-<n>.cpp` (also into another
+   set); a replaced problem's file to `Mock_<set>/old/<n>_<OldTitle>.cpp`; never over written code (on a clash the
+   incoming file goes to `Mock_<set>/old/<name>_moved.cpp` and the judge prints it); empty starters stay; nothing
+   deleted; every move printed once (`show_moves` in `judge.py`), the second run is quiet.
 4. **Never delete files the updater does not own.** No "wipe and reinstall" step, ever.
 5. **Fail safe.** If the network is down, slow (>2 s), or a hash does not match, keep the current
    version and continue silently. A broken update must never stop a student from judging.
@@ -48,18 +55,24 @@ C2_MOCK/
     interactive/<name>/{problem.json, interactor.cpp, tests/NN.in}
     communication/<name>/{problem.json, manager.cpp, stub/, tests/}
   student/                      # student-side files outside Judge/ (copied by build_dist.py)
-    README.txt, Progress.md, .vscode/, Mock_K/Mock_K.pdf
-    set_files/{Makefile, judge.bat, template.cpp}   # every Mock_K (a Makefile_<n> is used for a set of n != 6
-                                                    # problems); template.cpp (empty) -> 1.cpp ... n.cpp
+    README.txt, Progress.md, .vscode/
+    Mock_A01/Mock_A01.pdf                           # the whole set with its cover
+    Mock_A01/3/3_<Title>.pdf                        # one problem; all PDFs are written by C2_MOCK_SRC build.py all
+    set_files/{Makefile, judge.bat}                 # in every set folder (a Makefile_<n> is used for a set of n != 6
+                                                    # problems): whole set, `make 3` / `judge 3`, `make progress`
+    set_files/{Makefile_problem, judge_problem.bat} # in every problem folder, as Makefile / judge.bat
+    set_files/template.cpp                          # (empty) -> Mock_A01/3/A01-3.cpp
   samples/                      # known-verdict programs used as regression tests
     batch/towers_ok.cpp, towers_smallhi.cpp, towers_slow.cpp, towers_crash.cpp, towers_syntax.cpp
     interactive/guess_ok.cpp, guess_noflush.cpp, guess_linear.cpp, guess_crash.cpp
     expected.json               # {"batch/towers_ok.cpp": {"problem": "3-2", "verdict": "AC", "score": 100}, ...}
                                 # verdict: AC/WA/TLE/RE/MLE/CE (first failing test); "score" optional (runs all tests)
   tools/
+    layout.py                   # the names of the student package (code_path, pdf_path, old_name): the one place
     build_manifest.py           # writes manifest.json (VERSION + SHA-256 of every file in Judge/); --check for CI
+    moves/problems_<v>.json     # problems.json of release <v> (from 7.2 on; none yet), see "Self-update"
     update_problem_manifest.py  # refreshes problems/batch/Mock_K/N/manifest.json after adding tests; --check --all in CI
-    build_dist.py               # builds the student zip (C2_Mock_Test/ layout with Judge/ and empty Mock_K/*.cpp)
+    build_dist.py               # builds the student zip (C2_Mock_Test/ layout with Judge/ and one folder per problem)
   tests/
     run_regression.py           # runs every sample, compares verdicts with expected.json
   .github/workflows/ci.yml      # matrix: windows-latest, macos-latest, ubuntu-latest
@@ -68,7 +81,17 @@ C2_MOCK/
 ```
 
 Student-side layout (what `build_dist.py` produces): `C2_Mock_Test/Judge/` = `core/` + `problems/`,
-and `C2_Mock_Test/Mock_K/1.cpp ... 6.cpp` = student files. The repo layout is **not** the student layout.
+and `C2_Mock_Test/Mock_A01/3/` = one problem: the student's `A01-3.cpp` (empty at first), `3_<Title>.pdf`, `Makefile`,
+`judge.bat`; the set folder also holds `Mock_A01.pdf`, `Makefile`, `judge.bat` (and `old/` after an update that
+replaced a problem the student had written). The repo layout is **not** the student layout.
+The judge finds the problem from the code file's name (`A01-3.cpp`, also `a1-3.cpp`: `problem_of_name`) or from its
+folder (`Mock_A01/3/`: `problem_of_folder`), the name first; both must keep working. Inside a problem folder, no
+arguments = that problem; inside a set folder, no arguments = the whole set and `3` = problem 3. A file that is not a
+`.cpp` (Ctrl+Shift+B on `Progress.md`) shows the progress dashboard. Binaries are compiled in `Judge/.build/<new
+folder>` (`make_build_dir`; removed after the run; the system temp folder when `Judge/` is not writable), never in a
+set or problem folder (`test_judging` checks that nothing is left behind and that `Judge/.build/` is empty).
+The progress tracker is keyed by problem id (`Judge/progress.json`), so a score stays with its problem when the
+problem moves.
 `judge.py` finds batch data in the first existing of `Judge/problems/batch/` (student package),
 `../problems/batch/` (repo, run from `core/`) and `Judge/tests/` (older zips, JSON files next to judge.py).
 
@@ -139,19 +162,23 @@ Propose the design and wait for approval before writing it.
   -> write the new `Judge/manifest.json`. Any failure: remove the temp folder, keep the current version, silent.
 - Paths: only `Judge/`-relative, no absolute, no `..`, no `\`, no leading `.`, never `manifest.json` /
   `progress.json`. Outside `Judge/` only two kinds, each matched by a strict regex in `updater.py`:
-  *managed* files students do not edit (`Mock_K/Mock_K.pdf`, `Makefile`, `judge.bat`, `README.txt`, `Guide.pdf`,
-  `Progress.md`, `.vscode/*.json`) are replaced when their hash changes (old copy in `Judge/.backup/_package/`);
-  *create-only* files (`Mock_K/N.cpp` templates) are added only when missing. A `.cpp` can never be managed.
-  Nothing is ever deleted.
+  *managed* files students do not edit (`Mock_<S>/Mock_<S>.pdf`, `Mock_<S>/<n>/<n>_<Title>.pdf`, `Makefile` and
+  `judge.bat` of a set folder and of a problem folder, `README.txt`, `Guide.pdf`, `Progress.md`, `.vscode/*.json`)
+  are replaced when their hash changes (old copy in `Judge/.backup/_package/`);
+  *create-only* files (`Mock_<S>/<n>/<S>-<n>.cpp`, S = `[AB][0-9]{2}`, n = 1..9: the set and the number in the name
+  must agree with the folders, `SET_FILE`) are added only when missing. A `.cpp` can never be managed. Nothing is
+  ever deleted.
+- Retired PDFs: a problem PDF is named after its English title, so a re-titled problem gets a new PDF name and
+  the new manifest no longer lists the old one. The updater moves the old PDF to `Judge/.backup/_package/` only when
+  its bytes are exactly what it installed (the hash in the installed `Judge/manifest.json`) and the new manifest
+  manages another PDF in the same problem folder (`plan_retired`, `retire`). No list of old names is needed; a file
+  with other bytes stays.
 - Only an installed package updates (`Judge/judge.py` and `Judge/manifest.json` exist); `core/` in the repo never.
 - `--update` forces a check and prints the result; `--no-update` skips it; the header box shows `Judge vX.Y`
   (from `Judge/manifest.json`). Recovery when `judge.py` itself is broken: `python3 ../Judge/updater.py`.
 - Manifest format (version in `tools/build_manifest.py`): `version`, `sources` (Judge/ prefix -> repo folder),
-  `files` (Judge/ path -> sha256), `managed` and `create_only` (package path -> [sha256, repo path]), `moves`
-  ({sha256 of an older release's problems.json: [[from, to], ...]}, made from `tools/moves/problems_<v>.json`:
-  same English title = same problem). An old updater installs the release and keeps the old problems.json in
-  `Judge/.backup/`; the new `judge.py` calls `updater.follow_moves()` at start-up, which recognises it by hash and
-  moves the files once (`Judge/.moves_done`). Ids in `problems.json` stay with their problems (progress follows).
+  `files` (Judge/ path -> sha256), `managed` and `create_only` (package path -> [sha256, repo path]), `bundles`,
+  `moves`. It is one plain view: no legacy or bootstrap views (every installed updater reads it as it is).
 - Speed: GitHub raw answers one file in about 0.3 s, so an updater that fetches files one
   by one needs minutes for a new set of problems (v3.0 of C1_PRACTICE: ~1,950 files, ~11 minutes, and one slow
   request aborted all of it). The updater therefore downloads in parallel (`WORKERS`), retries each file (`TRIES`),
@@ -159,25 +186,31 @@ Propose the design and wait for approval before writing it.
   checked against its own sha256 in `files`), and prints "Downloading ..." for big updates.
   `build_manifest.py` writes the bundles (deterministic zips, rewritten only when their content changes) and
   `manifest.json` lists them under `bundles`. Commit `bundles/` with the manifest.
-- Format 2 (because judges before this change still fetch one file at a time): `tools/legacy_manifest.json` is
-  the last manifest those old updaters understood. The top level of `manifest.json` is then a legacy view (that
-  release's unchanged entries plus the new `judge.py` and `updater.py`), and the real manifest is under `full`.
-  An old judge thus downloads two files, restarts with the new updater, and its next check installs `full`
-  quickly. The updater writes the `full` part as `Judge/manifest.json`. Keep `legacy_manifest.json`; never edit
-  it. `tests/fixtures/updater_v2.py` is that old updater, used by the regression test "Fast update".
-- Format 3 (v7.0, because updaters before 7.0 reject `Mock_A01/...` paths): the real manifest is under `full_v7`;
-  `full` is a *bootstrap* view (`"bootstrap": true`) holding every `Judge/` file but only package entries the old
-  path rules accept. An old updater installs it (so it gets the new updater); the new `judge.py` then calls
-  `finish_bootstrap()`, which installs `full_v7` at once (even right after the restart or a recent check).
-  The updater prefers `full_v7`, then `full`. Regression: "Bootstrap view", "Moves (6.0 / 6.0.2 / 6.1 -> now)".
+- Moves (releases after 7.2 move, replace and re-title problems): `moves` is {sha256 of an earlier release's
+  `problems.json`: [[from, to], ...]}, built by `build_manifest.py` from `tools/moves/problems_<v>.json` (exact bytes of
+  release `<v>`; none exist yet). The same English title = the same problem (`RENAMED` in `build_manifest.py` maps an
+  old title to a new one; without it a re-title counts as a replacement); a problem that is no longer in the sets
+  goes to `Mock_<set>/old/<n>_<OldTitle>.cpp`. After an update, `follow_moves` finds the hash of the `problems.json`
+  it replaced (in `Judge/.backup/`), applies the pairs once (`Judge/.moves_done`) under the rules of hard constraint
+  3, and puts an empty starter back where a file moved away. Ids in `problems.json` stay with their problems, so the
+  tracker's scores follow. Regression: `test_future_update` (a fake 7.3 over local HTTP: re-titled, replaced and
+  moved problems inside a set and across sets, a clash, files the updater did not ship, tracker scores kept, a quiet
+  second run).
+- There is no legacy manifest, no bootstrap view and no code for layouts before 7.2 (`Mock_K/N.cpp`): they were
+  removed with 7.2 because no student ever had those packages. Do not add them back.
 
 ## Releasing a change to students
 
 1. Make the change, add a sample/test, run `python3 tests/run_regression.py`.
-2. Bump `VERSION`, run `python3 tools/build_manifest.py`, commit both with the change, push.
+2. If the release moves, replaces or re-titles problems: first save the released `problems.json` (exact bytes, e.g.
+   `git show v7.2:problems/batch/problems.json`) as `tools/moves/problems_<released version>.json`, and put re-titled
+   problems in `RENAMED` in `tools/build_manifest.py`.
+3. Bump `VERSION`, run `python3 tools/build_manifest.py`, commit both with the change, push.
    CI fails if `manifest.json` is stale. Students get the new files on their next judge run (GitHub raw caches
    for up to 5 minutes; a forced `--update` adds `?t=<time>` to every URL to skip that cache).
-3. For new students: `python3 tools/build_dist.py` and publish `dist/C2_Mock_Test.zip` (GitHub Release).
+   `build_manifest.py` stops with "missing student/Mock_.../<n>_<Title>.pdf" when a problem PDF is not there: run
+   `C2_MOCK_SRC`'s `build.py all` first.
+4. For new students: `python3 tools/build_dist.py` and publish `dist/C2_Mock_Test.zip` (GitHub Release).
 
 ## Commands
 
@@ -189,6 +222,16 @@ python3 tools/update_problem_manifest.py Mock_K/N   # after adding NN.in/NN.out 
 python3 tools/build_dist.py              # build dist/C2_Mock_Test/ + dist/C2_Mock_Test.zip (--out DIR, --no-zip)
 python3 core/judge.py samples/batch/towers_ok.cpp A7-3     # judge one file from the repo (creates big tests, see above)
 python3 core/interactive_judge.py guess samples/interactive/guess_ok.cpp
+```
+In a student package (`dist/C2_Mock_Test/`):
+```
+python3 ../../Judge/judge.py             # in a problem folder (Mock_A03/5): that problem; also `make`, `judge`
+python3 ../Judge/judge.py                # in a set folder: the whole set; also `make`, `judge`
+python3 ../Judge/judge.py 5              # in a set folder: problem 5; also `make 5`, `judge 5`
+python3 <path>/Judge/judge.py FILE.cpp   # anywhere: the problem from the file's name or folder (Ctrl+Shift+B does this)
+python3 <path>/Judge/judge.py FILE.cpp K-P   # name the problem yourself (A3-5)
+python3 ../Judge/judge.py --list         # sets with their folders and code names
+python3 ../Judge/judge.py --progress     # the tracker (--progress A3: one set)
 ```
 
 ## Working rules for Claude Code
