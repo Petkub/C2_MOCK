@@ -564,10 +564,10 @@
 ]
 },
 "files": {
-"CHANGELOG.txt": "f10dbdff14df59d9d50c2c23a7d92ef54d95460901a8de7238cd7a6faa2d57a6",
-"README.txt": "c3b9d4e519ee560620fcddc4c2d0919ac2d3e317b59f72fde1177d9703495b0f",
+"CHANGELOG.txt": "620ffc03495b019f58eaaffaa8f49ccf14f7425c70e362183abc7a02f6913eb8",
+"README.txt": "98489174ccb56350631189ca915cfca9ed036025a7fc6af790c793e4dd31a5e7",
 "include/bits/stdc++.h": "1545f1f4b55b3acb866effca73203f3a9131773f147331cbf4e983ebf36d6cc9",
-"judge.py": "4705e8924e0d11773b0f027e80fd4d6851f635e76bd3ae5a1e6117429b34cb16",
+"judge.py": "5d015be4d86a43950c6798de9a0bc5eeb05d34fe4f95b71f784117b67b5cde6a",
 "problems/batch/Mock_A01/1/01.in": "e294ce8cd9fcefeffaa6176fe43fb83680d3f188d4907a61af759b1bacc658a7",
 "problems/batch/Mock_A01/1/01.out": "9b0075ff06538a8d894625a300662c2d941de46477f4dba6d8e6328a5c98bb49",
 "problems/batch/Mock_A01/1/02.in": "6a126644aedf52770ea7ea5b4cb9a40c4a98eb44c7d5421391bbba202ecb2590",
@@ -6029,7 +6029,7 @@
 "problems/batch/Mock_B08/6/manifest.json": "f8f1ec9774df11073273b9f81e1d0b29347aac0017785d3b433d2cedd2f1bb28",
 "problems/batch/problems.json": "9f0cced132b6bf77a8a8dbae788b73d9430998bc6844a888634640347093b8dd",
 "problems/batch/sets.json": "6f8570b763b222cdbd596b7935496b251889070ecef1531355d0115920b86cd8",
-"updater.py": "2c2e04f84aa6ce6e80f8a1470604f69688865e9d280ae01a290c8a45dfd97f38"
+"updater.py": "ec1f7802b9e9be45255e4aef92fa8cf968d07706caadc85b63bddc1bae53c4fb"
 },
 "managed": {
 ".vscode/settings.json": [
@@ -6041,83 +6041,35 @@
 "student/.vscode/tasks.json"
 ],
 "Mock_A01/1/1_Splitting_the_Digit_Tiles.pdf": [
-"bf860897262c41328d45565031297c21208b696fdc63bd497f1989f90209ff3a",
+"ef530df2ab5cfd0cc58493cb1bed8329221b48c418803e6533805bf0dbb6e3e3",
 "student/Mock_A01/1/1_Splitting_the_Digit_Tiles.pdf"
 ],
-"Mock_A01/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A01/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A01/2/2_Ramping_Up_Production.pdf": [
-"c526bfc563ace7a7462d17625b5f44cf7a8078ec43280fb5422ef0d352b1eb0d",
+"5ad055cdfd2f1b619dadaf462f54ce443c9f4047a59237032c263c62e2292e2f",
 "student/Mock_A01/2/2_Ramping_Up_Production.pdf"
 ],
-"Mock_A01/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A01/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A01/3/3_Tunnels_of_the_Gem_Mine.pdf": [
-"92f1a02fd4c580602eedab7b5174dad35aae42327537e2bcec33d2de9f61029a",
+"0d0231c8dcccffced2b9ed7818e73e6f3f1f186f8c64ba55b28e13f6acadb3d8",
 "student/Mock_A01/3/3_Tunnels_of_the_Gem_Mine.pdf"
 ],
-"Mock_A01/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A01/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A01/4/4_Free_Tasting_Stalls.pdf": [
-"6c6d33362ee993d7eb11cb26a2ae62e62a654a6d47b8b63e10f9ba74d9660689",
+"5e44bab7b10adbae40c7fcdd6e52eaa6ec23218bc2890d89a74db7249945228a",
 "student/Mock_A01/4/4_Free_Tasting_Stalls.pdf"
 ],
-"Mock_A01/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A01/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A01/5/5_Delivery_Robot_With_a_Battery.pdf": [
-"4e9f4674a54a2dba4573700379664c33894b50055162c2d1c44b2017903ae0a6",
+"57d65e8c29896536cd816b36eb3626e778163b4efc2e3d5bf21e4096f59cac06",
 "student/Mock_A01/5/5_Delivery_Robot_With_a_Battery.pdf"
 ],
-"Mock_A01/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A01/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A01/6/6_Review_Rounds.pdf": [
-"62b6dc0825e8d5a0e662f7b5680a90aac7bdaef51f08535af7eba9a87841080e",
+"2b3ba404b31fec5b29010f78b95fbd355029a0e6efd890a0a01b3953f0d6a890",
 "student/Mock_A01/6/6_Review_Rounds.pdf"
-],
-"Mock_A01/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A01/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_A01/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_A01/Mock_A01.pdf": [
-"3415e7f77ed59a371b6136d5e0c52c50e4fb3d8e188bf04595c9f1a0723c3258",
+"70ba30d29d086c8e76c54a66a622c4ebd305c1dbe732e6a3b708c0feaa9e6c7b",
 "student/Mock_A01/Mock_A01.pdf"
 ],
 "Mock_A01/judge.bat": [
@@ -6125,83 +6077,35 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A02/1/1_TwoColour_Can_Pyramid.pdf": [
-"beb88a4c38ae15ba9670eca73f1e2375b86833b6c5fa2bc31d3605f624915f2f",
+"847cdfc784342291cf0f0766526f01538ae25cbb887c9f40d683e336e98d007b",
 "student/Mock_A02/1/1_TwoColour_Can_Pyramid.pdf"
 ],
-"Mock_A02/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A02/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A02/2/2_Boxes_Within_Boxes.pdf": [
-"fb3d79bd0fab61c33a39126a940ac5be06b09bcbd418afb449bd09284f5d0cce",
+"1e8d53601cb807887c4b35174d50d66961816db0619bb73ccde723facfd28bdd",
 "student/Mock_A02/2/2_Boxes_Within_Boxes.pdf"
 ],
-"Mock_A02/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A02/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A02/3/3_Rescheduling_the_Takeoffs.pdf": [
-"141f0524ab900d77fa94eb0d6fde4e77380ce3f37be5191d5fdb6f5b98bfe847",
+"710da691438a25dace528f46add4a02d71c078a72aacd76fc71663bc2fc1a973",
 "student/Mock_A02/3/3_Rescheduling_the_Takeoffs.pdf"
 ],
-"Mock_A02/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A02/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A02/4/4_Two_Stacks_of_Boxes.pdf": [
-"d89c0cd8b272fa38ccdbecc3d77718b40c01d379c19f97f597d8d3bc742a637e",
+"52f9e040a8899d9efe5cbd407ee0a2aefc23fbd82e5eaefe9ff4efd59bd01702",
 "student/Mock_A02/4/4_Two_Stacks_of_Boxes.pdf"
 ],
-"Mock_A02/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A02/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A02/5/5_Skateboarding_on_the_Hillside.pdf": [
-"311f4ce36ca2b7abab65b988944466456a02c8fc2690356eea56a6fbd8871a69",
+"37a04e13faf083c18b35bdabfac01cd47bb9ad65c1d56b19a55d16eae926832e",
 "student/Mock_A02/5/5_Skateboarding_on_the_Hillside.pdf"
 ],
-"Mock_A02/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A02/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A02/6/6_Black_and_White_Beads.pdf": [
-"755ee1e47fdb33ea2e1812e92cbf7e46ed76e01d7dffa49799083e97d052ee91",
+"4b02e14f7caa616ab1a28e055fe8c1042fad25d024e11344664088330d59ab4f",
 "student/Mock_A02/6/6_Black_and_White_Beads.pdf"
-],
-"Mock_A02/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A02/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_A02/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_A02/Mock_A02.pdf": [
-"1d6d44defc0d9bf501e0b723b9f5390ba26596c43f61c7d67d555c8c35bec316",
+"219321de3d76bd6f298e3366fda258109b99a7a71aacc64d904cba1ca3f0d9c0",
 "student/Mock_A02/Mock_A02.pdf"
 ],
 "Mock_A02/judge.bat": [
@@ -6209,83 +6113,35 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A03/1/1_Balloon_Pumps.pdf": [
-"8d268abb625ea346627eb3e79cdda4d9aca78f859de5f7993db8184ddf2d2a4a",
+"8a3291ff73b7902d2c7830f0cd4fab86f464a1269d5d81e6cd32ae9c5d216730",
 "student/Mock_A03/1/1_Balloon_Pumps.pdf"
 ],
-"Mock_A03/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A03/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A03/2/2_Spare_Drone_Batteries.pdf": [
-"7aeb39a4349e07627e73a123617dea75662f46117c4ef1912e2c03f6057a9066",
+"150cef81b4bf4f4cdd19f12bebcfe8bb38e483ecad660c9a3f4b5f32e4ad697a",
 "student/Mock_A03/2/2_Spare_Drone_Batteries.pdf"
 ],
-"Mock_A03/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A03/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A03/3/3_Ruler_With_Few_Marks.pdf": [
-"9659a35b9f5b392104a020d68a63297cfa524d869dab2358db5dcbc05265dab1",
+"64180cb8d4fd66010b4431fc906f0ecfbbd2044550606b7e6c01df4d7df39bd4",
 "student/Mock_A03/3/3_Ruler_With_Few_Marks.pdf"
 ],
-"Mock_A03/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A03/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A03/4/4_Reassigning_Shifts.pdf": [
-"0f2f47f400a16c13aa1e97671a6876038ca680c3e50090a96ecbfbd7ebebfd05",
+"b448df1b54392178a737f11863098ebd85e585693444a853a93a992b5ae77de8",
 "student/Mock_A03/4/4_Reassigning_Shifts.pdf"
 ],
-"Mock_A03/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A03/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A03/5/5_Diamond_Sprinklers.pdf": [
-"14a61881911ff4d1139d1d517ef02967557a8b02ed8bc9866f0a5d1e9d2de346",
+"8a14908b7409cf9beb782d0df9edafc9dab72d6460f96ee89f08f7cfbb6b6176",
 "student/Mock_A03/5/5_Diamond_Sprinklers.pdf"
 ],
-"Mock_A03/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A03/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A03/6/6_Dishes_That_Cool_Down.pdf": [
-"625c1a6c29f28f0dd089f4394475eb84f6eb28a3e67415d976147f0478f2cb09",
+"6eea5563d906464f62cfd0a95c2fcc6f100290a14847c7788b68cc250c14a0db",
 "student/Mock_A03/6/6_Dishes_That_Cool_Down.pdf"
-],
-"Mock_A03/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A03/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_A03/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_A03/Mock_A03.pdf": [
-"718c1d6bf8690e0ca97a0453732c709e15c33a74ff56bb71dceb068e99dd8ba0",
+"6d022a6e5d61ecf993a649a56494a41eebcfec9a76f3df77bd31bce71a551259",
 "student/Mock_A03/Mock_A03.pdf"
 ],
 "Mock_A03/judge.bat": [
@@ -6293,83 +6149,35 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A04/1/1_Free_Stalls_Around_the_Market.pdf": [
-"1d789daf91b111969ed7163f91e54ef10c2aa9807fb6d231ad37b6396236f2a5",
+"7f760abdc845e3f9d2d73d0c994fab74fada50804920f3e176e6843568c60724",
 "student/Mock_A04/1/1_Free_Stalls_Around_the_Market.pdf"
 ],
-"Mock_A04/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A04/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A04/2/2_The_Lava_Level.pdf": [
-"a57115c17bafae217ecf4c6a8dd87030218762ff1e2eed28aa7da0441f5192d2",
+"6553ba8ab2dbf2cdb8d1a5cf81231c7a5f2052789376f9de5890d2e91ffa23ee",
 "student/Mock_A04/2/2_The_Lava_Level.pdf"
 ],
-"Mock_A04/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A04/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A04/3/3_Placing_the_Health_Stations.pdf": [
-"e96059344280031653e4bdccbde7d8eb42eb52e039e57732f5cb6cefeb346b0e",
+"7fb0bc4427b20b4a65a854f5302a8229e3745810198117a51b451ff0516ab524",
 "student/Mock_A04/3/3_Placing_the_Health_Stations.pdf"
 ],
-"Mock_A04/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A04/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A04/4/4_Three_Heirs.pdf": [
-"cff19944b9434750aae240cd35bf485c9d9744b24021d4e04cf727b9ae4db71c",
+"9957123502931875ce3df906167010da9e234543d4860426ce5af867e66b7c01",
 "student/Mock_A04/4/4_Three_Heirs.pdf"
 ],
-"Mock_A04/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A04/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A04/5/5_Colourful_Districts.pdf": [
-"8249f710fd5c7c57b41a63de27793d9e9d495e63fc242bff5c15c16833944c6b",
+"cf01509ac521dd1af558ee6aeaf8fd60f7fdbee1ff4050914583c9af5f71f19c",
 "student/Mock_A04/5/5_Colourful_Districts.pdf"
 ],
-"Mock_A04/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A04/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A04/6/6_The_Last_Seats.pdf": [
-"3887767dba2de34ef69f407df4a7285bcd47cc1c85eae567356323659c822e4f",
+"922e6a01d08318f28158916a63bc553f88277b1018a66303a561c518b99e0610",
 "student/Mock_A04/6/6_The_Last_Seats.pdf"
-],
-"Mock_A04/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A04/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_A04/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_A04/Mock_A04.pdf": [
-"ed4bce47e1f68545f800406ec606f9bee4620d922b43935bb6f1e66a217c423e",
+"821da0f574a960e09a73173013a54ca881908a32f91abf7021b1d50f2517e1ea",
 "student/Mock_A04/Mock_A04.pdf"
 ],
 "Mock_A04/judge.bat": [
@@ -6377,83 +6185,35 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A05/1/1_Compressed_Strings.pdf": [
-"d6220a23d7fc4bc56c508fa75a510c7759136320fb2c1e371d9ff56ee6c1a9c7",
+"4590006c7d595715b9b752e94afd2a42997cc56ab60693a94c2b00e1bb37638d",
 "student/Mock_A05/1/1_Compressed_Strings.pdf"
 ],
-"Mock_A05/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A05/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A05/2/2_Blown_Into_the_Traps.pdf": [
-"8471bf30363742af8f45fa6f5b7eb3b1bc82afd5e17b5f1e830850b05a283298",
+"2945d563fcba9b5ab1873730f05cf8b1095669beac1e955da78049b2b3a46027",
 "student/Mock_A05/2/2_Blown_Into_the_Traps.pdf"
 ],
-"Mock_A05/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A05/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A05/3/3_Repeated_Chant.pdf": [
-"d9ab14d40529c19474ae86b7937bee08ccb25e2a71f7ff279e2d2be685220e6b",
+"957336188db84d4b918964a8de48a85b8370e9031bdfb7a247412575956c5159",
 "student/Mock_A05/3/3_Repeated_Chant.pdf"
 ],
-"Mock_A05/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A05/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A05/4/4_Switching_Boat_Companies.pdf": [
-"558de0b0bc6f6f88318d276772f0ff8a10c2d73055742877b40ce1984f021562",
+"5d066189ade5730729809709ebb7e7f92d6682bcd8281c455d88cd1c233af902",
 "student/Mock_A05/4/4_Switching_Boat_Companies.pdf"
 ],
-"Mock_A05/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A05/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A05/5/5_Not_Too_Big_a_Team.pdf": [
-"639d75748d4937482c0b655796b69327539378ebc2288acbee27145b9c3bcc1c",
+"bf777d16315d0726dab6b8916687c36c05b57844044a6490105978598df28aac",
 "student/Mock_A05/5/5_Not_Too_Big_a_Team.pdf"
 ],
-"Mock_A05/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A05/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A05/6/6_Repair_Convoys.pdf": [
-"fe24a20ac958e8324100a9e12f5a8fcb224400b71e5f084282f43364c90ec625",
+"740f164bf3f532798895cac17d9531707f44bfa2784a20ff165a1c32a54c9a06",
 "student/Mock_A05/6/6_Repair_Convoys.pdf"
-],
-"Mock_A05/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A05/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_A05/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_A05/Mock_A05.pdf": [
-"f4f0d3050710f30db9fa224d50069634204dcb0f8b099a7a92250540cfc84666",
+"a05b7a01dae9a5323747155f6f898c0e7c583afb7a98b4c9c66e972d69f4f5b8",
 "student/Mock_A05/Mock_A05.pdf"
 ],
 "Mock_A05/judge.bat": [
@@ -6461,83 +6221,35 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A06/1/1_The_FloorMopping_Robot.pdf": [
-"5467c90f63f1f484a0a2b7c3114c7491ee069e718048254ed2cc67ece47d2e58",
+"9187be878c2d93dbb96ce1278d88fd5560412a8f25d1140e3298a0c86e3bd045",
 "student/Mock_A06/1/1_The_FloorMopping_Robot.pdf"
 ],
-"Mock_A06/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A06/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A06/2/2_AllergyFree_Menu.pdf": [
-"1a2f332154a8c8bc45fc3bb434a3fc1fc1100c46b673048997c62248762399b5",
+"cd75f2de0e4749e5870a0e5af37c42821aef4d8de84cee62fda38f3ba5139e9f",
 "student/Mock_A06/2/2_AllergyFree_Menu.pdf"
 ],
-"Mock_A06/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A06/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A06/3/3_Every_Window_Has_Variety.pdf": [
-"cee5c7e025e379c056cae267f52102cd9a178563651c51227505d8b3bde25394",
+"5852ba1107a065e841e846e22de08e1698111d97d4974ab939545ab4592e875f",
 "student/Mock_A06/3/3_Every_Window_Has_Variety.pdf"
 ],
-"Mock_A06/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A06/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A06/4/4_Keyword_Highlighter.pdf": [
-"4f0fe9929bcdbd69d930ab4444047227d0fabf5930352ee2d15a1d741514a0e9",
+"6a939b31426541f78e0b6844cc2a5fa5bca4911935ecfac4069a4f009a86109b",
 "student/Mock_A06/4/4_Keyword_Highlighter.pdf"
 ],
-"Mock_A06/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A06/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A06/5/5_Fighting_Through_to_the_Boss.pdf": [
-"311aefa5769c7a3040afc2a1fd5defce67445a27fc7e41858323c21d52f5863c",
+"d17c0f3be4e28d64a81418c8d49fc7f4e010254d19ad3b14f35a73d128cccfe7",
 "student/Mock_A06/5/5_Fighting_Through_to_the_Boss.pdf"
 ],
-"Mock_A06/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A06/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A06/6/6_Festival_Shows.pdf": [
-"0db7960de87e4527a72a4ba13cf09c88eb3b38e8f99953a4c4d3e86bdc159fc9",
+"c52f2a30cf4c97719ec529e6daa14c3c6cb6362fa4b211cb2d646992896fde1e",
 "student/Mock_A06/6/6_Festival_Shows.pdf"
-],
-"Mock_A06/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A06/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_A06/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_A06/Mock_A06.pdf": [
-"66cd755b97683caa546c37a5474dee181c024ef8df76f9d876db55846a88a4ca",
+"57f2dec6c5ca699a7f64aaaf6d3dca94a04cfeb75157727c7a6dc520ceeade0c",
 "student/Mock_A06/Mock_A06.pdf"
 ],
 "Mock_A06/judge.bat": [
@@ -6545,83 +6257,35 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A07/1/1_Robot_Stop_Log.pdf": [
-"91ef20b5032459cd5804e8d811166858bc87657ebbea2ffe60642b742445efc7",
+"985431e81e6d73164a1d28ffece678d5b99152448fca651aac6b6d798c74c105",
 "student/Mock_A07/1/1_Robot_Stop_Log.pdf"
 ],
-"Mock_A07/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A07/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A07/2/2_A_Team_for_Three_Subjects.pdf": [
-"3d850eb11f065855cbfcc91c0643510a44c0e5bb922adf66539c215deb12a285",
+"42fd0f929ca952a791d1abd037dcf6ac057d0d7887f054dfb00e8b46f2cb7af8",
 "student/Mock_A07/2/2_A_Team_for_Three_Subjects.pdf"
 ],
-"Mock_A07/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A07/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A07/3/3_Signal_Towers.pdf": [
-"0553f9808155453b68068cf38cb27f716228e6f1d01f3730b7053e9f36933525",
+"c8a25931ea16391460f3483cc5766bd62bc4c6e63a5f5be11205eaa207358218",
 "student/Mock_A07/3/3_Signal_Towers.pdf"
 ],
-"Mock_A07/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A07/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A07/4/4_Robot_With_Few_Turns.pdf": [
-"0af44a91730f0a78bfa3b3580dd5c9484b7e1f71031102fd693d67be29051bfd",
+"c6f91c724abae97566d4e886a7c12015c807ec62b6b5b4854f0911758bb0d905",
 "student/Mock_A07/4/4_Robot_With_Few_Turns.pdf"
 ],
-"Mock_A07/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A07/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A07/5/5_Forgotten_Password.pdf": [
-"63ae740451bc40b21ecdf32af63b0a73321608f9650aa971a4af3263a54e65b2",
+"e6ea3c2716751bcf8f2e22b91e1d67c2e57ef426bb2e1a57181659e2b4aed9ba",
 "student/Mock_A07/5/5_Forgotten_Password.pdf"
 ],
-"Mock_A07/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A07/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A07/6/6_The_Marble_Prize_Board.pdf": [
-"cd3d04a2b4def3160ce41dddddb4428a44b1bd02f281071fd99b3dfffcc556f2",
+"e658bf67a93bfe4c0394abef3409fbdf7a3fca83b60a11cb8332a51320dd7ba9",
 "student/Mock_A07/6/6_The_Marble_Prize_Board.pdf"
-],
-"Mock_A07/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A07/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_A07/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_A07/Mock_A07.pdf": [
-"2b5792f91d92dff3122154f7446cc6171c71d0e5f0d38e25ab3f8c8329916ebf",
+"8aabfc8833fd31e1a405c7d891049c2aa46d6f6f562b78f3381f10c9f959eb11",
 "student/Mock_A07/Mock_A07.pdf"
 ],
 "Mock_A07/judge.bat": [
@@ -6629,83 +6293,35 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A08/1/1_Pipe_Cutting_Shop.pdf": [
-"280aafaa45a451123af7908e9490b689024de4739615cdf8f0b124c64f896440",
+"08faa129307ed6115b411c0130339662d84a590f9bcde689be2f4448d3421aa8",
 "student/Mock_A08/1/1_Pipe_Cutting_Shop.pdf"
 ],
-"Mock_A08/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A08/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A08/2/2_The_Apprentice_Mechanic.pdf": [
-"b9d3dfd7908c637d183361ec9d2c3c65b71efabc5d8df3a3b097b2801c806446",
+"c1722f076745203bf68e7a78d60c9ad426960ee1c29dc498d30d2cc043d69d16",
 "student/Mock_A08/2/2_The_Apprentice_Mechanic.pdf"
 ],
-"Mock_A08/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A08/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A08/3/3_Discount_Coupons.pdf": [
-"40b521365a177a2455cfb67ed2da09b9322e2ea4fd4fc2378e21d2b85ea86dfd",
+"4cb83ff86d51b3be4cf6c93d6c76ee99a41cc9a41bf5aab63efcec7cfd1f6b4d",
 "student/Mock_A08/3/3_Discount_Coupons.pdf"
 ],
-"Mock_A08/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A08/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A08/4/4_One_Extra_Cable_Car.pdf": [
-"29714c83fd0c500bf7eb6a7ab501ea8bdd28dea74e5cc960861ba2324971ee85",
+"dcd3efa1bdc92e54914c66c36abe1c34c9a6117a28688f0146dc9351dc1811f4",
 "student/Mock_A08/4/4_One_Extra_Cable_Car.pdf"
 ],
-"Mock_A08/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A08/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A08/5/5_The_FourStation_Rally.pdf": [
-"6c4a455bca6115f3489613852856b0955e44662d043908e46fe6c1565c8719b5",
+"c590f105e3b2c57c247cfa3fb5aae6102893f58ec4ead9a82c5d8e8056c94948",
 "student/Mock_A08/5/5_The_FourStation_Rally.pdf"
 ],
-"Mock_A08/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A08/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A08/6/6_OneWay_Bike_Lanes.pdf": [
-"4f5d0ed59a82604c2437f695edd4c6f5db023b1eb7ddceee4e2241b700992a22",
+"e553eb65f4a5e1b6085c46f02c3f5ba1d5acef357831d414e8fdc23ce4bdae1e",
 "student/Mock_A08/6/6_OneWay_Bike_Lanes.pdf"
-],
-"Mock_A08/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A08/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_A08/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_A08/Mock_A08.pdf": [
-"4a8704391f0dbc66a1e552e59bc9c3de510be3c453213e09535347eb06e9fed6",
+"d94c2735ae96f1b1dd12ea78a255377883574c9d4f4bcd289b7d660313d91e02",
 "student/Mock_A08/Mock_A08.pdf"
 ],
 "Mock_A08/judge.bat": [
@@ -6713,83 +6329,35 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A09/1/1_On_the_Edge.pdf": [
-"b64c7e2a1a76d12df3eec91049450cada92091a87e4bad0f9a97dbba2bb3093d",
+"330bfb9702bb4ef6fd7c0041e5d83cd2bc18c13fa526676a18b28797218a0d4c",
 "student/Mock_A09/1/1_On_the_Edge.pdf"
 ],
-"Mock_A09/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A09/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A09/2/2_Parking_Lot_Logs.pdf": [
-"507d7efef717bb0e1a955e4dd78af87b501b292237304f6c4b3dc510a730b4bd",
+"ef70089a37c5ead800c561437ed85832a27bf78c31353d852e368e651c83421c",
 "student/Mock_A09/2/2_Parking_Lot_Logs.pdf"
 ],
-"Mock_A09/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A09/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A09/3/3_Wages_and_Homework.pdf": [
-"fb9f37097ca1116f338dca7f9fc48e0c437f627a5e61dab853d2e5be585e8876",
+"c0eec052954b8334afeb69d74cb74aad593f5fc9b51369780d3872cb04d1aba5",
 "student/Mock_A09/3/3_Wages_and_Homework.pdf"
 ],
-"Mock_A09/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A09/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A09/4/4_Robots_Into_Order.pdf": [
-"d7953d6172135e47b31de9ef8a4c882b2feb6c33e00049c25d2994972465961d",
+"b536e5ceb5764258b438b0677610634beb9b488fa9749e1938f033c4ca363171",
 "student/Mock_A09/4/4_Robots_Into_Order.pdf"
 ],
-"Mock_A09/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A09/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A09/5/5_The_Paper_Umbrella.pdf": [
-"fb7fc8c1ac228df17f0800dab87ecee43cdcf461731518fd0aa643ae06efd840",
+"6999e9daf4712e37fcde6f1069e76d0d52aa14a9e6a711b94f1b95c05423241e",
 "student/Mock_A09/5/5_The_Paper_Umbrella.pdf"
 ],
-"Mock_A09/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A09/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A09/6/6_The_Shelf_Beside_the_Kiln.pdf": [
-"c2ff3e9e6a4c5fb5ff1f00249cb6e776e49474cc88769494fe7d357154eecd40",
+"cb25c9b0ea89d8a24709acbb540726c6d0ba169aa202ca37ea5cd5755e62aea5",
 "student/Mock_A09/6/6_The_Shelf_Beside_the_Kiln.pdf"
-],
-"Mock_A09/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A09/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_A09/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_A09/Mock_A09.pdf": [
-"91435c2090216748b4b29a3d325ee1ed184dd973308dd0a47634a69aaab1db34",
+"d7a4af0e2e9506179a89979d9b75308ec142034f146df9bd81eacf61c7b828eb",
 "student/Mock_A09/Mock_A09.pdf"
 ],
 "Mock_A09/judge.bat": [
@@ -6797,83 +6365,35 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A10/1/1_Keyboard_Slips.pdf": [
-"38197e443d49d76bdd78b5ea45041727fa2745f8a8c2ae65fdc98ff58289ff7f",
+"33750bc3676d3970a2c576e319e9b5f86caf351a24457c09543bf30715a039f9",
 "student/Mock_A10/1/1_Keyboard_Slips.pdf"
 ],
-"Mock_A10/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A10/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A10/2/2_Mountain_Descent_With_One_Long_Jump.pdf": [
-"1bc030aaf491c87911e23ffd714c6a75ef13da92b3468f1932ae0aa864a34097",
+"23a8c30ca0ea6e005e6b6acce2797fd586ba9666bcbd717bddd69993309170a8",
 "student/Mock_A10/2/2_Mountain_Descent_With_One_Long_Jump.pdf"
 ],
-"Mock_A10/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A10/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A10/3/3_Every_Kth_Day_Free.pdf": [
-"2bdc09fa0fc5d7783b3adbab18d32ec997f8f8cd76c52e37a830a29766bc9725",
+"e62ef29d7ac7dff8a75f9e53a7a4a020340e965e4d75eb1878abe45a9e7d9d73",
 "student/Mock_A10/3/3_Every_Kth_Day_Free.pdf"
 ],
-"Mock_A10/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A10/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A10/4/4_Course_Plan.pdf": [
-"e0dbee6806a1698a858889e20cb59f07cd46ac98382a4786b0e3e45612dec977",
+"d1feae79459bbe9ae362bad666c1669f510d888a432180a18d100c62255d9c8a",
 "student/Mock_A10/4/4_Course_Plan.pdf"
 ],
-"Mock_A10/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A10/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A10/5/5_Drawing_From_the_Pile.pdf": [
-"e255634f0bc34f19e68b4fa65adb3d8ec9d0c2f4353b501a960815b2581d3577",
+"738abc7f0252cfd46f7b3fbd03947104b899d882aa6a0e5964ca22e88583e56e",
 "student/Mock_A10/5/5_Drawing_From_the_Pile.pdf"
 ],
-"Mock_A10/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A10/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A10/6/6_Cards_There_and_Back.pdf": [
-"e420a800c4b5295758b6abde8765cd6298c7edcbed701468430d30495eb54fbd",
+"da4d27d09e57342c506df854fe89e6e9e493f7a77ab62fa8e9a1c92f4ba2d6b4",
 "student/Mock_A10/6/6_Cards_There_and_Back.pdf"
-],
-"Mock_A10/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A10/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_A10/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_A10/Mock_A10.pdf": [
-"6ec0e709e87e9ab4c4d7de33ab853fa6612ac4f57efd62092f19dab1565c4a61",
+"93a88b0ee80b9b2f2003ab75b51c492ba523f953e378f7c3d2a9b6e8912bebdb",
 "student/Mock_A10/Mock_A10.pdf"
 ],
 "Mock_A10/judge.bat": [
@@ -6881,83 +6401,35 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A11/1/1_Seedlings_From_Three_Nurseries.pdf": [
-"3af99259b98ad3b7dbba08c7fd3054e45cadc84e2d318d99f4cf6b43fe56aa12",
+"aa672271a01ff3b23be6ee46cf5a38ce94675f0898ac4dacff1fcd36a4b2d2b9",
 "student/Mock_A11/1/1_Seedlings_From_Three_Nurseries.pdf"
 ],
-"Mock_A11/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A11/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A11/2/2_Village_Land_Claims.pdf": [
-"8ac11b7322ca6514a78e65fe8490e339c2cd02b99fc5206c20f6d4bda9dff84e",
+"85a20356057371827fa87114178fe42c5bc741704dc26636e3e83ee0f18a73f0",
 "student/Mock_A11/2/2_Village_Land_Claims.pdf"
 ],
-"Mock_A11/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A11/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A11/3/3_Choosing_Committees.pdf": [
-"65b6e4a72d6272317cc6ea813f47849b486dd0d365b62fe8db3db4cee24f481a",
+"f5af096fb17cfde2153787fee25df79a4b695aff07d164d8bfd504890c444fb8",
 "student/Mock_A11/3/3_Choosing_Committees.pdf"
 ],
-"Mock_A11/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A11/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A11/4/4_Fixing_a_Message.pdf": [
-"6c6015b3154ff942903b4f2c7040064933838c4b651b52627f22d1904153726a",
+"c39acdae7178f263a75d7967dedec41b3603d6e977c275c778aa103661d190ce",
 "student/Mock_A11/4/4_Fixing_a_Message.pdf"
 ],
-"Mock_A11/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A11/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A11/5/5_Spreadsheet_With_Loops.pdf": [
-"312a491e003989cfa6a50a13718a05165609711a8fc80de7e29f4ce92cd37550",
+"60c55c9ce8e998a7c98632e89aaebfe280f46a65509a2e5be2451f862b30ebc1",
 "student/Mock_A11/5/5_Spreadsheet_With_Loops.pdf"
 ],
-"Mock_A11/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A11/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A11/6/6_Lanterns_Along_the_Canal.pdf": [
-"cfdcee9cffa9019fcc71f1f04d6fc0a001a3534f26c0e09353455a14ee66fb8b",
+"1bf4abc07cc45834ee02996546b405994148dbbcd2ba19b57d6fa8831ef76a53",
 "student/Mock_A11/6/6_Lanterns_Along_the_Canal.pdf"
-],
-"Mock_A11/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A11/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_A11/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_A11/Mock_A11.pdf": [
-"19f16ccc1403a79f80d22ce8c1fb8d8c5ba189ce2aabc877ae8acf4a80592fef",
+"33f75c6dfa90a77ee5e685f8b08ea8ebd971496156bbce2366f14f702a3dc2d1",
 "student/Mock_A11/Mock_A11.pdf"
 ],
 "Mock_A11/judge.bat": [
@@ -6965,83 +6437,35 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A12/1/1_Mango_or_Longan.pdf": [
-"0d1945d12773b15549914876f807f8c848fd83a5a87de6f382abc0ebc4ec501b",
+"acb7bae6cc7b843f3b86c9ae0fca1b0bc99972fd01d158bdae834bd9ba4b1775",
 "student/Mock_A12/1/1_Mango_or_Longan.pdf"
 ],
-"Mock_A12/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A12/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A12/2/2_Lucky_Wheels.pdf": [
-"308d710bda29b301f18d08dddfdbbb15524e4634a93ce42ed9047478fcd90de8",
+"29fa9648bfa9fb642abe33247f47110f8f02cc68e0b462b0f06528375d782351",
 "student/Mock_A12/2/2_Lucky_Wheels.pdf"
 ],
-"Mock_A12/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A12/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A12/3/3_Sports_Day_Photo_Line.pdf": [
-"eec354699c95c1bf22774b3b2dfee69537f943a7c08f9d95d6674af6f6915853",
+"0a5ee614218f305a8fa8de7107fb006658a9a186e7c620481a332940fb654093",
 "student/Mock_A12/3/3_Sports_Day_Photo_Line.pdf"
 ],
-"Mock_A12/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A12/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A12/4/4_Walks_of_Exact_Length.pdf": [
-"494964f71f224640dba463b792cdcac8a27c67054f64e72d34c9e0d369ad3cf1",
+"27aa8314876726d8b641fe8a0c62501171a392280e6f1740864183b22a086072",
 "student/Mock_A12/4/4_Walks_of_Exact_Length.pdf"
 ],
-"Mock_A12/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A12/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A12/5/5_Cutting_the_Pearl_Necklace.pdf": [
-"59f7c41aa4f69dddad84dcfbe913e51634c5b74439cd0e0435b857d3c33f45e9",
+"0a5893f28b446644abaee381a5dbb034e74c4d2b902c8ba9cee0c685c2dc7fc1",
 "student/Mock_A12/5/5_Cutting_the_Pearl_Necklace.pdf"
 ],
-"Mock_A12/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A12/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_A12/6/6_Print_Shop.pdf": [
-"5106983b9709318c55125c4c07f270893d56501915a793b5efb1ab8270397c23",
+"4fd0cf7b2fe1c0c4cc3f4995c1c445040577034742dc550f48246e29ed85ebd2",
 "student/Mock_A12/6/6_Print_Shop.pdf"
-],
-"Mock_A12/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_A12/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_A12/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_A12/Mock_A12.pdf": [
-"875867c0c16f0e14d35debdfd8b75aaaf870db8fc3bdbc4d4b45b5a39cdfa81f",
+"5ec977f3f39ec3b21a79cd2f28e628dfcf4dfc87ac7b843174f798586e5a5700",
 "student/Mock_A12/Mock_A12.pdf"
 ],
 "Mock_A12/judge.bat": [
@@ -7049,83 +6473,35 @@
 "student/set_files/judge.bat"
 ],
 "Mock_B01/1/1_Trimming_the_Hedge.pdf": [
-"4096545d93da4e77c15871a31a5c83fe22811d63bb28222f423ad0373927bef0",
+"2e24e63dc91c0fd096ca701e0ecd8f17da6874bc4d5afc6058a8fd6bbfa78ab2",
 "student/Mock_B01/1/1_Trimming_the_Hedge.pdf"
 ],
-"Mock_B01/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B01/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B01/2/2_SingleFile_Shuttle.pdf": [
-"c58ec4e0844ee6fa93ce0698fd45d7751d1dd3a26e7e41d2f6b4c1ed33f4a9bb",
+"ee9c01d7bb76f172301eac53dcf984e6f626f8f5ef4aedd8497ef3eab33a1423",
 "student/Mock_B01/2/2_SingleFile_Shuttle.pdf"
 ],
-"Mock_B01/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B01/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B01/3/3_Cables_Across_Companies.pdf": [
-"9db13cb6d9c9e228ea5eb1685b7a5adecc79209ad5b04f04dc7847e883f6d124",
+"f432bbeee41adb0cffb94322a992a053dc8b96905b2a01b35e1bb0c021d30862",
 "student/Mock_B01/3/3_Cables_Across_Companies.pdf"
 ],
-"Mock_B01/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B01/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B01/4/4_Two_Trips_of_the_School_Van.pdf": [
-"3927aafe9597845b203b2e56fa1c3d3289e692bcc1d5146d63c9c99392545da9",
+"1be58ed63ced5e97780382e4db409fbbb10996eee84437ab197633b4c87570f9",
 "student/Mock_B01/4/4_Two_Trips_of_the_School_Van.pdf"
 ],
-"Mock_B01/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B01/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B01/5/5_Concert_Carpool.pdf": [
-"6a3ecbb96472bd589aa26038da2429e1923993176607782a95a4a9e09c511df8",
+"146c1a2ff298e197a935c3bf057f88df47645b461c38ef89ecc706702efe1168",
 "student/Mock_B01/5/5_Concert_Carpool.pdf"
 ],
-"Mock_B01/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B01/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B01/6/6_Tour_Around_the_Courtyard.pdf": [
-"bae537d3cf6163baf3d811813e8dd8966b1c62c3b2ff5da9d74cb229c2029558",
+"bfc9d82f3f22ed63baf722e17cea69271c414aa908660baa89a09388b53c9e43",
 "student/Mock_B01/6/6_Tour_Around_the_Courtyard.pdf"
-],
-"Mock_B01/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B01/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_B01/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_B01/Mock_B01.pdf": [
-"8b1593a28f98d1ee54aa2d4ff22888ff781903cd16024b617e9a3c9cb2e54f67",
+"57edb1cc2a330726257946f4be2de444811f51b56734196baffc06cc18d9eecc",
 "student/Mock_B01/Mock_B01.pdf"
 ],
 "Mock_B01/judge.bat": [
@@ -7133,83 +6509,35 @@
 "student/set_files/judge.bat"
 ],
 "Mock_B02/1/1_Star_Flares.pdf": [
-"a0db5cdcf9cf95cb7a14536994added23d9d08bb4324d506a515a2d470449a22",
+"16498f74533f5acbc5ef09ab64cb3ce5e3bca3d9179e1b8c6fd4638367418f10",
 "student/Mock_B02/1/1_Star_Flares.pdf"
 ],
-"Mock_B02/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B02/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B02/2/2_Crossword_Fill.pdf": [
-"77693fd28e184f71b80a87e61ad4aaf55d726f8f9c757c13f5e8078c5259a5cb",
+"bdff199dc5735789d55a5908c51fa92287645ad343b7862a75022bce1f1b1f87",
 "student/Mock_B02/2/2_Crossword_Fill.pdf"
 ],
-"Mock_B02/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B02/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B02/3/3_Skyline_From_the_Corner.pdf": [
-"95a42b96d8849e0cdefce4752e9f72a9622589e68c08adcf8e25d40db022d33b",
+"b403a4b51f98ea5d611215fdf2cae658e61222ed525c11f3924564559ad71c58",
 "student/Mock_B02/3/3_Skyline_From_the_Corner.pdf"
 ],
-"Mock_B02/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B02/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B02/4/4_Exactly_K_Branches.pdf": [
-"06f9321961a4ce4fa52500fa4b7df0c813cd0e7a51454455c3c0142527412d59",
+"39608dad123b3ea0067dac4452663125d3c8d1f6a7f7953636cf763fc0acf6ec",
 "student/Mock_B02/4/4_Exactly_K_Branches.pdf"
 ],
-"Mock_B02/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B02/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B02/5/5_One_Card_to_Fix.pdf": [
-"6fbe9ec9d7d5cbabd420ab3a79a2f39ecf1fc4a424f7733732830c176bbbadf2",
+"9d8badce17e36459b3190a190139cadf5aa14c4c9ed143243df8c606cbd3a665",
 "student/Mock_B02/5/5_One_Card_to_Fix.pdf"
 ],
-"Mock_B02/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B02/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B02/6/6_The_Longest_Ride.pdf": [
-"cdfd6199bd224f3e0a271969f4205b6f5e5c8d1bac5bab931b9b08abb93660a5",
+"e99bc8bfd2455cfe0a240ee47ca89d058382553b2a6590595253d70a1a3e9f70",
 "student/Mock_B02/6/6_The_Longest_Ride.pdf"
-],
-"Mock_B02/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B02/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_B02/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_B02/Mock_B02.pdf": [
-"17a61bd8d7d2e9fc41aa167d6c9dad5c7494bff8dd25fa23216b619e5de4409d",
+"a4e558d20771c83d0f48a0cc8e468bb317623091d448a5f7c7f270e948a213ed",
 "student/Mock_B02/Mock_B02.pdf"
 ],
 "Mock_B02/judge.bat": [
@@ -7217,83 +6545,35 @@
 "student/set_files/judge.bat"
 ],
 "Mock_B03/1/1_Gallery_Arrangement_Number.pdf": [
-"4c0583eb5ebe955a82899cdedcef93c8cbd3a2356b495e8f4ab92225bb3ef6e5",
+"d02a73764c878f01dfb7761b7ebca88c65f08a5312a5dd22ba7c83f5151fcdc8",
 "student/Mock_B03/1/1_Gallery_Arrangement_Number.pdf"
 ],
-"Mock_B03/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B03/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B03/2/2_Ice_Rink_With_Brakes.pdf": [
-"377a169b37951ba342b8a3a8210a6fa5ae6c78417ad101aafeffabf4c9181d4e",
+"341331281fe0e6b3e5568e6565a4106943e92b459fb6c3c09c93e9d9edec6c3b",
 "student/Mock_B03/2/2_Ice_Rink_With_Brakes.pdf"
 ],
-"Mock_B03/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B03/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B03/3/3_One_Road_Past_Everyone.pdf": [
-"9e4f0e62dd35f73c47641ca1a07f3b961fd792392daa98a2643ab9abb5eed44d",
+"6e87a612fadd0b2f25b33f42ea3b395a79d57030b6452cf334fe276058b08256",
 "student/Mock_B03/3/3_One_Road_Past_Everyone.pdf"
 ],
-"Mock_B03/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B03/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B03/4/4_Splitting_the_Kingdom.pdf": [
-"52b50dda56572a48929c5ac517975a76301d24d32749ced49cbb2255ac2a16f8",
+"f92ec990aa2b03f05e169cf1fa3f1419ae97fb60f37d3a471b2301b3f2609120",
 "student/Mock_B03/4/4_Splitting_the_Kingdom.pdf"
 ],
-"Mock_B03/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B03/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B03/5/5_Up_and_Down_Photo_Plan.pdf": [
-"fc699bf7168263a5a985f254870aeaa18046b1d76af6c7703f0868ae60279e69",
+"9c4ff8370c1c498e36d52fee02df96e6e79e23fb91fe3456e5833b6720c39a50",
 "student/Mock_B03/5/5_Up_and_Down_Photo_Plan.pdf"
 ],
-"Mock_B03/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B03/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B03/6/6_Four_Badges.pdf": [
-"252c96a31db4905655fb318894b8c38f4b2a5671175ebd6c2ed1df767f10c9c5",
+"89498f736e9becc3f261ecebba186d54702fa9129afc1469c793e50810d5ab9e",
 "student/Mock_B03/6/6_Four_Badges.pdf"
-],
-"Mock_B03/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B03/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_B03/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_B03/Mock_B03.pdf": [
-"52074598ff21b474b30354e334a7281f640844af2c9b7c33c1e832a1b7e13bcf",
+"491e386761e6b4ea42ab66b6130d3d2c9e9ed7fc46c80f88c4f2322c2f5edd1d",
 "student/Mock_B03/Mock_B03.pdf"
 ],
 "Mock_B03/judge.bat": [
@@ -7301,83 +6581,35 @@
 "student/set_files/judge.bat"
 ],
 "Mock_B04/1/1_Rolling_Block.pdf": [
-"846f7561c369ee7ae98a75702677a90302e9f2ba3162a36fc8481fb6204a18d4",
+"dfae8110931db2e69e6e09d84cf1d4d9d27aa4924f7500f553f0985a3b4b05b6",
 "student/Mock_B04/1/1_Rolling_Block.pdf"
 ],
-"Mock_B04/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B04/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B04/2/2_Sharing_the_Song.pdf": [
-"d4dc7c14189d004c614441897fe006367c31bce6c4140ca5a5dcf1be89fdc34e",
+"2ffd5922f01f521146fd326d46a4754efbd61bd28cba7c8e55962754852220d1",
 "student/Mock_B04/2/2_Sharing_the_Song.pdf"
 ],
-"Mock_B04/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B04/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B04/3/3_Lamps_Around_the_Lake.pdf": [
-"c76f84fc2a6ca6ef58799beb2b856e30d07e12f8a3e21e5884049fb1630eba67",
+"019f09bd01d4ad6343e628017bc5e198b5dc87c489a1614353ed3353e2c9a176",
 "student/Mock_B04/3/3_Lamps_Around_the_Lake.pdf"
 ],
-"Mock_B04/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B04/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B04/4/4_Delivery_Drone.pdf": [
-"996b5e7aa295e0a3db7aadc6edf3108b3c234221f1e749f09905b25265b666a4",
+"ecd373a438dcaba25066fa2986e8e982ccc853de268a173dd9ff64d62de24740",
 "student/Mock_B04/4/4_Delivery_Drone.pdf"
 ],
-"Mock_B04/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B04/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B04/5/5_Aquarium_Temperatures.pdf": [
-"2b77b26eb8c22a46f058d4a42d6facba735411b9343b7ef5dc81fa9fc503de36",
+"2c0ee51b40d613693af3933ba22e44d5e33c16f3f1c44d6b4b3cfb590df7987f",
 "student/Mock_B04/5/5_Aquarium_Temperatures.pdf"
 ],
-"Mock_B04/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B04/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B04/6/6_Fireballs_and_Demons.pdf": [
-"406efba7f23ddd642ab4ffa0a20d4ac99c865e3e80270a2e8b8ce5d31091c83f",
+"4da04dbd61f6ea66d7c0546b022f0d310e20c99c387b9e600bc69f3305702617",
 "student/Mock_B04/6/6_Fireballs_and_Demons.pdf"
-],
-"Mock_B04/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B04/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_B04/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_B04/Mock_B04.pdf": [
-"23bc81980fc44290c67d457f8eb0fe328b2c62951774fd113cd71a399ce6e26a",
+"8670cf1f0c3b0cbf8fc02ab00559496e480046850b10e868190e2d31a5ae5f27",
 "student/Mock_B04/Mock_B04.pdf"
 ],
 "Mock_B04/judge.bat": [
@@ -7385,83 +6617,35 @@
 "student/set_files/judge.bat"
 ],
 "Mock_B05/1/1_Nonogram_Count.pdf": [
-"5c40a18818ec873103d3b0c6e517d2925e6c64d8acb0b1fdfae762018d182336",
+"17bca3ad934908802231c27f1055419f55a4533d5b95d8d1bd14afab3f1a0345",
 "student/Mock_B05/1/1_Nonogram_Count.pdf"
 ],
-"Mock_B05/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B05/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B05/2/2_Auditors_Ledger.pdf": [
-"b4bd338d3db9cd80fc88e238d7a812669d891e3a3942c274fb3f18e66bab14a0",
+"aa792c79dff9eb8c23c994aa9bee8538726b2f1d08b1c6c97593d30401c3d83f",
 "student/Mock_B05/2/2_Auditors_Ledger.pdf"
 ],
-"Mock_B05/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B05/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B05/3/3_Growing_Network.pdf": [
-"c0fed65cad70271b275c5fd41e884d1a686054d53de23865edb9ba9d1c8a7e00",
+"3513b6df19cb527fd04a2c73dfe7bf25237b573423b5def80901c96a69527937",
 "student/Mock_B05/3/3_Growing_Network.pdf"
 ],
-"Mock_B05/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B05/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B05/4/4_Radio_Station_Drill.pdf": [
-"5f5dba74733fed3e2a097703f8536b730a51d8676014bf9af40ae3ded0ee921b",
+"b2149b61287c1a6589b762c51b2152d143f94ce3df2d3cfa38822cb8c28e7f30",
 "student/Mock_B05/4/4_Radio_Station_Drill.pdf"
 ],
-"Mock_B05/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B05/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B05/5/5_The_Leader_Screen.pdf": [
-"91fda93340c1608bf51dc15aefb4f3f9a59daeb7bcce09fb5529f67aa308fbb3",
+"1aba2ad46ea98f85d5ddbfe413a01d28e0699552364961185d4e926aa74c39c9",
 "student/Mock_B05/5/5_The_Leader_Screen.pdf"
 ],
-"Mock_B05/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B05/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B05/6/6_Stage_Backdrops.pdf": [
-"0378b705b050fb16828def9e104d890644a543287d4c3ca324e5d2e3faed84a4",
+"928a09e2dc9137b7bc4173df3618a3ea45815f460fec070c25ffd99e32a0c27b",
 "student/Mock_B05/6/6_Stage_Backdrops.pdf"
-],
-"Mock_B05/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B05/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_B05/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_B05/Mock_B05.pdf": [
-"cb6db2ee11fb918a0468844c4d1c40f61addc691b48f8c97f1ac6c364cf5154c",
+"48c992bb29286080550e7eea47d11fe0e65dc4224a2d499909dba352a741debc",
 "student/Mock_B05/Mock_B05.pdf"
 ],
 "Mock_B05/judge.bat": [
@@ -7469,83 +6653,35 @@
 "student/set_files/judge.bat"
 ],
 "Mock_B06/1/1_Nearest_Shop_With_Updates.pdf": [
-"056213531828a9d1fae3b210744df8fccb5ff15562b79fb49aae0c6d78077c60",
+"5c4289c7e924da07d9c51fa8efb69c916a2b78784c236c6f767eeb3d932693af",
 "student/Mock_B06/1/1_Nearest_Shop_With_Updates.pdf"
 ],
-"Mock_B06/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B06/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B06/2/2_Moving_the_Parked_Cars.pdf": [
-"9efd3ab8edfb594871dd170034b7dc60aa3e0e73d0186fabc8d5f92894b6b25f",
+"a44537f9826ed767e997f12887623113e19ec68b4f5855bcaf927a4e7a7e5bcc",
 "student/Mock_B06/2/2_Moving_the_Parked_Cars.pdf"
 ],
-"Mock_B06/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B06/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B06/3/3_Relief_Truck.pdf": [
-"3e341bd4b985761552b9cf21cc8f82898396825236340c556667de7e6e4002ad",
+"97488a194a5a62453ac9452810daaa631d993e891764c45cd1815093060e9dc5",
 "student/Mock_B06/3/3_Relief_Truck.pdf"
 ],
-"Mock_B06/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B06/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B06/4/4_Splitting_Cells.pdf": [
-"eaa639c6f623bf7e236e2c3841fab4e516a6a9209aef748936ea229196c80adf",
+"3a1922d4d6fcfc60b18361afac9e260034e3dcc09fbf57e08035cc075be1cea5",
 "student/Mock_B06/4/4_Splitting_Cells.pdf"
 ],
-"Mock_B06/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B06/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B06/5/5_Vanishing_Card_Pairs.pdf": [
-"27f97f4fe4809a92fb01699bc3569bd2e289727101b6c804a6e4d5b75fccb373",
+"6cbfac9b950a1a6f5b6b4df9d4ed111d34f12d9fa86d59fd72601b0a9d81f8df",
 "student/Mock_B06/5/5_Vanishing_Card_Pairs.pdf"
 ],
-"Mock_B06/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B06/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B06/6/6_Honey_Rounds.pdf": [
-"e5590a00093e7f64580fafa611378f1446428934c3379536d37cb5cde7d6d9d3",
+"f24ff52e60e7a65fdcf3ef7554800ba5edbba02a2cd9dd533dae6c1e9a2d7d8b",
 "student/Mock_B06/6/6_Honey_Rounds.pdf"
-],
-"Mock_B06/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B06/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_B06/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_B06/Mock_B06.pdf": [
-"d0facbb7e8742da50db313fb45ec606e8958535b47a631f7ee234aa84e2363e0",
+"4a12e9d112daf23343bb5851d17d67edcbaf2c619fca641bde943800a2e91aca",
 "student/Mock_B06/Mock_B06.pdf"
 ],
 "Mock_B06/judge.bat": [
@@ -7553,83 +6689,35 @@
 "student/set_files/judge.bat"
 ],
 "Mock_B07/1/1_Weighted_Zigzag.pdf": [
-"6142a44723430023606e11be90950bbc23ab036cbea38c326f9b0fc1a5f7b999",
+"41715adfa87cb16319ca9daff9d333b8f846fcddf091772b57bdd97836d4640f",
 "student/Mock_B07/1/1_Weighted_Zigzag.pdf"
 ],
-"Mock_B07/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B07/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B07/2/2_Parcel_to_the_Capital.pdf": [
-"2c074ae231149d5d5bc190553e0f4769548bd5085935f532a8f2ac6ba89db0ce",
+"648f996849d29c9180c915f179cfd5dadf749de0a34d9eb4c405812633df979f",
 "student/Mock_B07/2/2_Parcel_to_the_Capital.pdf"
 ],
-"Mock_B07/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B07/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B07/3/3_Hills_in_View.pdf": [
-"35400c5fb6a92c3ffe5df894a3efbc9f3281be0f77c1e85917fd330395fa2ecf",
+"fe73dcafd1e3c34b1ed67d2a9b25a436973fa7fa7c08aa37d75890b2159c6599",
 "student/Mock_B07/3/3_Hills_in_View.pdf"
 ],
-"Mock_B07/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B07/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B07/4/4_Balanced_Districts.pdf": [
-"9b30e89cc204613747505b267e635d3f850a2f12f75d28309f7e0e12c1836255",
+"eb4c62d7f3cb0c4a8b4ebc2d61c7b832faa71e69a7527ff5f339985e2ab951e3",
 "student/Mock_B07/4/4_Balanced_Districts.pdf"
 ],
-"Mock_B07/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B07/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B07/5/5_Camp_Tents.pdf": [
-"1e1e7157aba8db07fc20f3fe3c2988c753719f4db55837b956050f1ce62ce8fa",
+"6121842a13d5a3afa602a1a48043e2187840f9cd4ae33b5224843621c2b04ea5",
 "student/Mock_B07/5/5_Camp_Tents.pdf"
 ],
-"Mock_B07/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B07/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B07/6/6_Introductions_Before_Moving_Out.pdf": [
-"f033ef4a7a1cd4da5f13d67575906debf45911d557ff1ad7fb63a757cfab9f91",
+"374ac97725026f79f1c5e51ae12aff75cc210940d72994c6e205216c61a5660d",
 "student/Mock_B07/6/6_Introductions_Before_Moving_Out.pdf"
-],
-"Mock_B07/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B07/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_B07/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_B07/Mock_B07.pdf": [
-"0979d605d2fe3b0dff286e7ae6e3d9e3ffc9ba5284d0fbeb63e4f84857c5ec0b",
+"44d0b654049b138df1d146195b8970c0a73ffdcb836fe9f88c492fad8a2de8ff",
 "student/Mock_B07/Mock_B07.pdf"
 ],
 "Mock_B07/judge.bat": [
@@ -7637,83 +6725,35 @@
 "student/set_files/judge.bat"
 ],
 "Mock_B08/1/1_Sports_Day_Colours.pdf": [
-"9b9b93f239c151310b6fbc01bd17be8c54d634e03d5af8c88da1cadb27f6d6ee",
+"bab1aa22f9d164f3c055f099343f7f29f32a2ef1d6926d41a016f3f003767162",
 "student/Mock_B08/1/1_Sports_Day_Colours.pdf"
 ],
-"Mock_B08/1/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B08/1/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B08/2/2_TeaPicking_Robots.pdf": [
-"6512fe8c400b150c9c538412e0c82d0d278545534615befd3a1b5527ecabe1d3",
+"ec59368ae6a3bb6a2ab3a8ca903c6946e3f245920e0b5aa74d3c6cd7e0c96e92",
 "student/Mock_B08/2/2_TeaPicking_Robots.pdf"
 ],
-"Mock_B08/2/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B08/2/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B08/3/3_Monkey_Gathering.pdf": [
-"c664950efc8df77a82c0e527f7f75d016706c9df73e4bbdef502d4fd2dff36ff",
+"c72d28b294b201aaf34373cbd1eaca7629d34256aa60b2a90bb7296072735107",
 "student/Mock_B08/3/3_Monkey_Gathering.pdf"
 ],
-"Mock_B08/3/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B08/3/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B08/4/4_Zone_Passes.pdf": [
-"6b9adca841366b0419cdff318ad3596754bfc36c0758334c3315beee411b9b05",
+"99867099108263e9120b353492196dfc1a667d740f155b561d65c332f75e01af",
 "student/Mock_B08/4/4_Zone_Passes.pdf"
 ],
-"Mock_B08/4/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B08/4/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B08/5/5_Leaky_Bucket_Line.pdf": [
-"f1174c9a02cab68323965132637a1fc436fd63e3bb8b192689abb2fa26dbc04e",
+"e3202d9fec700d3ed3366ce7762cbcc22d082b4bca79b3f0ad60780bfe61a48d",
 "student/Mock_B08/5/5_Leaky_Bucket_Line.pdf"
 ],
-"Mock_B08/5/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B08/5/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
-],
 "Mock_B08/6/6_Member_Codes.pdf": [
-"f49963f87f77d897f566d529f9ab432d3c7d818ca4e6b14cf5b9f8aee2b38056",
+"fddaa8725c083f2bacd80424f370bd156c54897f39000b8368558659f9334682",
 "student/Mock_B08/6/6_Member_Codes.pdf"
-],
-"Mock_B08/6/Makefile": [
-"53352e11e9e232276180fcb21aecc13ae91d7369fba65d702d81687581534d2e",
-"student/set_files/Makefile_problem"
-],
-"Mock_B08/6/judge.bat": [
-"e9f9366202ce59a574f54d34567a3bca6a8026e130aff44c38c70646959ad20d",
-"student/set_files/judge_problem.bat"
 ],
 "Mock_B08/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_B08/Mock_B08.pdf": [
-"cffffb06ea35a1af4b0cfdca3b7384eb29b69e604c6c8c04f9032c3543897477",
+"148f7e4e16909bb253150f3a80e731d5b2b31a960ba7014c623879546aca7562",
 "student/Mock_B08/Mock_B08.pdf"
 ],
 "Mock_B08/judge.bat": [
@@ -7725,7 +6765,7 @@
 "student/Progress.md"
 ],
 "README.txt": [
-"c3b9d4e519ee560620fcddc4c2d0919ac2d3e317b59f72fde1177d9703495b0f",
+"98489174ccb56350631189ca915cfca9ed036025a7fc6af790c793e4dd31a5e7",
 "student/README.txt"
 ]
 },

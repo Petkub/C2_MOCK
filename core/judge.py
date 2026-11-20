@@ -7,9 +7,10 @@ Layout of the package: one folder per problem, holding its code file and its sta
   Mock_A03/5/A03-5.cpp               set A3, problem 5      (Mock_A03/Mock_A03.pdf = the whole set)
 
 Usage (the judge is in Judge/ next to the set folders)
-  python3 ../../Judge/judge.py                 inside a problem folder (Mock_A03/5): judge that problem
+  python3 ../../Judge/judge.py                 inside a problem folder (Mock_A03/5): judge that problem (the folder
+                                               has no Makefile / judge.bat: those are in the set folder)
   python3 ../Judge/judge.py                    inside a set folder (Mock_A03): judge the whole set
-  python3 ../Judge/judge.py 5                  inside a set folder: judge problem 5
+  python3 ../Judge/judge.py 5                  inside a set folder: judge problem 5 (also: make 5, judge 5)
   python3 <path>/Judge/judge.py FILE.cpp       anywhere: the problem comes from the file's name (A03-5.cpp) or from
                                                its folder (Mock_A03/5/)
 

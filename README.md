@@ -20,7 +20,7 @@ problems/batch/        test data: Mock_K/N/01.in, 01.out, ..., gen.py, manifest.
                        + problems.json (problem bank) + sets.json (sets)
 student/               the rest of the student package: README.txt, Progress.md, .vscode/, Mock_A01/Mock_A01.pdf (whole
                        set), Mock_A01/3/3_<Title>.pdf (one problem), set_files/ (Makefile + judge.bat for a set folder,
-                       Makefile_problem + judge_problem.bat for a problem folder, template.cpp -> Mock_A01/3/A01-3.cpp)
+                       template.cpp -> Mock_A01/3/A01-3.cpp; a problem folder gets no Makefile / judge.bat)
 samples/               known-verdict programs used by the tests (expected.json says which verdict each must get)
 tests/run_regression.py          the test suite: run before every push
 tools/layout.py                  the names of the student package (folders, code files, PDFs): the one place
@@ -42,14 +42,14 @@ C2_Mock_Test/
     Makefile  judge.bat      whole set; make 3 / judge 3; make progress
     3/
       A01-3.cpp              their code: empty at first, created once, never replaced by the updater
-      3_<English_Title>.pdf  this problem alone
-      Makefile  judge.bat    judge this problem from its own folder
+      3_<English_Title>.pdf  this problem alone (the folder holds exactly these two files)
 ```
 The judge finds the problem from the code file's name (`A01-3.cpp`) or from its folder (`Mock_A01/3/`); students must
 not rename either. `tools/layout.py` writes these names down once; `judge.py` and `updater.py` hold the same rules
-(the tests compare them). Every problem folder has `Makefile` and `judge.bat`; to ship only the `.cpp` and the PDF
-there, set `PROBLEM_FOLDER_TOOLS = False` in `tools/build_manifest.py` (and update the two test lines that list
-the folder contents).
+(the tests compare them). A problem folder holds exactly its code file and its PDF (teacher's decision, 2026-11-20):
+`Makefile` and `judge.bat` are in the set folder only (`make`, `make 3`, `judge 3`, `make progress`), and the updater
+refuses a manifest that puts one into a problem folder. Inside a problem folder: Ctrl+Shift+B, or
+`python3 ../../Judge/judge.py`.
 
 **Two manifests, do not mix them up.** `manifest.json` at the repo root lists every file of `Judge/` for the
 updater. `problems/batch/Mock_K/N/manifest.json` lists that problem's tests with the SHA-256 of each input and
@@ -116,8 +116,8 @@ here. By hand, for a set `A13`:
 3. `problems/batch/sets.json`: append `{"set": "A13", "track": "A", ..., "problems": [ids in order]}`.
 4. `student/Mock_A13/Mock_A13.pdf` (the whole set) and `student/Mock_A13/<n>/<n>_<English_Title>.pdf` for each
    problem (the file name is `tools/layout.py` `pdf_name`; `build_manifest.py` stops if one is missing).
-5. Release. Existing students get the test data, the PDFs, `Makefile` and `judge.bat` of the set folder and of
-   each problem folder, and the updater **creates** the empty `Mock_A13/<n>/A13-<n>.cpp` (only ever created, never
+5. Release. Existing students get the test data, the PDFs, `Makefile` and `judge.bat` of the set folder,
+   and the updater **creates** the empty `Mock_A13/<n>/A13-<n>.cpp` (only ever created, never
    overwritten).
 
 ### 4d. Change something students see outside Judge/ (README, Makefile, judge.bat, template, Progress.md)

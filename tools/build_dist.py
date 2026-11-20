@@ -15,7 +15,7 @@ Layout produced (one folder per problem, tools/layout.py):
   C2_Mock_Test/Mock_A01/Makefile, judge.bat       from student/set_files/
   C2_Mock_Test/Mock_A01/3/A01-3.cpp               the student's code file: empty (student/set_files/template.cpp)
   C2_Mock_Test/Mock_A01/3/3_<Title>.pdf           the problem's own PDF, from student/Mock_A01/3/
-  C2_Mock_Test/Mock_A01/3/Makefile, judge.bat     student/set_files/Makefile_problem, judge_problem.bat
+                                                  (a problem folder holds exactly these two files)
 The zip holds the contents of C2_Mock_Test/ without the folder itself (see make_zip).
 The manifest is rebuilt first, so the zip and manifest.json always agree.
 """

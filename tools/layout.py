@@ -6,11 +6,11 @@ students' side (the regression test compares them).
 
   Mock_A01/                              set folder: "Mock_" + sets.json "set" (A01 ... A12, B01 ... B08)
     Mock_A01.pdf                         the whole set with its cover (timed practice like the real exam)
-    Makefile, judge.bat
+    Makefile, judge.bat                  whole set; make 3 / judge 3 = problem 3; make progress
     3/                                   problem 3 (1 ... 6)
       A01-3.cpp                          the student's code (create-only: empty at first, never replaced)
       3_Boxes_Within_Boxes.pdf           the statement of this problem alone (managed: replaced when it changes)
-      Makefile, judge.bat                judge this problem from its own folder
+                                         nothing else: no Makefile / judge.bat in a problem folder
 
 A folder name never changes when a problem is replaced or re-titled; the PDF's name follows the English title.
 """

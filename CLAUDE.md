@@ -60,7 +60,7 @@ C2_MOCK/
     Mock_A01/3/3_<Title>.pdf                        # one problem; all PDFs are written by C2_MOCK_SRC build.py all
     set_files/{Makefile, judge.bat}                 # in every set folder (a Makefile_<n> is used for a set of n != 6
                                                     # problems): whole set, `make 3` / `judge 3`, `make progress`
-    set_files/{Makefile_problem, judge_problem.bat} # in every problem folder, as Makefile / judge.bat
+                                                    # (a problem folder gets no Makefile / judge.bat)
     set_files/template.cpp                          # (empty) -> Mock_A01/3/A01-3.cpp
   samples/                      # known-verdict programs used as regression tests
     batch/towers_ok.cpp, towers_smallhi.cpp, towers_slow.cpp, towers_crash.cpp, towers_syntax.cpp
@@ -81,8 +81,9 @@ C2_MOCK/
 ```
 
 Student-side layout (what `build_dist.py` produces): `C2_Mock_Test/Judge/` = `core/` + `problems/`,
-and `C2_Mock_Test/Mock_A01/3/` = one problem: the student's `A01-3.cpp` (empty at first), `3_<Title>.pdf`, `Makefile`,
-`judge.bat`; the set folder also holds `Mock_A01.pdf`, `Makefile`, `judge.bat` (and `old/` after an update that
+and `C2_Mock_Test/Mock_A01/3/` = one problem: the student's `A01-3.cpp` (empty at first), `3_<Title>.pdf` and
+nothing else (teacher's decision 2026-11-20: no `Makefile` / `judge.bat` in a problem folder; the updater refuses
+such a path); the set folder also holds `Mock_A01.pdf`, `Makefile`, `judge.bat` (and `old/` after an update that
 replaced a problem the student had written). The repo layout is **not** the student layout.
 The judge finds the problem from the code file's name (`A01-3.cpp`, also `a1-3.cpp`: `problem_of_name`) or from its
 folder (`Mock_A01/3/`: `problem_of_folder`), the name first; both must keep working. Inside a problem folder, no
@@ -163,7 +164,7 @@ Propose the design and wait for approval before writing it.
 - Paths: only `Judge/`-relative, no absolute, no `..`, no `\`, no leading `.`, never `manifest.json` /
   `progress.json`. Outside `Judge/` only two kinds, each matched by a strict regex in `updater.py`:
   *managed* files students do not edit (`Mock_<S>/Mock_<S>.pdf`, `Mock_<S>/<n>/<n>_<Title>.pdf`, `Makefile` and
-  `judge.bat` of a set folder and of a problem folder, `README.txt`, `Guide.pdf`, `Progress.md`, `.vscode/*.json`)
+  `judge.bat` of a set folder only, `README.txt`, `Guide.pdf`, `Progress.md`, `.vscode/*.json`)
   are replaced when their hash changes (old copy in `Judge/.backup/_package/`);
   *create-only* files (`Mock_<S>/<n>/<S>-<n>.cpp`, S = `[AB][0-9]{2}`, n = 1..9: the set and the number in the name
   must agree with the folders, `SET_FILE`) are added only when missing. A `.cpp` can never be managed. Nothing is
@@ -225,7 +226,7 @@ python3 core/interactive_judge.py guess samples/interactive/guess_ok.cpp
 ```
 In a student package (`dist/C2_Mock_Test/`):
 ```
-python3 ../../Judge/judge.py             # in a problem folder (Mock_A03/5): that problem; also `make`, `judge`
+python3 ../../Judge/judge.py             # in a problem folder (Mock_A03/5): that problem (no `make` / `judge` there)
 python3 ../Judge/judge.py                # in a set folder: the whole set; also `make`, `judge`
 python3 ../Judge/judge.py 5              # in a set folder: problem 5; also `make 5`, `judge 5`
 python3 <path>/Judge/judge.py FILE.cpp   # anywhere: the problem from the file's name or folder (Ctrl+Shift+B does this)

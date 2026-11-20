@@ -7,13 +7,13 @@
     Judge/                               ตัวตรวจและชุดทดสอบ (ไม่ต้องแก้อะไรในโฟลเดอร์นี้)
     Mock_A01/                            โฟลเดอร์ของชุด A1 (Mock_A01 ... Mock_A12 = Track A, Mock_B01 ... Mock_B08 = Track B)
       Mock_A01.pdf                       โจทย์ทั้งชุด (หน้าปก + 6 ข้อ) ใช้ตอนจับเวลาทำทั้งชุดเหมือนสอบจริง
-      Makefile, judge.bat                ใช้ตรวจทั้งชุด
+      Makefile, judge.bat                ใช้ตรวจทั้งชุดหรือตรวจทีละข้อ (make 3 / judge 3)
       1/
       2/
       3/                                 โฟลเดอร์ของข้อ 3
         A01-3.cpp                        ไฟล์คำตอบของข้อนี้ (ชุด A01 ข้อ 3) เริ่มต้นเป็นไฟล์ว่าง เขียน code ลงไฟล์นี้ได้เลย
         3_<ชื่อโจทย์ภาษาอังกฤษ>.pdf        โจทย์ของข้อนี้ข้อเดียว (เนื้อหาเดียวกับในไฟล์ทั้งชุด)
-        Makefile, judge.bat              ใช้ตรวจข้อนี้
+                                         (โฟลเดอร์ของข้อมีแค่สองไฟล์นี้ ไม่มี Makefile / judge.bat)
       4/
       5/
       6/
@@ -48,14 +48,13 @@ Track B (ชุด B1–B8): ยากกว่าข้อสอบจริง
      ถ้ากด Ctrl+Shift+B แล้วขึ้นรายการ g++ / gcc ให้เลือกแทนการตรวจ แปลว่าเปิดผิดโฟลเดอร์
      เปิดไฟล์ที่ทำ เช่น Mock_A02/3/A02-3.cpp แล้วกด Ctrl+Shift+B (Mac: Cmd+Shift+B) = ตรวจข้อนั้น
      ตรวจทั้งชุด: Terminal > Run Task... > Judge whole set
-  ข) terminal ในโฟลเดอร์ของข้อที่ทำ (เช่น cd Mock_A03/3)
-       Linux / macOS     make          (ตรวจข้อนี้)
-       Windows           judge         (PowerShell: .\judge)   หรือดับเบิลคลิก judge.bat ในโฟลเดอร์ข้อนั้น
-  ค) terminal ในโฟลเดอร์ของชุด (เช่น cd Mock_A03)
-       Linux / macOS     make          (ทั้งชุด)   make 3          (เฉพาะข้อ 3)
-       Windows           judge         (ทั้งชุด)   judge 3         (PowerShell: .\judge 3)
+  ข) terminal ในโฟลเดอร์ของชุด (เช่น cd Mock_A03)
+       Linux / macOS     make 3        (เฉพาะข้อ 3)   make          (ทั้งชุด)
+       Windows           judge 3       (เฉพาะข้อ 3)   judge         (ทั้งชุด)   (PowerShell: .\judge 3 และ .\judge)
      หรือดับเบิลคลิก judge.bat ในโฟลเดอร์ชุดนั้น (Windows) เพื่อตรวจทั้งชุด
-  ง) เรียก judge ตรง ๆ (ทุกระบบ  Windows ใช้ python แทน python3)
+     ในโฟลเดอร์ของข้อ (เช่น Mock_A03/3) ไม่มี Makefile และ judge.bat จึงสั่ง make / judge ที่นั่นไม่ได้
+     ให้ตรวจด้วย Ctrl+Shift+B หรือสั่ง make 3 / judge 3 ในโฟลเดอร์ชุด หรือเรียก judge ตรง ๆ ตามข้อ ค)
+  ค) เรียก judge ตรง ๆ (ทุกระบบ  Windows ใช้ python แทน python3)
        ในโฟลเดอร์ข้อ      python3 ../../Judge/judge.py
        ในโฟลเดอร์ชุด      python3 ../Judge/judge.py   (ทั้งชุด)   หรือ   python3 ../Judge/judge.py 3   (เฉพาะข้อ 3)
        จากที่ใดก็ได้       python3 <ที่อยู่ของ C2_Mock_Test>/Judge/judge.py <ไฟล์ .cpp>
@@ -70,7 +69,7 @@ Track B (ชุด B1–B8): ยากกว่าข้อสอบจริง
   ดูหน้าสรุปเต็มในเทอร์มินัล:  VS Code: เปิดไฟล์ Progress.md แล้วกด Ctrl+Shift+B (Mac: Cmd+Shift+B)
                                หรือ Terminal > Run Task... > Show progress
                                make progress  ·  judge progress (Windows)  ·  python3 ../Judge/judge.py --progress
-                               (พิมพ์ในโฟลเดอร์ชุด ถ้าอยู่ในโฟลเดอร์ข้อ make progress และ judge progress ใช้ได้เหมือนกัน)
+                               (พิมพ์ในโฟลเดอร์ชุด ถ้าอยู่ในโฟลเดอร์ข้อ ใช้ python3 ../../Judge/judge.py --progress)
                                (ดูเฉพาะชุด A2: python3 ../Judge/judge.py --progress A2)
   ไฟล์คำตอบที่ยังว่างอยู่จะไม่ถูกนับ
   (ถ้าอยากได้ปุ่มลัดแยก เช่น Ctrl+Alt+P: Ctrl+Shift+P > "Preferences: Open Keyboard Shortcuts (JSON)" แล้วเพิ่ม

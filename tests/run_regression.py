@@ -9,7 +9,7 @@ that gen.py rebuilds and progress.json are never written into the repo.
 1. Package: no rebuilt tests and no progress.json are shipped.
 2. Student package (one folder per problem): the layout of every set and problem folder (tools/layout.py and
    judge.py agree), judging from the problem folder, from the set folder, by file name and by folder, the tracker
-   (scores by problem id), make / judge.bat / the VS Code tasks, nothing left behind (Judge/.build/ is empty).
+   (scores by problem id), make / judge.bat in the set folder / the VS Code tasks, nothing left behind (Judge/.build/ is empty).
 3. Every sample in samples/expected.json is judged and must get its verdict (and score, when given; that run
    also rebuilds the problem's big tests with gen.py and checks them).
    Verdict = CE if it does not compile, else the first non-AC verdict, else AC.
@@ -164,7 +164,7 @@ def test_layout(root):
             agree = agree and judge.code_name(s, i) == layout.code_name(s, i) and judge.slot_name(s, i) == layout.slot(s, i)
             agree = agree and meta[str(pid)]["dir"] == f"{d0}/{i}" and layout.entry_code_path(meta[str(pid)]) == layout.code_path(s, i)
             d = os.path.join(top, layout.slot(s, i))
-            want = {layout.code_name(s, i), layout.pdf_name(s, i, meta[str(pid)]["en"]), "Makefile", "judge.bat"}
+            want = {layout.code_name(s, i), layout.pdf_name(s, i, meta[str(pid)]["en"])}
             got = set(os.listdir(d)) if os.path.isdir(d) else set()
             if got != want:
                 bad.append(f"{d0}/{layout.slot(s, i)}: {sorted(got ^ want)}")
@@ -174,8 +174,8 @@ def test_layout(root):
                 with open(os.path.join(d, layout.pdf_name(s, i, meta[str(pid)]["en"])), "rb") as f:
                     if f.read(5) != b"%PDF-":
                         bad.append(f"{d0}/{layout.slot(s, i)}: not a PDF")
-    check(not bad and count == 120, f"every problem folder ({count}) holds its empty code file, its PDF, Makefile and "
-          "judge.bat; every set folder its PDF, Makefile, judge.bat and the problem folders 1 ... 6", "\n".join(bad[:8]))
+    check(not bad and count == 120, f"every problem folder ({count}) holds exactly its empty code file and its PDF "
+          "(no Makefile / judge.bat); every set folder its PDF, Makefile, judge.bat and the problem folders 1 ... 6", "\n".join(bad[:8]))
     check(agree, "judge.py and tools/layout.py name the set folders, problem folders and code files the same way")
     with open(os.path.join(root, "Judge", "manifest.json"), encoding="utf-8") as f:
         man = json.load(f)
@@ -282,10 +282,8 @@ def test_judging(root, tmp):
           "a missing file: the message says where code files live", f"exit {code}\n{out}")
     if os.name != "nt" and shutil.which("make"):
         env = dict(os.environ, PYTHON=sys.executable, NO_COLOR="1")
-        for cwd, args, want, what in ((prob, [], "ACCEPTED", "make in the problem folder"),
-                                      (set1, [TOWERS_N], "ACCEPTED", f"make {TOWERS_N} in the set folder"),
+        for cwd, args, want, what in ((set1, [TOWERS_N], "ACCEPTED", f"make {TOWERS_N} in the set folder"),
                                       (set1, [], " 100 / 600", "make in the set folder (whole set)"),
-                                      (prob, ["progress"], "Track A", "make progress in the problem folder"),
                                       (set1, ["progress"], "Track A", "make progress in the set folder")):
             r = subprocess.run(["make"] + args, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             out = r.stdout.decode("utf-8", "replace")
@@ -298,12 +296,11 @@ def test_judging(root, tmp):
         check(not bad, "make -n 6 calls judge.py 6 in every set folder", ", ".join(bad))
     with open(os.path.join(set1, "judge.bat"), "rb") as f:
         set_bat = f.read()
-    with open(os.path.join(prob, "judge.bat"), "rb") as f:
-        prob_bat = f.read()
-    check(b'"..\\Judge\\judge.py" %1' in set_bat and b'"..\\..\\Judge\\judge.py" %1' in prob_bat
-          and b'cd /d "%~dp0"' in set_bat and b'cd /d "%~dp0"' in prob_bat
-          and all(b.count(b"\r\n") == b.count(b"\n") > 5 and b'if "%~1"=="" pause' in b for b in (set_bat, prob_bat)),
-          "judge.bat (set and problem folder): quoted paths, runs from its own folder, passes %1, CRLF")
+    check(b'"..\\Judge\\judge.py" %1' in set_bat and b'cd /d "%~dp0"' in set_bat
+          and set_bat.count(b"\r\n") == set_bat.count(b"\n") > 5 and b'if "%~1"=="" pause' in set_bat,
+          "judge.bat (set folder): quoted paths, runs from its own folder, passes %1, CRLF")
+    check(not glob.glob(os.path.join(root, "Mock_*", "*", "Makefile")) and not glob.glob(os.path.join(root, "Mock_*", "*", "judge.bat")),
+          "no Makefile or judge.bat in any problem folder (they are in the set folders only)")
     with open(os.path.join(root, ".vscode", "tasks.json"), encoding="utf-8") as f:
         tasks = json.load(f)["tasks"]
     check(tasks[0]["args"][-1] == "${file}" and tasks[0]["group"].get("isDefault") and "/.." in tasks[1]["options"]["cwd"]
@@ -692,7 +689,8 @@ def test_updater():
             check(code == 1 and "bad create-only entry" in out and not os.path.exists(os.path.join(root, *rel.split("/"))),
                   f"a create-only path that is not Mock_<set>/<n>/<set>-<n>.cpp is refused ({rel})", f"exit {code}\n{out}")
         for n, rel in enumerate((f"{TOWERS_SET}/notes.pdf", f"{TOWERS_SET}/Mock_B01.pdf", f"{TOWERS_SET}/1/2_Title.pdf",
-                                 f"{TOWERS_SET}/1/1_Bad-Title.pdf", f"{TOWERS_SET}/old/Makefile", "Mock_7/Makefile")):
+                                 f"{TOWERS_SET}/1/1_Bad-Title.pdf", f"{TOWERS_SET}/old/Makefile", "Mock_7/Makefile",
+                                 "Mock_A01/3/Makefile", "Mock_A01/3/judge.bat")):
             rebuild_manifest(repo2)
             edit_manifest(repo2, lambda m: m["managed"].update(
                 {rel: [sha(os.path.join(repo2, "student", "set_files", "template.cpp")), "student/set_files/template.cpp"]})
@@ -741,7 +739,8 @@ def test_manifest():
 
 def test_fast_update():
     """A package from a release before the newest set gets that whole set in a few requests (a bundle for the test
-    data, one template for all the code files, one Makefile and one judge.bat for all the problem folders)."""
+    data, one template for all the code files, the set folder's Makefile and judge.bat, one PDF per problem; a
+    problem folder gets its code file and its PDF, nothing else)."""
     print("Fast update")
     tmp = tempfile.mkdtemp(prefix="judge_fast_")
     try:
@@ -776,7 +775,8 @@ def test_fast_update():
               and os.path.exists(os.path.join(root, *layout.code_path(last_set, last_n).split("/")))
               and os.path.exists(os.path.join(root, last, last + ".pdf"))
               and len(glob.glob(os.path.join(root, last, "*", "*.pdf"))) == last_n
-              and len(glob.glob(os.path.join(root, last, "*", "Makefile"))) == last_n and len(log) <= 12 + last_n,
+              and all(len(os.listdir(d)) == 2 for d in glob.glob(os.path.join(root, last, "[1-9]")))
+              and os.path.isfile(os.path.join(root, last, "Makefile")) and len(log) <= 10 + last_n,
               f"updater installs {last} ({len(files)} files) in {len(log)} requests", f"{log}\n{out}")
         with open(os.path.join(judge_dir, "manifest.json"), encoding="utf-8") as f:
             installed = json.load(f)
@@ -980,7 +980,7 @@ def test_future_update(root=None):
         check(read(code(x, P8)) == "" and not glob.glob(os.path.join(root, X, "old", f"{P8}_*")),
               "replaced problem with an untouched empty starter: nothing is moved")
         folder8 = sorted(os.listdir(os.path.join(root, X, str(P8))))
-        check(folder8 == sorted([layout.code_name(x, P8), f"{P8}_Brand_New_Eight.pdf", "Makefile", "judge.bat"]),
+        check(folder8 == sorted([layout.code_name(x, P8), f"{P8}_Brand_New_Eight.pdf"]),
               "a replaced problem's folder holds the new PDF only (the old shipped one is retired)", str(folder8))
         # moved problems follow their titles
         check(read(code(x, T)) == written[x["set"], U] and read(code(x, U)) == towers_text,
@@ -997,8 +997,9 @@ def test_future_update(root=None):
               "files the updater did not ship (notes, extra .cpp files, a file already in old/) are untouched")
         lines = [ln for ln in out.splitlines() if " -> " in ln]
         check(len(lines) == 5 and "moved with their problems" in out, "every move is printed once", "\n".join(lines))
-        check(os.path.isfile(os.path.join(root, Y, "7", "Makefile")) and os.path.isfile(new_pdf(dict(y, problems=[0] * 7), 7)),
-              "a new problem folder (7) gets its PDF, Makefile and judge.bat")
+        folder7 = sorted(os.listdir(os.path.join(root, Y, "7")))
+        check(folder7 == sorted([layout.code_name(dict(y, problems=[0] * 7), 7), os.path.basename(new_pdf(dict(y, problems=[0] * 7), 7))]),
+              "a new problem folder (7) holds exactly its code file and its PDF", str(folder7))
         # the second run is quiet and changes nothing
         snap = outside_judge(root)
         run_code, out2, _ = run_student(["--no-color"], os.path.dirname(code(x, U)), url)

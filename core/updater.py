@@ -12,14 +12,14 @@ Rules
   - writes only inside Judge/ and only the files listed in the manifest; never deletes anything (a retired problem
     PDF, below, goes to Judge/.backup/_package/, it is not deleted)
   - never reads or writes student files (Mock_<set>/<problem>/<set>-<problem>.cpp, progress.json), except the moves
-    below. Outside Judge/ it only handles "managed" files the students do not edit (the PDFs, Makefile, judge.bat,
-    README.txt, Guide.pdf, Progress.md, .vscode/) and "create-only" files (the empty code file of a problem, added
+    below. Outside Judge/ it only handles "managed" files the students do not edit (the PDFs, Makefile and judge.bat
+    of a set folder, README.txt, Guide.pdf, Progress.md, .vscode/) and "create-only" files (the empty code file of a problem, added
     only when missing). The old copy of every replaced file goes to Judge/.backup/ (package files under _package/)
   - updates only an installed package (Judge/judge.py and Judge/manifest.json exist), never the source repo
 
 Package layout (v7.2, one folder per problem; tools/layout.py in the repo):
   Mock_A01/Mock_A01.pdf, Makefile, judge.bat                           (sets A01 ... A12, B01 ... B08)
-  Mock_A01/3/A01-3.cpp, 3_<English_Title>.pdf, Makefile, judge.bat
+  Mock_A01/3/A01-3.cpp, 3_<English_Title>.pdf                          (a problem folder holds nothing else)
 
 Speed: files are downloaded in parallel (each one retried), and a whole problem folder comes as one zip ("bundle")
 when many of its files are needed, so a new set of problems takes a few requests instead of thousands. Every file
@@ -79,7 +79,6 @@ PDF_TITLE = r"[A-Za-z0-9_]{1,60}"
 PROBLEM_PDF = re.compile(r"^Mock_[AB][0-9]{2}/(?P<n>[1-9])/(?P=n)_" + PDF_TITLE + r"\.pdf$")   # Mock_A01/3/3_<Title>.pdf
 MANAGED_FILE = re.compile(                                  # replaced when they change
     r"^(?:" + SET_DIR + r"/(?:Makefile|judge\.bat|Mock_(?P=s)\.pdf)"
-    r"|Mock_[AB][0-9]{2}/[1-9]/(?:Makefile|judge\.bat)"
     r"|Guide\.pdf|README\.txt|Progress\.md|\.vscode/(?:tasks|settings)\.json)$")
 
 

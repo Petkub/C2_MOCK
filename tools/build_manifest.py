@@ -20,7 +20,7 @@ Format:
    "files": {"judge.py": "<sha256>", "problems/batch/Mock_A01/1/01.in": "<sha256>", ...},
    "managed": {"Mock_A01/Mock_A01.pdf": ["<sha256>", "student/Mock_A01/Mock_A01.pdf"],
                "Mock_A01/3/3_<Title>.pdf": ["<sha256>", "student/Mock_A01/3/3_<Title>.pdf"],
-               "Mock_A01/3/Makefile": ["<sha256>", "student/set_files/Makefile_problem"], ...},
+               "Mock_A01/Makefile": ["<sha256>", "student/set_files/Makefile"], ...},
    "create_only": {"Mock_A01/3/A01-3.cpp": ["<sha256>", "student/set_files/template.cpp"], ...},
    "bundles": {"bundles/Mock_A01.zip": {"sha256": "<sha256>", "prefix": "problems/batch/Mock_A01/"}, ...},
    "moves": {"<sha256 of an earlier release's problems.json>": [["Mock_A01/3/A01-3.cpp", "Mock_A02/5/A02-5.cpp"], ...]}}
@@ -120,14 +120,9 @@ def problem_pdfs():
     return out
 
 
-# True: every problem folder also gets Makefile and judge.bat, so `make` / double-clicking judge.bat judges the problem
-# from its own folder (the same decision as C2_PRACTICE). False: a problem folder holds only its .cpp and its PDF; then
-# judge from the set folder (make 3) or with Ctrl+Shift+B.
-PROBLEM_FOLDER_TOOLS = True
-
-
 def managed_files():
-    """Managed package files outside Judge/ as (package path, repo-relative source path)."""
+    """Managed package files outside Judge/ as (package path, repo-relative source path). A problem folder holds
+    exactly its code file and its PDF: Makefile and judge.bat are in the set folders only."""
     out = []
     for name in ("README.txt", "Guide.pdf", "Progress.md", ".vscode/tasks.json", ".vscode/settings.json"):
         if os.path.exists(os.path.join(REPO, "student", *name.split("/"))):
@@ -139,9 +134,6 @@ def managed_files():
         out.append((f"{d}/judge.bat", "student/set_files/judge.bat"))
         if os.path.exists(os.path.join(REPO, "student", d, f"{d}.pdf")):
             out.append((f"{d}/{d}.pdf", f"student/{d}/{d}.pdf"))
-        for i in range(1, n + 1) if PROBLEM_FOLDER_TOOLS else ():
-            out.append((f"{d}/{layout.slot(s, i)}/Makefile", "student/set_files/Makefile_problem"))
-            out.append((f"{d}/{layout.slot(s, i)}/judge.bat", "student/set_files/judge_problem.bat"))
     return out + problem_pdfs()
 
 
