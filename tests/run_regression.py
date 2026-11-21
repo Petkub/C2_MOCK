@@ -164,14 +164,14 @@ def test_layout(root):
             agree = agree and judge.code_name(s, i) == layout.code_name(s, i) and judge.slot_name(s, i) == layout.slot(s, i)
             agree = agree and meta[str(pid)]["dir"] == f"{d0}/{i}" and layout.entry_code_path(meta[str(pid)]) == layout.code_path(s, i)
             d = os.path.join(top, layout.slot(s, i))
-            want = {layout.code_name(s, i), layout.pdf_name(s, i, meta[str(pid)]["en"])}
+            want = {layout.code_name(s, i), layout.pdf_name(s, i, layout.file_title(meta[str(pid)]))}
             got = set(os.listdir(d)) if os.path.isdir(d) else set()
             if got != want:
                 bad.append(f"{d0}/{layout.slot(s, i)}: {sorted(got ^ want)}")
             elif os.path.getsize(os.path.join(d, layout.code_name(s, i))) != 0:
                 bad.append(f"{d0}/{layout.slot(s, i)}: the code file is not empty")
             else:
-                with open(os.path.join(d, layout.pdf_name(s, i, meta[str(pid)]["en"])), "rb") as f:
+                with open(os.path.join(d, layout.pdf_name(s, i, layout.file_title(meta[str(pid)]))), "rb") as f:
                     if f.read(5) != b"%PDF-":
                         bad.append(f"{d0}/{layout.slot(s, i)}: not a PDF")
     check(not bad and count == 120, f"every problem folder ({count}) holds exactly its empty code file and its PDF "
@@ -188,9 +188,21 @@ def test_layout(root):
           "updater.py accepts every package path of the manifest (its path rules agree with tools/layout.py)")
     names = [n for _, _, fs in os.walk(root) for n in fs] + [n for _, ds, _ in os.walk(root) for n in ds]
     check(all(n.isascii() and " " not in n for n in names), "every file and folder name is ASCII without spaces")
-    pdfs = [layout.pdf_name(s, i, meta[str(pid)]["en"]) for s in sets for i, pid in enumerate(s["problems"], 1)]
+    pdfs = [layout.pdf_name(s, i, layout.file_title(meta[str(pid)])) for s in sets for i, pid in enumerate(s["problems"], 1)]
     check(all(re.fullmatch(r"[1-9]_[A-Za-z0-9_]{1,60}\.pdf", n) for n in pdfs),
           "problem PDF names: <n>_<EnglishTitle>.pdf, letters, digits and _ only, title at most 60 characters")
+    long_en = "Reincarnated as a Dark Lord Before Taking Over the World with Power 999999999"
+    override = [(s, i, meta[str(pid)]) for s in sets for i, pid in enumerate(s["problems"], 1)
+                if meta[str(pid)].get("file_title")]
+    check(layout.pdf_name({"set": "A01"}, 1, layout.file_title({"en": long_en, "file_title": "Dark_Lord_Power_999999999"}))
+          == "1_Dark_Lord_Power_999999999.pdf"
+          and layout.file_title({"en": long_en}) == long_en and len(layout.title_slug(long_en)) == 60
+          and override and all(os.path.isfile(os.path.join(root, *layout.pdf_path(s, i, e["file_title"]).split("/")))
+                               and not os.path.exists(os.path.join(root, *layout.pdf_path(s, i, e["en"]).split("/")))
+                               for s, i, e in override),
+          "file-name override: a problems.json \"file_title\" names the problem's PDF instead of its English title "
+          "(Mock_A01/1 -> 1_Dark_Lord_Power_999999999.pdf, not the 60-character cut of the long title)",
+          str([(layout.set_dir(s), i, e.get("file_title")) for s, i, e in override]))
     check(layout.title_slug("Mo's  Algo-rithm: 2 (hard)") == "Mos_Algorithm_2_hard" and len(layout.title_slug("x" * 80)) == 60,
           "title -> file name: spaces become _, other characters are dropped, at most 60 characters")
     stray = [os.path.join(dp, n) for dp, _, fs in os.walk(root) for n in fs
@@ -861,14 +873,17 @@ def make_next_release(tmp, version="7.3"):
     renamed = {old[sx["set"], R2]: "Renamed Problem Two", old[sx["set"], R9]: "Renamed Problem Nine"}
     for i in (R2, R9):
         P[pid(sx, i)]["en"] = renamed[old[sx["set"], i]]
+        P[pid(sx, i)].pop("file_title", None)                              # a re-title drops the file-name override
     for i, title in ((P3, "Brand New Three"), (P8, "Brand New Eight")):
         P[pid(sx, i)]["en"] = title
+        P[pid(sx, i)].pop("file_title", None)
     swap(sx, T, sx, U)
     swap(sy, 1, sz, 1)
     ydir = layout.set_dir(sy)
     P["9001"] = dict(P[pid(sy, 2)], dir=f"{ydir}/7")                       # the old Y/2 -> a new slot 7
     shutil.copytree(os.path.join(batch, ydir, "2"), os.path.join(batch, ydir, "7"))
     P[pid(sy, 2)]["en"] = "Brand New Clash"
+    P[pid(sy, 2)].pop("file_title", None)
     sy["problems"].append(9001)
     with open(os.path.join(batch, "problems.json"), "w", encoding="utf-8") as f:
         json.dump(P, f, ensure_ascii=False, indent=1)
@@ -885,7 +900,7 @@ def make_next_release(tmp, version="7.3"):
         for i in range(1, len(s["problems"]) + 1):
             d = os.path.join(repo2, "student", layout.set_dir(s), layout.slot(s, i))
             os.makedirs(d, exist_ok=True)
-            want = os.path.join(d, layout.pdf_name(s, i, P[pid(s, i)]["en"]))
+            want = os.path.join(d, layout.pdf_name(s, i, layout.file_title(P[pid(s, i)])))
             if not os.path.exists(want):
                 have = glob.glob(os.path.join(d, "*.pdf"))
                 if have:
@@ -912,12 +927,14 @@ def test_future_update(root=None):
         x, y, z, T, U, R2, R9, P3, P8 = next_release_plan()
         X, Y, Z = (layout.set_dir(s) for s in (x, y, z))
         repo2, old = make_next_release(tmp)
+        with open(os.path.join(REPO, "problems", "batch", "problems.json"), encoding="utf-8") as f:
+            old_file = {e["dir"]: layout.file_title(e) for e in json.load(f).values()}   # PDF titles before
 
         def code(s, i):
             return os.path.join(root, *layout.code_path(s, i).split("/"))
 
         def old_pdf(i):
-            return os.path.join(root, *layout.pdf_path(x, i, old[x["set"], i]).split("/"))
+            return os.path.join(root, *layout.pdf_path(x, i, old_file[f"{X}/{i}"]).split("/"))
 
         # the student's work before the update: Signal Towers solved (100 in the tracker), other files written
         shutil.copy(os.path.join(SAMPLES, "batch", "towers_ok.cpp"), code(x, T))
@@ -953,7 +970,7 @@ def test_future_update(root=None):
         with open(os.path.join(judge_dir, "manifest.json"), encoding="utf-8") as f:
             check(json.load(f).get("version") == "7.3", "the installed version is 7.3")
         with open(os.path.join(judge_dir, "problems", "batch", "problems.json"), encoding="utf-8") as f:
-            titles = {e["dir"]: e["en"] for e in json.load(f).values()}       # the titles after the update
+            titles = {e["dir"]: layout.file_title(e) for e in json.load(f).values()}   # the PDF titles after the update
 
         def new_pdf(s, i):
             return os.path.join(root, *layout.pdf_path(s, i, titles[f"{layout.set_dir(s)}/{i}"]).split("/"))
@@ -964,7 +981,7 @@ def test_future_update(root=None):
         check(run_code == 0 and towers_solved(out_p, U) and not towers_solved(out_p, T),
               f"the tracker still shows the 100 for the moved problem (now problem {U})", out_p)
         # a re-titled problem: the code stays, the old PDF is retired, the new one appears
-        bak2 = os.path.join(judge_dir, ".backup", "_package", *layout.pdf_path(x, R2, old[x["set"], R2]).split("/"))
+        bak2 = os.path.join(judge_dir, ".backup", "_package", *layout.pdf_path(x, R2, old_file[f"{X}/{R2}"]).split("/"))
         check(read(code(x, R2)) == written[x["set"], R2] and not glob.glob(os.path.join(root, X, "old", f"{R2}_*")),
               "re-titled problem: the written file stays in its folder")
         check(os.path.isfile(new_pdf(x, R2)) and "Renamed_Problem_Two" in new_pdf(x, R2) and not os.path.exists(old_pdf(R2))

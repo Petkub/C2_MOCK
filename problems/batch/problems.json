@@ -512,12 +512,13 @@
   "scoring": "all"
  },
  "111": {
-  "title": "แบ่งป้ายตัวเลข",
-  "en": "Splitting the Digit Tiles",
+  "title": "เกิดใหม่เป็นจอมมาร ก่อนยึดครองโลกด้วยพลัง 999999999",
+  "en": "Reincarnated as a Dark Lord Before Taking Over the World with Power 999999999",
   "tier": 0,
   "dir": "Mock_A01/1",
   "samples": 4,
-  "scoring": "all"
+  "scoring": "all",
+  "file_title": "Dark_Lord_Power_999999999"
  },
  "112": {
   "title": "สั่งกล้าไม้จากสามร้าน",

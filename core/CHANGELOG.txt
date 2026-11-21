@@ -8,6 +8,9 @@ POSN Practice Judge - changes
      the set folder: make 3 / judge 3). The judge finds the problem from the file's
      name (A01-3.cpp) or from its folder (Mock_A01/3/); compiled programs go to Judge/.build/ and are removed after
      the run. --list shows every problem's folder and file name.
+     ชุด A01 ข้อ 1 มีชื่อและเนื้อเรื่องใหม่ (โจทย์เหมือนเดิมทุกอย่าง): "เกิดใหม่เป็นจอมมาร ก่อนยึดครองโลกด้วยพลัง 999999999"
+     ไฟล์โจทย์ของข้อนี้คือ Mock_A01/1/1_Dark_Lord_Power_999999999.pdf. Mock_A01/1 has a new title and story (the
+     problem is unchanged): "Reincarnated as a Dark Lord Before Taking Over the World with Power 999999999".
 7.1  แทนโจทย์ Track A 21 ข้อด้วยโจทย์ใหม่ที่คุณภาพสูงกว่า (ข้อเดิมซ้ำกับโจทย์ที่มีเฉลยเผยแพร่แล้ว เช่น NOI Singapore,
      CSES, AtCoder): A1/3, A1/4, A2/3, A2/5, A3/1, A3/2, A4/2, A4/6, A5/4, A6/1, A6/5, A7/6, A8/5, A8/6, A9/1, A9/3,
      A9/5, A10/5, A10/6, A11/6, A12/3; ชุดทดสอบแข็งขึ้นใน A2/2, A3/4, A3/6, A6/4, A7/3, A10/3, A11/3, A12/4.

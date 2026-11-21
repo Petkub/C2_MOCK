@@ -113,7 +113,7 @@ def problem_pdfs():
     out = []
     for s in load_sets():
         for i, pid in enumerate(s["problems"], 1):
-            rel = layout.pdf_path(s, i, meta[str(pid)]["en"])
+            rel = layout.pdf_path(s, i, layout.file_title(meta[str(pid)]))
             if not os.path.exists(os.path.join(REPO, "student", *rel.split("/"))):
                 raise SystemExit(f"missing student/{rel}: run C2_MOCK_SRC build.py all (it writes the problem PDFs)")
             out.append((rel, "student/" + rel))

@@ -12,7 +12,8 @@ students' side (the regression test compares them).
       3_Boxes_Within_Boxes.pdf           the statement of this problem alone (managed: replaced when it changes)
                                          nothing else: no Makefile / judge.bat in a problem folder
 
-A folder name never changes when a problem is replaced or re-titled; the PDF's name follows the English title.
+A folder name never changes when a problem is replaced or re-titled; the PDF's name follows the English title, or
+the entry's "file_title" when it has one (file_title()).
 """
 import re
 
@@ -51,6 +52,13 @@ def title_slug(title):
     if not out:
         raise ValueError(f"title gives an empty file name: {title!r}")
     return out
+
+
+def file_title(e):
+    """The title a problem's own PDF is named after (e: a meta.json or problems.json entry): its "file_title" when
+    the teacher set one (a short ASCII name for a very long English title, e.g. "Dark_Lord_Power_999999999" for
+    Mock_A01/1), otherwise the English title. A re-title drops the override."""
+    return e.get("file_title") or e["en"]
 
 
 def pdf_name(s, i, title):
