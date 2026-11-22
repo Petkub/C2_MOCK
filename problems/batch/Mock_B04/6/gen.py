@@ -1,4 +1,4 @@
-# Writes tests/NN.in for this problem. Samples first (01..05), then hidden tests.
+# Writes tests/NN.in for this problem. Samples first (01..06), then hidden tests.
 # Answer = min over the spelled monster k of best(prefix before k) + best(suffix after k), where best() is the
 # capped left-to-right greedy. The big tests make the cap matter (big / small alternations, small HP next to big HP),
 # put the best k away from the largest HP, add dead monsters (HP 0) as walls and push the answer above 2^31.
@@ -48,6 +48,7 @@ add([6, 1, 9, 2, 0])
 add([9, 2, 2, 4, 3, 2, 9, 8])
 add([7, 0, 9, 0, 0, 5, 4])
 add([1000000000])
+add([5, 1, 5, 1, 5])          # the target must be alive: 9 (a covering model that ignores it says 6)
 # hidden: tiny (the brute force plays the game itself on these)
 add([0])
 add([3, 3])

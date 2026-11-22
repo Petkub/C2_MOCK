@@ -62,7 +62,7 @@
 },
 "bundles/Mock_B04.zip": {
 "prefix": "problems/batch/Mock_B04/",
-"sha256": "e5d92016992b509be1dbaa20b09b930b7a15c7d669291d042ac7938078ff6dca"
+"sha256": "5fc7535eb562011c1b5929f7c9fb50210259e57e2972c4b509376f4e7ee30342"
 },
 "bundles/Mock_B05.zip": {
 "prefix": "problems/batch/Mock_B05/",
@@ -564,7 +564,7 @@
 ]
 },
 "files": {
-"CHANGELOG.txt": "38dacc864392f6dd36e69bbad04e8cd1c5396cb878e27acd4e1416e54d631b24",
+"CHANGELOG.txt": "cf00d390592838ca39247eb8e359763d2a2777f41672bab4291a392083eb6350",
 "README.txt": "98489174ccb56350631189ca915cfca9ed036025a7fc6af790c793e4dd31a5e7",
 "include/bits/stdc++.h": "1545f1f4b55b3acb866effca73203f3a9131773f147331cbf4e983ebf36d6cc9",
 "judge.py": "5d015be4d86a43950c6798de9a0bc5eeb05d34fe4f95b71f784117b67b5cde6a",
@@ -4949,40 +4949,42 @@
 "problems/batch/Mock_B04/6/04.out": "a1fb50e6c86fae1679ef3351296fd6713411a08cf8dd1790a4fd05fae8688164",
 "problems/batch/Mock_B04/6/05.in": "e1799a325686d59e370ceb604fe5cfc38e5622b46fc9ebef2847feff47334f2a",
 "problems/batch/Mock_B04/6/05.out": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
-"problems/batch/Mock_B04/6/06.in": "5d90ef7fc0d040fd56a1e48697cfa99e0dfaf4fd803aefefc3b5053ec1d36aea",
-"problems/batch/Mock_B04/6/06.out": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
-"problems/batch/Mock_B04/6/07.in": "ff9b20d131a845cfc49c813794e541d1878c8aa00ee264f03fa7e97fc10a7ead",
-"problems/batch/Mock_B04/6/07.out": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
-"problems/batch/Mock_B04/6/08.in": "cbc6d0fe882f940401ca24feb2d0759da63bd75b238dde9ed528994399e9df6c",
+"problems/batch/Mock_B04/6/06.in": "a3d6d294fb2b96276996675c7d3128a022319ed58cfd007e4e262a424a2dce2b",
+"problems/batch/Mock_B04/6/06.out": "2e6d31a5983a91251bfae5aefa1c0a19d8ba3cf601d0e8a706b4cfa9661a6b8a",
+"problems/batch/Mock_B04/6/07.in": "5d90ef7fc0d040fd56a1e48697cfa99e0dfaf4fd803aefefc3b5053ec1d36aea",
+"problems/batch/Mock_B04/6/07.out": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+"problems/batch/Mock_B04/6/08.in": "ff9b20d131a845cfc49c813794e541d1878c8aa00ee264f03fa7e97fc10a7ead",
 "problems/batch/Mock_B04/6/08.out": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
-"problems/batch/Mock_B04/6/09.in": "0a178aadb4a4456410446fc337d32ce5f9e9b0d3230e8c1343549990458c6750",
-"problems/batch/Mock_B04/6/09.out": "06e9d52c1720fca412803e3b07c4b228ff113e303f4c7ab94665319d832bbfb7",
-"problems/batch/Mock_B04/6/10.in": "0b5fcb79c01e1c8f182322ed7abab887033419ec737e08c8cfaa7d87e6fb37f0",
-"problems/batch/Mock_B04/6/10.out": "f0b5c2c2211c8d67ed15e75e656c7862d086e9245420892a7de62cd9ec582a06",
-"problems/batch/Mock_B04/6/11.in": "36535cfbfcf90c5f3e6492591cd42ae27733e769287e64f9aff8c79182cb1d28",
+"problems/batch/Mock_B04/6/09.in": "cbc6d0fe882f940401ca24feb2d0759da63bd75b238dde9ed528994399e9df6c",
+"problems/batch/Mock_B04/6/09.out": "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2",
+"problems/batch/Mock_B04/6/10.in": "0a178aadb4a4456410446fc337d32ce5f9e9b0d3230e8c1343549990458c6750",
+"problems/batch/Mock_B04/6/10.out": "06e9d52c1720fca412803e3b07c4b228ff113e303f4c7ab94665319d832bbfb7",
+"problems/batch/Mock_B04/6/11.in": "0b5fcb79c01e1c8f182322ed7abab887033419ec737e08c8cfaa7d87e6fb37f0",
 "problems/batch/Mock_B04/6/11.out": "f0b5c2c2211c8d67ed15e75e656c7862d086e9245420892a7de62cd9ec582a06",
-"problems/batch/Mock_B04/6/12.in": "b11a8ac2541cb952b8d71140b1924a57200dc210e27e0c1470070eff7d3b90db",
-"problems/batch/Mock_B04/6/12.out": "7de1555df0c2700329e815b93b32c571c3ea54dc967b89e81ab73b9972b72d1d",
-"problems/batch/Mock_B04/6/13.out": "a97d36c1aa91bbbed4db0596ee9f8f946e85c9a5331a19be4445e86609d62e55",
-"problems/batch/Mock_B04/6/14.out": "bc5a1ec58b27e40546f4bbc0145761cf4e6a5a4ce819f782f80d55adb702cd25",
-"problems/batch/Mock_B04/6/15.out": "8c58251f6767d051dbdea6ba29b498e96b5edf0f3bca794d48d0c939cf0f26b7",
-"problems/batch/Mock_B04/6/16.out": "3ca42eabdeaafc3e09953ad553a36176e63a86c3e661963d79f060f7fa6a39e9",
-"problems/batch/Mock_B04/6/17.out": "2370c60868d84a630ec768e161751e0eeb318909b17782c0d40a36c43c969cd6",
-"problems/batch/Mock_B04/6/18.out": "2e112d25c1e67fea9d9e75590c29325646730af8644a0aa0cb6a0ceccf831ac0",
-"problems/batch/Mock_B04/6/19.out": "0f0461dd258ad914487deeb49bef9f9e0d922c6c6bf5487f61e32f8db3029c62",
-"problems/batch/Mock_B04/6/20.out": "4206ffe77eff16e3fe9a7b35eb3de4e0a636949f15dc7e7b1fbc5f237168aae2",
-"problems/batch/Mock_B04/6/21.out": "91f233dd9964c124542201b6d92caddb6ad4e5b99ad48d182f3f72c4378cdfa4",
-"problems/batch/Mock_B04/6/22.out": "d6a57bcb24d29df167f2e467708dc74915dd190ccacd64442e821a5446b0d6fc",
-"problems/batch/Mock_B04/6/23.out": "186a97d65b0f0831f1bbc637d86095dbc2332a1f644355c2125b7ffd1c85089e",
-"problems/batch/Mock_B04/6/24.out": "cdc9f36f8f11529722f58a638921c5ca956ebad6374909b51bb0b1e4da7b4dc3",
-"problems/batch/Mock_B04/6/25.out": "f9840d4f0dd902dea1fa3a9eb6f25332c6919ab9106fe63a587dd16459a8ac6f",
-"problems/batch/Mock_B04/6/26.out": "de75470e983812a23d3ddc40c911070c8f8c56a4a2e4d50de129ce32cc7886c6",
-"problems/batch/Mock_B04/6/27.out": "9a764d5fd1cfbce43b96984dd6642ffbc8e40e5096e02a47bb3ba5ba1994248a",
-"problems/batch/Mock_B04/6/28.out": "5f0dbecc5127390704d5cffee9bfec0b270a3d6e919c5cc9679d784b6bf4e0cd",
-"problems/batch/Mock_B04/6/29.out": "f5e4a697eff21dc9937d4a9295631e16690a13a11eca7e7672dfc73c5ef731b6",
-"problems/batch/Mock_B04/6/30.out": "09261113cd7a2809322ac6bb55dd02b931ce82e2a1c59fc1795a2dff1b6df7c8",
-"problems/batch/Mock_B04/6/gen.py": "f90dec1f4bb31ba736c5bcd461a520c02518e23f64b86faeadf568212eb1602f",
-"problems/batch/Mock_B04/6/manifest.json": "23116d0966ebd2819e42f132425e3af82615b6487725cd1cac5649fcd28170b1",
+"problems/batch/Mock_B04/6/12.in": "36535cfbfcf90c5f3e6492591cd42ae27733e769287e64f9aff8c79182cb1d28",
+"problems/batch/Mock_B04/6/12.out": "f0b5c2c2211c8d67ed15e75e656c7862d086e9245420892a7de62cd9ec582a06",
+"problems/batch/Mock_B04/6/13.in": "b11a8ac2541cb952b8d71140b1924a57200dc210e27e0c1470070eff7d3b90db",
+"problems/batch/Mock_B04/6/13.out": "7de1555df0c2700329e815b93b32c571c3ea54dc967b89e81ab73b9972b72d1d",
+"problems/batch/Mock_B04/6/14.out": "a97d36c1aa91bbbed4db0596ee9f8f946e85c9a5331a19be4445e86609d62e55",
+"problems/batch/Mock_B04/6/15.out": "bc5a1ec58b27e40546f4bbc0145761cf4e6a5a4ce819f782f80d55adb702cd25",
+"problems/batch/Mock_B04/6/16.out": "8c58251f6767d051dbdea6ba29b498e96b5edf0f3bca794d48d0c939cf0f26b7",
+"problems/batch/Mock_B04/6/17.out": "3ca42eabdeaafc3e09953ad553a36176e63a86c3e661963d79f060f7fa6a39e9",
+"problems/batch/Mock_B04/6/18.out": "2370c60868d84a630ec768e161751e0eeb318909b17782c0d40a36c43c969cd6",
+"problems/batch/Mock_B04/6/19.out": "2e112d25c1e67fea9d9e75590c29325646730af8644a0aa0cb6a0ceccf831ac0",
+"problems/batch/Mock_B04/6/20.out": "0f0461dd258ad914487deeb49bef9f9e0d922c6c6bf5487f61e32f8db3029c62",
+"problems/batch/Mock_B04/6/21.out": "4206ffe77eff16e3fe9a7b35eb3de4e0a636949f15dc7e7b1fbc5f237168aae2",
+"problems/batch/Mock_B04/6/22.out": "91f233dd9964c124542201b6d92caddb6ad4e5b99ad48d182f3f72c4378cdfa4",
+"problems/batch/Mock_B04/6/23.out": "d6a57bcb24d29df167f2e467708dc74915dd190ccacd64442e821a5446b0d6fc",
+"problems/batch/Mock_B04/6/24.out": "186a97d65b0f0831f1bbc637d86095dbc2332a1f644355c2125b7ffd1c85089e",
+"problems/batch/Mock_B04/6/25.out": "cdc9f36f8f11529722f58a638921c5ca956ebad6374909b51bb0b1e4da7b4dc3",
+"problems/batch/Mock_B04/6/26.out": "f9840d4f0dd902dea1fa3a9eb6f25332c6919ab9106fe63a587dd16459a8ac6f",
+"problems/batch/Mock_B04/6/27.out": "de75470e983812a23d3ddc40c911070c8f8c56a4a2e4d50de129ce32cc7886c6",
+"problems/batch/Mock_B04/6/28.out": "9a764d5fd1cfbce43b96984dd6642ffbc8e40e5096e02a47bb3ba5ba1994248a",
+"problems/batch/Mock_B04/6/29.out": "5f0dbecc5127390704d5cffee9bfec0b270a3d6e919c5cc9679d784b6bf4e0cd",
+"problems/batch/Mock_B04/6/30.out": "f5e4a697eff21dc9937d4a9295631e16690a13a11eca7e7672dfc73c5ef731b6",
+"problems/batch/Mock_B04/6/31.out": "09261113cd7a2809322ac6bb55dd02b931ce82e2a1c59fc1795a2dff1b6df7c8",
+"problems/batch/Mock_B04/6/gen.py": "5bce330c00220362f5442800d969f5aa33449295f3fd4b3f81bf977fac50b88f",
+"problems/batch/Mock_B04/6/manifest.json": "c362a13cd93219deda316102e1355116887d75eb5bcc9d5920f2911c9f100ae7",
 "problems/batch/Mock_B05/1/01.in": "bc19f1459229a0e720dde8aacae389780164cde2477a8bc297aca1c818179a22",
 "problems/batch/Mock_B05/1/01.out": "6f40a35919d2c4941a543d1d8f0033f907a2b34ca749d94659cb98e3823c2110",
 "problems/batch/Mock_B05/1/02.in": "4ce4bc915d72805bd2ee725c6aa7559ae990255b70fc04fc187c605afa4431cd",
@@ -6027,7 +6029,7 @@
 "problems/batch/Mock_B08/6/14.out": "3cf915c1aba04ee6e5b4daf12f3bda55be5d3a547011605c866083d52c9ff501",
 "problems/batch/Mock_B08/6/gen.py": "f3e931089ea9231bdddbde0771bbf3258953ff365a821ea763a664423de635d8",
 "problems/batch/Mock_B08/6/manifest.json": "f8f1ec9774df11073273b9f81e1d0b29347aac0017785d3b433d2cedd2f1bb28",
-"problems/batch/problems.json": "d76a001bec4c67ff78d08dd7d536d1027b570e8cec0eb095b419a0d87f9f12e1",
+"problems/batch/problems.json": "43582e5165d33d982398a84ebcc062a274952aac56674939eaf6da789ebf667f",
 "problems/batch/sets.json": "6f8570b763b222cdbd596b7935496b251889070ecef1531355d0115920b86cd8",
 "updater.py": "ec1f7802b9e9be45255e4aef92fa8cf968d07706caadc85b63bddc1bae53c4fb"
 },
@@ -6045,23 +6047,23 @@
 "student/Mock_A01/1/1_Dark_Lord_Power_999999999.pdf"
 ],
 "Mock_A01/2/2_Ramping_Up_Production.pdf": [
-"5ad055cdfd2f1b619dadaf462f54ce443c9f4047a59237032c263c62e2292e2f",
+"d62d280ce3b8c854a781ddab68f636a44f16051683ad285d83bf75d01e94001a",
 "student/Mock_A01/2/2_Ramping_Up_Production.pdf"
 ],
 "Mock_A01/3/3_Tunnels_of_the_Gem_Mine.pdf": [
-"0d0231c8dcccffced2b9ed7818e73e6f3f1f186f8c64ba55b28e13f6acadb3d8",
+"99dd260e5f10f0abd5a33869f9e5321c88ec0de2d0c50075cfe85c33855b5dfa",
 "student/Mock_A01/3/3_Tunnels_of_the_Gem_Mine.pdf"
 ],
 "Mock_A01/4/4_Free_Tasting_Stalls.pdf": [
-"5e44bab7b10adbae40c7fcdd6e52eaa6ec23218bc2890d89a74db7249945228a",
+"bba12fffa2958f3c55db0e5cb8772ba8207b7dad9ac4ab5df768c21302ed5d89",
 "student/Mock_A01/4/4_Free_Tasting_Stalls.pdf"
 ],
 "Mock_A01/5/5_Delivery_Robot_With_a_Battery.pdf": [
-"57d65e8c29896536cd816b36eb3626e778163b4efc2e3d5bf21e4096f59cac06",
+"351954d80089e9601487f4c400144ca1d75edbea3f8001805032ff9525c22357",
 "student/Mock_A01/5/5_Delivery_Robot_With_a_Battery.pdf"
 ],
 "Mock_A01/6/6_Review_Rounds.pdf": [
-"2b3ba404b31fec5b29010f78b95fbd355029a0e6efd890a0a01b3953f0d6a890",
+"29d8ab9d073deeb645977aa63756f694f145ad80db433c984f46581752798a46",
 "student/Mock_A01/6/6_Review_Rounds.pdf"
 ],
 "Mock_A01/Makefile": [
@@ -6069,7 +6071,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A01/Mock_A01.pdf": [
-"daafce2613cf0a24bc885d2d7b699ab1d723408f2e52ada8c13d5a014d38af15",
+"a81604fe988d352a5e8ddd74a495d998626d994dd429a4cf24c2af0ed514a865",
 "student/Mock_A01/Mock_A01.pdf"
 ],
 "Mock_A01/judge.bat": [
@@ -6077,27 +6079,27 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A02/1/1_TwoColour_Can_Pyramid.pdf": [
-"847cdfc784342291cf0f0766526f01538ae25cbb887c9f40d683e336e98d007b",
+"47b1017c46d994ca794f1edc167cbabfaa8e4323b91199f2547e676f43cd2d8d",
 "student/Mock_A02/1/1_TwoColour_Can_Pyramid.pdf"
 ],
 "Mock_A02/2/2_Boxes_Within_Boxes.pdf": [
-"1e8d53601cb807887c4b35174d50d66961816db0619bb73ccde723facfd28bdd",
+"8359c0c1da5c2bc91e8c3d898f12186a0385920543b386c1866e2f2f84f9769f",
 "student/Mock_A02/2/2_Boxes_Within_Boxes.pdf"
 ],
 "Mock_A02/3/3_Rescheduling_the_Takeoffs.pdf": [
-"710da691438a25dace528f46add4a02d71c078a72aacd76fc71663bc2fc1a973",
+"4c536584923191c7b0f2cd51f99e2ed01b8708232c35bbe4dc0a0d9ea339c67a",
 "student/Mock_A02/3/3_Rescheduling_the_Takeoffs.pdf"
 ],
-"Mock_A02/4/4_Two_Stacks_of_Boxes.pdf": [
-"52f9e040a8899d9efe5cbd407ee0a2aefc23fbd82e5eaefe9ff4efd59bd01702",
-"student/Mock_A02/4/4_Two_Stacks_of_Boxes.pdf"
+"Mock_A02/4/4_Two_Piles_by_the_Conveyor.pdf": [
+"185ea94bf44510cc4506d408d66eb8dd0bd46534729a9cf6df542155380fcaa1",
+"student/Mock_A02/4/4_Two_Piles_by_the_Conveyor.pdf"
 ],
 "Mock_A02/5/5_Skateboarding_on_the_Hillside.pdf": [
-"37a04e13faf083c18b35bdabfac01cd47bb9ad65c1d56b19a55d16eae926832e",
+"31e23fff0aa4e2adf6788cef9c46ef1f04f3fdec7c2b8ee7180f00df16f67c69",
 "student/Mock_A02/5/5_Skateboarding_on_the_Hillside.pdf"
 ],
 "Mock_A02/6/6_Black_and_White_Beads.pdf": [
-"4b02e14f7caa616ab1a28e055fe8c1042fad25d024e11344664088330d59ab4f",
+"1158202f55f19c1f099522aa3987c961fb34de3aa02cfbd95140f37a473db839",
 "student/Mock_A02/6/6_Black_and_White_Beads.pdf"
 ],
 "Mock_A02/Makefile": [
@@ -6105,7 +6107,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A02/Mock_A02.pdf": [
-"219321de3d76bd6f298e3366fda258109b99a7a71aacc64d904cba1ca3f0d9c0",
+"433188c5a6e9307f77a4ce80e4cf3a820995cbe992a8a493a74ccba20f684bbe",
 "student/Mock_A02/Mock_A02.pdf"
 ],
 "Mock_A02/judge.bat": [
@@ -6113,27 +6115,27 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A03/1/1_Balloon_Pumps.pdf": [
-"8a3291ff73b7902d2c7830f0cd4fab86f464a1269d5d81e6cd32ae9c5d216730",
+"5539bf69558910b3ac60cb8b2e4cb140a0067b61e55ca9de50ff2ea0d7aa2666",
 "student/Mock_A03/1/1_Balloon_Pumps.pdf"
 ],
 "Mock_A03/2/2_Spare_Drone_Batteries.pdf": [
-"150cef81b4bf4f4cdd19f12bebcfe8bb38e483ecad660c9a3f4b5f32e4ad697a",
+"e6d298c6c1c918fb7f23ac0106c170eeeef66be3f6836cbd21afc90e271617ba",
 "student/Mock_A03/2/2_Spare_Drone_Batteries.pdf"
 ],
 "Mock_A03/3/3_Ruler_With_Few_Marks.pdf": [
-"64180cb8d4fd66010b4431fc906f0ecfbbd2044550606b7e6c01df4d7df39bd4",
+"da55760a9e30e9f14b1179cf0161e99d1a036c2a1a381f9d997577a0de90a9a6",
 "student/Mock_A03/3/3_Ruler_With_Few_Marks.pdf"
 ],
 "Mock_A03/4/4_Reassigning_Shifts.pdf": [
-"b448df1b54392178a737f11863098ebd85e585693444a853a93a992b5ae77de8",
+"d186800adb32b7878c0e0c8c9d279a4c386cca127fe60faa32332c611ce7ba37",
 "student/Mock_A03/4/4_Reassigning_Shifts.pdf"
 ],
 "Mock_A03/5/5_Diamond_Sprinklers.pdf": [
-"8a14908b7409cf9beb782d0df9edafc9dab72d6460f96ee89f08f7cfbb6b6176",
+"480a869ff2fe849d95609d740f8ecd87d8b504ae68bfc8415f3bcabf2268ab12",
 "student/Mock_A03/5/5_Diamond_Sprinklers.pdf"
 ],
 "Mock_A03/6/6_Dishes_That_Cool_Down.pdf": [
-"6eea5563d906464f62cfd0a95c2fcc6f100290a14847c7788b68cc250c14a0db",
+"3f82a92e0656901e22c674ba702afa77756ad1bc32c0b6613fa31d5fdce3d072",
 "student/Mock_A03/6/6_Dishes_That_Cool_Down.pdf"
 ],
 "Mock_A03/Makefile": [
@@ -6141,7 +6143,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A03/Mock_A03.pdf": [
-"6d022a6e5d61ecf993a649a56494a41eebcfec9a76f3df77bd31bce71a551259",
+"6fd1ccbe4e303ac83abebf451e468760a7ab87a728ea2217352c2c7aae4ff9fc",
 "student/Mock_A03/Mock_A03.pdf"
 ],
 "Mock_A03/judge.bat": [
@@ -6149,27 +6151,27 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A04/1/1_Free_Stalls_Around_the_Market.pdf": [
-"7f760abdc845e3f9d2d73d0c994fab74fada50804920f3e176e6843568c60724",
+"8dc393c703e33968b320c24546baa3ae3e59a124d3f89f0776e5a671e1e420d9",
 "student/Mock_A04/1/1_Free_Stalls_Around_the_Market.pdf"
 ],
 "Mock_A04/2/2_The_Lava_Level.pdf": [
-"6553ba8ab2dbf2cdb8d1a5cf81231c7a5f2052789376f9de5890d2e91ffa23ee",
+"6991bc1d5138d4e20f1fceaac3facbced11eeaf2b5601945283707e76a8d7e0d",
 "student/Mock_A04/2/2_The_Lava_Level.pdf"
 ],
 "Mock_A04/3/3_Placing_the_Health_Stations.pdf": [
-"7fb0bc4427b20b4a65a854f5302a8229e3745810198117a51b451ff0516ab524",
+"33a24257bce9a56df7aea40e52f52b627c73337bf37c51eee93965ea4d64cfd0",
 "student/Mock_A04/3/3_Placing_the_Health_Stations.pdf"
 ],
 "Mock_A04/4/4_Three_Heirs.pdf": [
-"9957123502931875ce3df906167010da9e234543d4860426ce5af867e66b7c01",
+"fdadebd1f487187f333d552f819bcf2a98cc9275e76867cdc846495d1a7a284d",
 "student/Mock_A04/4/4_Three_Heirs.pdf"
 ],
 "Mock_A04/5/5_Colourful_Districts.pdf": [
-"cf01509ac521dd1af558ee6aeaf8fd60f7fdbee1ff4050914583c9af5f71f19c",
+"f17877227cb713dd08ca6d384225d25049b3a23e9954250d8ed756252cce45ba",
 "student/Mock_A04/5/5_Colourful_Districts.pdf"
 ],
 "Mock_A04/6/6_The_Last_Seats.pdf": [
-"922e6a01d08318f28158916a63bc553f88277b1018a66303a561c518b99e0610",
+"6dc01870b209e42df72424b4211cdc360b14b86509d0d5adf282fd39cf9f95f3",
 "student/Mock_A04/6/6_The_Last_Seats.pdf"
 ],
 "Mock_A04/Makefile": [
@@ -6177,7 +6179,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A04/Mock_A04.pdf": [
-"821da0f574a960e09a73173013a54ca881908a32f91abf7021b1d50f2517e1ea",
+"5585f7a290ffd5585cfe89e08bfed6b0f0c782d01b7f3624d5afda542b8e7193",
 "student/Mock_A04/Mock_A04.pdf"
 ],
 "Mock_A04/judge.bat": [
@@ -6185,15 +6187,15 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A05/1/1_Compressed_Strings.pdf": [
-"4590006c7d595715b9b752e94afd2a42997cc56ab60693a94c2b00e1bb37638d",
+"b21f956d0a3624fb4f55a5f68d0d6ee0683fdc5a1eecd23d84fa61c54d361b49",
 "student/Mock_A05/1/1_Compressed_Strings.pdf"
 ],
 "Mock_A05/2/2_Blown_Into_the_Traps.pdf": [
-"2945d563fcba9b5ab1873730f05cf8b1095669beac1e955da78049b2b3a46027",
+"3e8175a552c414861d92d564c28cad06ec9402a9b3c3c7c63ac51f44d5765ad8",
 "student/Mock_A05/2/2_Blown_Into_the_Traps.pdf"
 ],
 "Mock_A05/3/3_Repeated_Chant.pdf": [
-"957336188db84d4b918964a8de48a85b8370e9031bdfb7a247412575956c5159",
+"45834ab4cb5ba497f9a6870dd48a89d48a65eedc82df5db3995211e0be622056",
 "student/Mock_A05/3/3_Repeated_Chant.pdf"
 ],
 "Mock_A05/4/4_Switching_Boat_Companies.pdf": [
@@ -6201,11 +6203,11 @@
 "student/Mock_A05/4/4_Switching_Boat_Companies.pdf"
 ],
 "Mock_A05/5/5_Not_Too_Big_a_Team.pdf": [
-"bf777d16315d0726dab6b8916687c36c05b57844044a6490105978598df28aac",
+"d9f0b66a360783edef46f1c6f5d0531281926673043e83296b055a6927784eea",
 "student/Mock_A05/5/5_Not_Too_Big_a_Team.pdf"
 ],
 "Mock_A05/6/6_Repair_Convoys.pdf": [
-"740f164bf3f532798895cac17d9531707f44bfa2784a20ff165a1c32a54c9a06",
+"b6d21b1b4ee86a767ab38c86f6afdbdf9b21a347f0f0019853428efb09640bb2",
 "student/Mock_A05/6/6_Repair_Convoys.pdf"
 ],
 "Mock_A05/Makefile": [
@@ -6213,7 +6215,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A05/Mock_A05.pdf": [
-"a05b7a01dae9a5323747155f6f898c0e7c583afb7a98b4c9c66e972d69f4f5b8",
+"5cbd86e1a9880bb5171cd8de2294de8cbe6165af9d4f3777394044a54f2bb990",
 "student/Mock_A05/Mock_A05.pdf"
 ],
 "Mock_A05/judge.bat": [
@@ -6221,27 +6223,27 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A06/1/1_The_FloorMopping_Robot.pdf": [
-"9187be878c2d93dbb96ce1278d88fd5560412a8f25d1140e3298a0c86e3bd045",
+"60e76b6c561c2da11197b0fb64bad1626e99f5ebd8637825d55fda30afc14c4d",
 "student/Mock_A06/1/1_The_FloorMopping_Robot.pdf"
 ],
 "Mock_A06/2/2_AllergyFree_Menu.pdf": [
-"cd75f2de0e4749e5870a0e5af37c42821aef4d8de84cee62fda38f3ba5139e9f",
+"1e2d9227c0d25469264d17a9babf45438fceceb13c05b57aae724a001b807453",
 "student/Mock_A06/2/2_AllergyFree_Menu.pdf"
 ],
-"Mock_A06/3/3_Every_Window_Has_Variety.pdf": [
-"5852ba1107a065e841e846e22de08e1698111d97d4974ab939545ab4592e875f",
-"student/Mock_A06/3/3_Every_Window_Has_Variety.pdf"
+"Mock_A06/3/3_Variety_in_Every_Snack_Pack.pdf": [
+"f9f49128c4fcdb28747c70026355632982b96ca9ccd0ca4aac03c7994e2433fb",
+"student/Mock_A06/3/3_Variety_in_Every_Snack_Pack.pdf"
 ],
 "Mock_A06/4/4_Keyword_Highlighter.pdf": [
-"6a939b31426541f78e0b6844cc2a5fa5bca4911935ecfac4069a4f009a86109b",
+"79abffd2d31e1870be29fa6ae74462dbc563e3c10d1e7688873546d1ae8efb82",
 "student/Mock_A06/4/4_Keyword_Highlighter.pdf"
 ],
 "Mock_A06/5/5_Fighting_Through_to_the_Boss.pdf": [
-"d17c0f3be4e28d64a81418c8d49fc7f4e010254d19ad3b14f35a73d128cccfe7",
+"6ac52f1f4199e996c9390d2281ac58e956b2e74da7f65afc06f41683a4a5c40b",
 "student/Mock_A06/5/5_Fighting_Through_to_the_Boss.pdf"
 ],
 "Mock_A06/6/6_Festival_Shows.pdf": [
-"c52f2a30cf4c97719ec529e6daa14c3c6cb6362fa4b211cb2d646992896fde1e",
+"97905c461d0544f64ff2874b3bf05a4482928ca5e3d5cd4df6124125e7c024b9",
 "student/Mock_A06/6/6_Festival_Shows.pdf"
 ],
 "Mock_A06/Makefile": [
@@ -6249,7 +6251,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A06/Mock_A06.pdf": [
-"57f2dec6c5ca699a7f64aaaf6d3dca94a04cfeb75157727c7a6dc520ceeade0c",
+"4043a222718337972b0907f2812e6d511ed727d922295dc1859c1420d184a29f",
 "student/Mock_A06/Mock_A06.pdf"
 ],
 "Mock_A06/judge.bat": [
@@ -6257,23 +6259,23 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A07/1/1_Robot_Stop_Log.pdf": [
-"985431e81e6d73164a1d28ffece678d5b99152448fca651aac6b6d798c74c105",
+"9a16ae201238646a4b642b9a5563c13d8fbbea77e583c700989db9f29e8ecb7a",
 "student/Mock_A07/1/1_Robot_Stop_Log.pdf"
 ],
 "Mock_A07/2/2_A_Team_for_Three_Subjects.pdf": [
-"42fd0f929ca952a791d1abd037dcf6ac057d0d7887f054dfb00e8b46f2cb7af8",
+"1eb3fb5bef23ffab4d9ca56e7544445bb3b13385999cf7eaad94947f911bcbd3",
 "student/Mock_A07/2/2_A_Team_for_Three_Subjects.pdf"
 ],
 "Mock_A07/3/3_Signal_Towers.pdf": [
-"c8a25931ea16391460f3483cc5766bd62bc4c6e63a5f5be11205eaa207358218",
+"2eaccc0b3e1cf2f8b1ff1f9c447b4f53ad7e8dce3c75f64d3dfa3c0fe48a064e",
 "student/Mock_A07/3/3_Signal_Towers.pdf"
 ],
 "Mock_A07/4/4_Robot_With_Few_Turns.pdf": [
-"c6f91c724abae97566d4e886a7c12015c807ec62b6b5b4854f0911758bb0d905",
+"8b84d615e490508b99aab6515b8bbcbd2bf095edfa0787153f98ab403c6ca180",
 "student/Mock_A07/4/4_Robot_With_Few_Turns.pdf"
 ],
 "Mock_A07/5/5_Forgotten_Password.pdf": [
-"e6ea3c2716751bcf8f2e22b91e1d67c2e57ef426bb2e1a57181659e2b4aed9ba",
+"0c88174e27662f22bc68ae11c230c48b2176d2123d1dd81907d75aaa6f856419",
 "student/Mock_A07/5/5_Forgotten_Password.pdf"
 ],
 "Mock_A07/6/6_The_Marble_Prize_Board.pdf": [
@@ -6285,7 +6287,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A07/Mock_A07.pdf": [
-"8aabfc8833fd31e1a405c7d891049c2aa46d6f6f562b78f3381f10c9f959eb11",
+"06fc455b2e3ab5f57f06083959f93f77031ab056a977452b7e3d0fe90355ed42",
 "student/Mock_A07/Mock_A07.pdf"
 ],
 "Mock_A07/judge.bat": [
@@ -6293,27 +6295,27 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A08/1/1_Pipe_Cutting_Shop.pdf": [
-"08faa129307ed6115b411c0130339662d84a590f9bcde689be2f4448d3421aa8",
+"e71e595e06102d0537ca92dfca9081e477d546615b697b76f032f45b15909ebd",
 "student/Mock_A08/1/1_Pipe_Cutting_Shop.pdf"
 ],
 "Mock_A08/2/2_The_Apprentice_Mechanic.pdf": [
-"c1722f076745203bf68e7a78d60c9ad426960ee1c29dc498d30d2cc043d69d16",
+"0611de812f0db07e87543998e1058dc33f007f241b4e100771d569836d454181",
 "student/Mock_A08/2/2_The_Apprentice_Mechanic.pdf"
 ],
 "Mock_A08/3/3_Discount_Coupons.pdf": [
-"4cb83ff86d51b3be4cf6c93d6c76ee99a41cc9a41bf5aab63efcec7cfd1f6b4d",
+"b4f8275bc7a97dbd0220cec5152abaea081b171ebd94640a5cf87a12c1c98013",
 "student/Mock_A08/3/3_Discount_Coupons.pdf"
 ],
 "Mock_A08/4/4_One_Extra_Cable_Car.pdf": [
-"dcd3efa1bdc92e54914c66c36abe1c34c9a6117a28688f0146dc9351dc1811f4",
+"fc1a26ba5fa5101f1f5fa4e569047a42e92a85c3f82be15a66fa03baff23f4ee",
 "student/Mock_A08/4/4_One_Extra_Cable_Car.pdf"
 ],
 "Mock_A08/5/5_The_FourStation_Rally.pdf": [
-"c590f105e3b2c57c247cfa3fb5aae6102893f58ec4ead9a82c5d8e8056c94948",
+"9fe16301a21ba7b84a994cfb40a98b0e8b6ab156aacc307420098aac15a820bc",
 "student/Mock_A08/5/5_The_FourStation_Rally.pdf"
 ],
 "Mock_A08/6/6_OneWay_Bike_Lanes.pdf": [
-"e553eb65f4a5e1b6085c46f02c3f5ba1d5acef357831d414e8fdc23ce4bdae1e",
+"6dca5be04b2d189c35200e001d59e2f9a019ebd0c42ebedfb770db5dd9a14d33",
 "student/Mock_A08/6/6_OneWay_Bike_Lanes.pdf"
 ],
 "Mock_A08/Makefile": [
@@ -6321,7 +6323,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A08/Mock_A08.pdf": [
-"d94c2735ae96f1b1dd12ea78a255377883574c9d4f4bcd289b7d660313d91e02",
+"24f4f8ba1f1c7c3f9a6588f5c74cece2c5a4983c87ed7c59d235566ee4b8d0a7",
 "student/Mock_A08/Mock_A08.pdf"
 ],
 "Mock_A08/judge.bat": [
@@ -6329,27 +6331,27 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A09/1/1_On_the_Edge.pdf": [
-"330bfb9702bb4ef6fd7c0041e5d83cd2bc18c13fa526676a18b28797218a0d4c",
+"65628b0c954ae1a927cde5f5f5bd40faae1020bd38eb0e4664ef3cf6f5a6e7e5",
 "student/Mock_A09/1/1_On_the_Edge.pdf"
 ],
 "Mock_A09/2/2_Parking_Lot_Logs.pdf": [
-"ef70089a37c5ead800c561437ed85832a27bf78c31353d852e368e651c83421c",
+"847b2b70e6d065b6fb128186a1d4af0ee7e836ef0de80fb1a85108f4e3154e34",
 "student/Mock_A09/2/2_Parking_Lot_Logs.pdf"
 ],
 "Mock_A09/3/3_Wages_and_Homework.pdf": [
-"c0eec052954b8334afeb69d74cb74aad593f5fc9b51369780d3872cb04d1aba5",
+"93ce9e35677782dcdae574b439cc59e021e5ce24e13cf31ddd226856735394c1",
 "student/Mock_A09/3/3_Wages_and_Homework.pdf"
 ],
 "Mock_A09/4/4_Robots_Into_Order.pdf": [
-"b536e5ceb5764258b438b0677610634beb9b488fa9749e1938f033c4ca363171",
+"7f0f62d7546ae2adb00be9c0460f5a1714ec5457ac0a4cb28e94037dcebf8f74",
 "student/Mock_A09/4/4_Robots_Into_Order.pdf"
 ],
 "Mock_A09/5/5_The_Paper_Umbrella.pdf": [
-"6999e9daf4712e37fcde6f1069e76d0d52aa14a9e6a711b94f1b95c05423241e",
+"5bd81deb01092f5bc6d21c3b45e1dc78e3334f91910c1da6955f962dacc4af51",
 "student/Mock_A09/5/5_The_Paper_Umbrella.pdf"
 ],
 "Mock_A09/6/6_The_Shelf_Beside_the_Kiln.pdf": [
-"cb25c9b0ea89d8a24709acbb540726c6d0ba169aa202ca37ea5cd5755e62aea5",
+"c046d3e1403995b7a56a81a15e81ec3b3880135b23b293f73250aefa25d14694",
 "student/Mock_A09/6/6_The_Shelf_Beside_the_Kiln.pdf"
 ],
 "Mock_A09/Makefile": [
@@ -6357,7 +6359,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A09/Mock_A09.pdf": [
-"d7a4af0e2e9506179a89979d9b75308ec142034f146df9bd81eacf61c7b828eb",
+"55c22c1f870968be9ee47d83467ca8ee17b5d1b53fb8486015e14bffcdc2f505",
 "student/Mock_A09/Mock_A09.pdf"
 ],
 "Mock_A09/judge.bat": [
@@ -6365,27 +6367,27 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A10/1/1_Keyboard_Slips.pdf": [
-"33750bc3676d3970a2c576e319e9b5f86caf351a24457c09543bf30715a039f9",
+"7ab1ba40bdcba2e70316b91bab36da6d385fbf1ac4d0cf91311ad11189b27ee0",
 "student/Mock_A10/1/1_Keyboard_Slips.pdf"
 ],
 "Mock_A10/2/2_Mountain_Descent_With_One_Long_Jump.pdf": [
-"23a8c30ca0ea6e005e6b6acce2797fd586ba9666bcbd717bddd69993309170a8",
+"df7f0c50b517af1a1c5b313ace8711ab1f176d2f07337f7ce063493e8df696f4",
 "student/Mock_A10/2/2_Mountain_Descent_With_One_Long_Jump.pdf"
 ],
 "Mock_A10/3/3_Every_Kth_Day_Free.pdf": [
-"e62ef29d7ac7dff8a75f9e53a7a4a020340e965e4d75eb1878abe45a9e7d9d73",
+"59eeb098553e3e8a40d6839d845834fa01ef97ec6b159be23a02df9b6a7895b3",
 "student/Mock_A10/3/3_Every_Kth_Day_Free.pdf"
 ],
 "Mock_A10/4/4_Course_Plan.pdf": [
-"d1feae79459bbe9ae362bad666c1669f510d888a432180a18d100c62255d9c8a",
+"75549d51ee643176f8d1e64cff82b0e45f8d48c2f4d64fbe8d5892c7a726843f",
 "student/Mock_A10/4/4_Course_Plan.pdf"
 ],
 "Mock_A10/5/5_Drawing_From_the_Pile.pdf": [
-"738abc7f0252cfd46f7b3fbd03947104b899d882aa6a0e5964ca22e88583e56e",
+"8b8952f0d26073014435f8ad73ba647c90631a8697fd25f9824e5d8f3a236d77",
 "student/Mock_A10/5/5_Drawing_From_the_Pile.pdf"
 ],
 "Mock_A10/6/6_Cards_There_and_Back.pdf": [
-"da4d27d09e57342c506df854fe89e6e9e493f7a77ab62fa8e9a1c92f4ba2d6b4",
+"09fd9476e627c9c718e20064138ccce13d8dd072c6b1471e358ca55d90563419",
 "student/Mock_A10/6/6_Cards_There_and_Back.pdf"
 ],
 "Mock_A10/Makefile": [
@@ -6393,7 +6395,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A10/Mock_A10.pdf": [
-"93a88b0ee80b9b2f2003ab75b51c492ba523f953e378f7c3d2a9b6e8912bebdb",
+"3cc5f8dbc1ab305a24d29648f30cac8ab09a09025a663d370ae9a31cca6bc380",
 "student/Mock_A10/Mock_A10.pdf"
 ],
 "Mock_A10/judge.bat": [
@@ -6401,27 +6403,27 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A11/1/1_Seedlings_From_Three_Nurseries.pdf": [
-"aa672271a01ff3b23be6ee46cf5a38ce94675f0898ac4dacff1fcd36a4b2d2b9",
+"0587f281c79e6af2ee11be6f3752eed7b141d953e27cb06e744de56de634d925",
 "student/Mock_A11/1/1_Seedlings_From_Three_Nurseries.pdf"
 ],
 "Mock_A11/2/2_Village_Land_Claims.pdf": [
-"85a20356057371827fa87114178fe42c5bc741704dc26636e3e83ee0f18a73f0",
+"30bf3f9d33012e05464db261c78c4c9eb808c69cce49dc5d39b3d1a580a67a0d",
 "student/Mock_A11/2/2_Village_Land_Claims.pdf"
 ],
 "Mock_A11/3/3_Choosing_Committees.pdf": [
-"f5af096fb17cfde2153787fee25df79a4b695aff07d164d8bfd504890c444fb8",
+"58bf395c729686d0b2965c18fc4f2f04f1b9359363a6747269e0f6386afc922a",
 "student/Mock_A11/3/3_Choosing_Committees.pdf"
 ],
 "Mock_A11/4/4_Fixing_a_Message.pdf": [
-"c39acdae7178f263a75d7967dedec41b3603d6e977c275c778aa103661d190ce",
+"23eba606f380be28e0a74a31918e313e7f5fad19ef99dc3263e444ed423a47fe",
 "student/Mock_A11/4/4_Fixing_a_Message.pdf"
 ],
 "Mock_A11/5/5_Spreadsheet_With_Loops.pdf": [
-"60c55c9ce8e998a7c98632e89aaebfe280f46a65509a2e5be2451f862b30ebc1",
+"c4c96f46de6e650332f83558353878d8d675dc9c1da7b0a8f498705156bff3c8",
 "student/Mock_A11/5/5_Spreadsheet_With_Loops.pdf"
 ],
 "Mock_A11/6/6_Lanterns_Along_the_Canal.pdf": [
-"1bf4abc07cc45834ee02996546b405994148dbbcd2ba19b57d6fa8831ef76a53",
+"1664eb48d06bc1d14754d4485d542f5b662c7b34bfbc29e69a564a0e448b1dbb",
 "student/Mock_A11/6/6_Lanterns_Along_the_Canal.pdf"
 ],
 "Mock_A11/Makefile": [
@@ -6429,7 +6431,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A11/Mock_A11.pdf": [
-"33f75c6dfa90a77ee5e685f8b08ea8ebd971496156bbce2366f14f702a3dc2d1",
+"50eb49ca1f70360e9fdedb4152673e3551683b24f56a2f28b419bb8fc1bf90ef",
 "student/Mock_A11/Mock_A11.pdf"
 ],
 "Mock_A11/judge.bat": [
@@ -6437,27 +6439,27 @@
 "student/set_files/judge.bat"
 ],
 "Mock_A12/1/1_Mango_or_Longan.pdf": [
-"acb7bae6cc7b843f3b86c9ae0fca1b0bc99972fd01d158bdae834bd9ba4b1775",
+"d2d57a0dab9410717d67dd17234916a0c3e3b3915c368ed5548eb1f126206267",
 "student/Mock_A12/1/1_Mango_or_Longan.pdf"
 ],
 "Mock_A12/2/2_Lucky_Wheels.pdf": [
-"29fa9648bfa9fb642abe33247f47110f8f02cc68e0b462b0f06528375d782351",
+"6d65c131e16c081c3cde0d7bcf56272b76760f3d3a8342a1ff6ce422f43371ae",
 "student/Mock_A12/2/2_Lucky_Wheels.pdf"
 ],
 "Mock_A12/3/3_Sports_Day_Photo_Line.pdf": [
-"0a5ee614218f305a8fa8de7107fb006658a9a186e7c620481a332940fb654093",
+"bd0052fa978ce6e2efe5031c08fe8f445adb1c7d70cc2040d75729cd89ac012d",
 "student/Mock_A12/3/3_Sports_Day_Photo_Line.pdf"
 ],
 "Mock_A12/4/4_Walks_of_Exact_Length.pdf": [
-"27aa8314876726d8b641fe8a0c62501171a392280e6f1740864183b22a086072",
+"59ae2cdcf2bbee5b435b4a5bae3859619232e73a0dcd57a4a2efa5d6e5ffdf88",
 "student/Mock_A12/4/4_Walks_of_Exact_Length.pdf"
 ],
 "Mock_A12/5/5_Cutting_the_Pearl_Necklace.pdf": [
-"0a5893f28b446644abaee381a5dbb034e74c4d2b902c8ba9cee0c685c2dc7fc1",
+"dcf7e8f0575a4720d93b7bb05e636f2022c1c74c14ba63a45cba5a3b3554b4f2",
 "student/Mock_A12/5/5_Cutting_the_Pearl_Necklace.pdf"
 ],
 "Mock_A12/6/6_Print_Shop.pdf": [
-"4fd0cf7b2fe1c0c4cc3f4995c1c445040577034742dc550f48246e29ed85ebd2",
+"ee09738cc1ead7de9d348af7d60ac4e02cc0b212e9a274d62c868e147458b846",
 "student/Mock_A12/6/6_Print_Shop.pdf"
 ],
 "Mock_A12/Makefile": [
@@ -6465,7 +6467,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A12/Mock_A12.pdf": [
-"5ec977f3f39ec3b21a79cd2f28e628dfcf4dfc87ac7b843174f798586e5a5700",
+"8e93ae1531d0d71a8d7915bbde71bbd1a3489042e177772f4cc805774f620605",
 "student/Mock_A12/Mock_A12.pdf"
 ],
 "Mock_A12/judge.bat": [
@@ -6473,27 +6475,27 @@
 "student/set_files/judge.bat"
 ],
 "Mock_B01/1/1_Trimming_the_Hedge.pdf": [
-"2e24e63dc91c0fd096ca701e0ecd8f17da6874bc4d5afc6058a8fd6bbfa78ab2",
+"07a0084ceae08c868f4c9302a0a84ab5de6514996cf9b89434b4a25a067196dc",
 "student/Mock_B01/1/1_Trimming_the_Hedge.pdf"
 ],
 "Mock_B01/2/2_SingleFile_Shuttle.pdf": [
-"ee9c01d7bb76f172301eac53dcf984e6f626f8f5ef4aedd8497ef3eab33a1423",
+"3edda3a7138defdaa44de2ddc38a006cb5977a01cf968c65a8050f2867b98d11",
 "student/Mock_B01/2/2_SingleFile_Shuttle.pdf"
 ],
 "Mock_B01/3/3_Cables_Across_Companies.pdf": [
-"f432bbeee41adb0cffb94322a992a053dc8b96905b2a01b35e1bb0c021d30862",
+"d2c1afbddf49cc0a45a3f46a63323e00cd6efbab63613e58e5ba93cff52f9c17",
 "student/Mock_B01/3/3_Cables_Across_Companies.pdf"
 ],
 "Mock_B01/4/4_Two_Trips_of_the_School_Van.pdf": [
-"1be58ed63ced5e97780382e4db409fbbb10996eee84437ab197633b4c87570f9",
+"081f4c55eff7ec802bdf1c2559d3312fab19b929d598abbcc32169ad3f6ee233",
 "student/Mock_B01/4/4_Two_Trips_of_the_School_Van.pdf"
 ],
 "Mock_B01/5/5_Concert_Carpool.pdf": [
-"146c1a2ff298e197a935c3bf057f88df47645b461c38ef89ecc706702efe1168",
+"c7fa6e2ab6fd2bf5f9a156b99d0b0e0b54d0fb997f7eb9e6ef1310e0a2f5b48d",
 "student/Mock_B01/5/5_Concert_Carpool.pdf"
 ],
 "Mock_B01/6/6_Tour_Around_the_Courtyard.pdf": [
-"bfc9d82f3f22ed63baf722e17cea69271c414aa908660baa89a09388b53c9e43",
+"03a8f19a4a2bb0147f2eae1e43763803a18037a90756b1eb9283055b1d76d7e7",
 "student/Mock_B01/6/6_Tour_Around_the_Courtyard.pdf"
 ],
 "Mock_B01/Makefile": [
@@ -6501,7 +6503,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_B01/Mock_B01.pdf": [
-"57edb1cc2a330726257946f4be2de444811f51b56734196baffc06cc18d9eecc",
+"bd21a12bb59d618f654203db2bc720732db533a635b9daa723ad7da817a0a3b1",
 "student/Mock_B01/Mock_B01.pdf"
 ],
 "Mock_B01/judge.bat": [
@@ -6509,27 +6511,27 @@
 "student/set_files/judge.bat"
 ],
 "Mock_B02/1/1_Star_Flares.pdf": [
-"16498f74533f5acbc5ef09ab64cb3ce5e3bca3d9179e1b8c6fd4638367418f10",
+"8b6a144107dc898672f09f739003fa6f731155b71055d15ce2be9a1493020b65",
 "student/Mock_B02/1/1_Star_Flares.pdf"
 ],
 "Mock_B02/2/2_Crossword_Fill.pdf": [
-"bdff199dc5735789d55a5908c51fa92287645ad343b7862a75022bce1f1b1f87",
+"d4dbf294817ebb422b4d7d189df80a71e1ebf0f1aa8db66938c8151c1d148923",
 "student/Mock_B02/2/2_Crossword_Fill.pdf"
 ],
 "Mock_B02/3/3_Skyline_From_the_Corner.pdf": [
-"b403a4b51f98ea5d611215fdf2cae658e61222ed525c11f3924564559ad71c58",
+"d44600cb4f0510a5488729655d20b0e4dbb5169bd5241d389eb6f561b7e99a89",
 "student/Mock_B02/3/3_Skyline_From_the_Corner.pdf"
 ],
 "Mock_B02/4/4_Exactly_K_Branches.pdf": [
-"39608dad123b3ea0067dac4452663125d3c8d1f6a7f7953636cf763fc0acf6ec",
+"7cef88eea27c05cad717d5af91d6462f0f6552ff83b1f6defca470360edc9b63",
 "student/Mock_B02/4/4_Exactly_K_Branches.pdf"
 ],
-"Mock_B02/5/5_One_Card_to_Fix.pdf": [
-"9d8badce17e36459b3190a190139cadf5aa14c4c9ed143243df8c606cbd3a665",
-"student/Mock_B02/5/5_One_Card_to_Fix.pdf"
+"Mock_B02/5/5_Sealed_Combo_of_the_Handmade_Deck.pdf": [
+"5aa4712d13c58e5e9d5ec738becca62d57c12c254de4b433b33dc62db10df80c",
+"student/Mock_B02/5/5_Sealed_Combo_of_the_Handmade_Deck.pdf"
 ],
 "Mock_B02/6/6_The_Longest_Ride.pdf": [
-"e99bc8bfd2455cfe0a240ee47ca89d058382553b2a6590595253d70a1a3e9f70",
+"33d9c8dbc2c714f6476c9e329695e3dbc21258fe7b93421a418fabe64f200ad6",
 "student/Mock_B02/6/6_The_Longest_Ride.pdf"
 ],
 "Mock_B02/Makefile": [
@@ -6537,7 +6539,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_B02/Mock_B02.pdf": [
-"a4e558d20771c83d0f48a0cc8e468bb317623091d448a5f7c7f270e948a213ed",
+"96089741248881bf352aab73bccc737a4d334a82b47709a687ed70de825bfda7",
 "student/Mock_B02/Mock_B02.pdf"
 ],
 "Mock_B02/judge.bat": [
@@ -6545,27 +6547,27 @@
 "student/set_files/judge.bat"
 ],
 "Mock_B03/1/1_Gallery_Arrangement_Number.pdf": [
-"d02a73764c878f01dfb7761b7ebca88c65f08a5312a5dd22ba7c83f5151fcdc8",
+"b3ef7c85b4fd29e5fd41358ee6c074665eed95e5581eff6ee7f1fcc2681757ae",
 "student/Mock_B03/1/1_Gallery_Arrangement_Number.pdf"
 ],
-"Mock_B03/2/2_Ice_Rink_With_Brakes.pdf": [
-"341331281fe0e6b3e5568e6565a4106943e92b459fb6c3c09c93e9d9edec6c3b",
-"student/Mock_B03/2/2_Ice_Rink_With_Brakes.pdf"
+"Mock_B03/2/2_Queen_of_the_Rink_Brakes_Sold_Separately.pdf": [
+"9edbf9e392688900d395d3d14f9d1035a61f9083eae4d40cb08b1ae02f7929f9",
+"student/Mock_B03/2/2_Queen_of_the_Rink_Brakes_Sold_Separately.pdf"
 ],
 "Mock_B03/3/3_One_Road_Past_Everyone.pdf": [
-"6e87a612fadd0b2f25b33f42ea3b395a79d57030b6452cf334fe276058b08256",
+"14f7c2959e2de6605e5c03f729bcc3b96b8b0181f0d6cf0c8d20db00fd9ee226",
 "student/Mock_B03/3/3_One_Road_Past_Everyone.pdf"
 ],
 "Mock_B03/4/4_Splitting_the_Kingdom.pdf": [
-"f92ec990aa2b03f05e169cf1fa3f1419ae97fb60f37d3a471b2301b3f2609120",
+"fffdf84ddfcc8e84cdb1a7b333216abb621e84d1a0be5a3efeb21c84a9b78980",
 "student/Mock_B03/4/4_Splitting_the_Kingdom.pdf"
 ],
 "Mock_B03/5/5_Up_and_Down_Photo_Plan.pdf": [
-"9c4ff8370c1c498e36d52fee02df96e6e79e23fb91fe3456e5833b6720c39a50",
+"1ac7b20e7a3c31a2af018c05706037fc4fb7aa3b2ddddec397f810cffeffe539",
 "student/Mock_B03/5/5_Up_and_Down_Photo_Plan.pdf"
 ],
 "Mock_B03/6/6_Four_Badges.pdf": [
-"89498f736e9becc3f261ecebba186d54702fa9129afc1469c793e50810d5ab9e",
+"4d0f1ec3d5d519c316f1f1bf80eec33ec11adc54e08ad525499d45d39619941b",
 "student/Mock_B03/6/6_Four_Badges.pdf"
 ],
 "Mock_B03/Makefile": [
@@ -6573,7 +6575,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_B03/Mock_B03.pdf": [
-"491e386761e6b4ea42ab66b6130d3d2c9e9ed7fc46c80f88c4f2322c2f5edd1d",
+"cf26f02727a73b1c77540918b57e12593f1a247e1c841d21004ffd7b60c22e45",
 "student/Mock_B03/Mock_B03.pdf"
 ],
 "Mock_B03/judge.bat": [
@@ -6581,63 +6583,63 @@
 "student/set_files/judge.bat"
 ],
 "Mock_B04/1/1_Rolling_Block.pdf": [
-"dfae8110931db2e69e6e09d84cf1d4d9d27aa4924f7500f553f0985a3b4b05b6",
+"005a4827a800d8b1b6e32e412541f21bb0b06882be3a55fda87e2a1a5a8a9ed7",
 "student/Mock_B04/1/1_Rolling_Block.pdf"
 ],
 "Mock_B04/2/2_Sharing_the_Song.pdf": [
-"2ffd5922f01f521146fd326d46a4754efbd61bd28cba7c8e55962754852220d1",
+"d845933211ef7dad7b4f4e12d9a81085b2e71a34dcf904dd4556dcce6bbc7457",
 "student/Mock_B04/2/2_Sharing_the_Song.pdf"
 ],
 "Mock_B04/3/3_Lamps_Around_the_Lake.pdf": [
-"019f09bd01d4ad6343e628017bc5e198b5dc87c489a1614353ed3353e2c9a176",
+"cc3f7050716537f1aedcbe2da94b89fbf7a0f4a4fb7e44e59314879dbeeaf39b",
 "student/Mock_B04/3/3_Lamps_Around_the_Lake.pdf"
 ],
 "Mock_B04/4/4_Delivery_Drone.pdf": [
-"ecd373a438dcaba25066fa2986e8e982ccc853de268a173dd9ff64d62de24740",
+"276fec9339b945357fb33db9cdf772bfc62a7a4a6801a575431bf0c003a1b47d",
 "student/Mock_B04/4/4_Delivery_Drone.pdf"
 ],
 "Mock_B04/5/5_Aquarium_Temperatures.pdf": [
-"2c0ee51b40d613693af3933ba22e44d5e33c16f3f1c44d6b4b3cfb590df7987f",
+"686c5d60299ed6329fd59bac719c09a38722048413fde895db7cb4a162c56184",
 "student/Mock_B04/5/5_Aquarium_Temperatures.pdf"
 ],
-"Mock_B04/6/6_Fireballs_and_Demons.pdf": [
-"4da04dbd61f6ea66d7c0546b022f0d310e20c99c387b9e600bc69f3305702617",
-"student/Mock_B04/6/6_Fireballs_and_Demons.pdf"
+"Mock_B04/6/6_Fireball_Sage_of_Nine_Thousand_Deaths.pdf": [
+"484a9906bb9b5eee0983c5270bd826ab43ad28eed8a89260288f193a0f3b6068",
+"student/Mock_B04/6/6_Fireball_Sage_of_Nine_Thousand_Deaths.pdf"
 ],
 "Mock_B04/Makefile": [
 "2075d229b19f127520774fd58e4749562a2c226fee4d318f62cb13d3aa671231",
 "student/set_files/Makefile"
 ],
 "Mock_B04/Mock_B04.pdf": [
-"8670cf1f0c3b0cbf8fc02ab00559496e480046850b10e868190e2d31a5ae5f27",
+"87f354e26942e3ea725a6b073e9df0a4583aa3093f78b04edebc88863c9b3fbb",
 "student/Mock_B04/Mock_B04.pdf"
 ],
 "Mock_B04/judge.bat": [
 "75fc7d706d1ffa2cf039cdb3c8fabcb9e64f87d18362c8999ba60e8dd1b0291a",
 "student/set_files/judge.bat"
 ],
-"Mock_B05/1/1_Nonogram_Count.pdf": [
-"17bca3ad934908802231c27f1055419f55a4533d5b95d8d1bd14afab3f1a0345",
-"student/Mock_B05/1/1_Nonogram_Count.pdf"
+"Mock_B05/1/1_The_AI_Swore_There_Was_Only_One_Answer.pdf": [
+"3af3943412393d66cea347523c94bc05d6f2f0ebbb54b58ab3cc950b2debfdec",
+"student/Mock_B05/1/1_The_AI_Swore_There_Was_Only_One_Answer.pdf"
 ],
 "Mock_B05/2/2_Auditors_Ledger.pdf": [
-"aa792c79dff9eb8c23c994aa9bee8538726b2f1d08b1c6c97593d30401c3d83f",
+"17fe65cb7449bd0443f628badd178ce8baa40c542e642360ee616ee77fcdc9ce",
 "student/Mock_B05/2/2_Auditors_Ledger.pdf"
 ],
 "Mock_B05/3/3_Growing_Network.pdf": [
-"3513b6df19cb527fd04a2c73dfe7bf25237b573423b5def80901c96a69527937",
+"e3cf5abec706d12f2edc56403ffbe56a8198dd732d13780048bc102fea24ed5e",
 "student/Mock_B05/3/3_Growing_Network.pdf"
 ],
 "Mock_B05/4/4_Radio_Station_Drill.pdf": [
-"b2149b61287c1a6589b762c51b2152d143f94ce3df2d3cfa38822cb8c28e7f30",
+"84fe8b2ed8024d8d8f2b40a1d6130af1350f82c6e39b756806bc1d5744b37022",
 "student/Mock_B05/4/4_Radio_Station_Drill.pdf"
 ],
 "Mock_B05/5/5_The_Leader_Screen.pdf": [
-"1aba2ad46ea98f85d5ddbfe413a01d28e0699552364961185d4e926aa74c39c9",
+"9fa798db2c09ff341c94ac27d6d6f5515f9a786939929d52049047f7448cb0f2",
 "student/Mock_B05/5/5_The_Leader_Screen.pdf"
 ],
 "Mock_B05/6/6_Stage_Backdrops.pdf": [
-"928a09e2dc9137b7bc4173df3618a3ea45815f460fec070c25ffd99e32a0c27b",
+"984cd8a05d46896f3a6082e5ef2697641d8177c820fc1580eb9a9a7eeec903bb",
 "student/Mock_B05/6/6_Stage_Backdrops.pdf"
 ],
 "Mock_B05/Makefile": [
@@ -6645,7 +6647,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_B05/Mock_B05.pdf": [
-"48c992bb29286080550e7eea47d11fe0e65dc4224a2d499909dba352a741debc",
+"a0474bf6ef0f8c671134bd313d6f3888b43737271a5f1843ccf58524a9065063",
 "student/Mock_B05/Mock_B05.pdf"
 ],
 "Mock_B05/judge.bat": [
@@ -6653,27 +6655,27 @@
 "student/set_files/judge.bat"
 ],
 "Mock_B06/1/1_Nearest_Shop_With_Updates.pdf": [
-"5c4289c7e924da07d9c51fa8efb69c916a2b78784c236c6f767eeb3d932693af",
+"0b45b93c54431c99681ab7040b1bdc7ebfc941dc149f94283bb5fd618736eee5",
 "student/Mock_B06/1/1_Nearest_Shop_With_Updates.pdf"
 ],
 "Mock_B06/2/2_Moving_the_Parked_Cars.pdf": [
-"a44537f9826ed767e997f12887623113e19ec68b4f5855bcaf927a4e7a7e5bcc",
+"da90d8cd6d81d8083bbdabfa1282f276fa6e2983444bfe5e87310ebba56d7acc",
 "student/Mock_B06/2/2_Moving_the_Parked_Cars.pdf"
 ],
 "Mock_B06/3/3_Relief_Truck.pdf": [
-"97488a194a5a62453ac9452810daaa631d993e891764c45cd1815093060e9dc5",
+"cc951a68f8b27ded7a49f0013aafbcff7e38b6a9d51307c4252a2387abc23beb",
 "student/Mock_B06/3/3_Relief_Truck.pdf"
 ],
 "Mock_B06/4/4_Splitting_Cells.pdf": [
-"3a1922d4d6fcfc60b18361afac9e260034e3dcc09fbf57e08035cc075be1cea5",
+"81ca6e2913625c8476e9e87914b3c79b24da74a6578f16628ea84f09cc22f45c",
 "student/Mock_B06/4/4_Splitting_Cells.pdf"
 ],
-"Mock_B06/5/5_Vanishing_Card_Pairs.pdf": [
-"6cbfac9b950a1a6f5b6b4df9d4ed111d34f12d9fa86d59fd72601b0a9d81f8df",
-"student/Mock_B06/5/5_Vanishing_Card_Pairs.pdf"
+"Mock_B06/5/5_Seal_of_the_Twin_Cards.pdf": [
+"a1584730cf9dd19562968c86e3bcde2533c7f698db1719cc01574183058e3a15",
+"student/Mock_B06/5/5_Seal_of_the_Twin_Cards.pdf"
 ],
 "Mock_B06/6/6_Honey_Rounds.pdf": [
-"f24ff52e60e7a65fdcf3ef7554800ba5edbba02a2cd9dd533dae6c1e9a2d7d8b",
+"aed6a9cd13accad18db4a9b14dec40dd3355e807979b6f0062da1f9069bf955c",
 "student/Mock_B06/6/6_Honey_Rounds.pdf"
 ],
 "Mock_B06/Makefile": [
@@ -6681,7 +6683,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_B06/Mock_B06.pdf": [
-"4a12e9d112daf23343bb5851d17d67edcbaf2c619fca641bde943800a2e91aca",
+"cd00bfb02275f69c923afbc4b795a42e55eaa2cab7eea5943b4c29a3233881eb",
 "student/Mock_B06/Mock_B06.pdf"
 ],
 "Mock_B06/judge.bat": [
@@ -6689,27 +6691,27 @@
 "student/set_files/judge.bat"
 ],
 "Mock_B07/1/1_Weighted_Zigzag.pdf": [
-"41715adfa87cb16319ca9daff9d333b8f846fcddf091772b57bdd97836d4640f",
+"7acb90005e3ef9679166b7d9af49dfb88640038407dc367d56a8bd639ffed662",
 "student/Mock_B07/1/1_Weighted_Zigzag.pdf"
 ],
 "Mock_B07/2/2_Parcel_to_the_Capital.pdf": [
-"648f996849d29c9180c915f179cfd5dadf749de0a34d9eb4c405812633df979f",
+"5606408ebf469062ded480bce167c144fe722d6738d1558f871d8ff7f5245a8f",
 "student/Mock_B07/2/2_Parcel_to_the_Capital.pdf"
 ],
 "Mock_B07/3/3_Hills_in_View.pdf": [
-"fe73dcafd1e3c34b1ed67d2a9b25a436973fa7fa7c08aa37d75890b2159c6599",
+"913f2403ec5f2e948d630bf5ab37065f68c518088169483ab1b87ec5214d1d3a",
 "student/Mock_B07/3/3_Hills_in_View.pdf"
 ],
 "Mock_B07/4/4_Balanced_Districts.pdf": [
-"eb4c62d7f3cb0c4a8b4ebc2d61c7b832faa71e69a7527ff5f339985e2ab951e3",
+"391d4beaf02fb214f99138dda78e9302665cf9893f5eecd7d9d7677dc308c2be",
 "student/Mock_B07/4/4_Balanced_Districts.pdf"
 ],
-"Mock_B07/5/5_Camp_Tents.pdf": [
-"6121842a13d5a3afa602a1a48043e2187840f9cd4ae33b5224843621c2b04ea5",
-"student/Mock_B07/5/5_Camp_Tents.pdf"
+"Mock_B07/5/5_The_Unchosen_of_the_Campsite.pdf": [
+"1afaee9347d6ac249ffac3843eafed7001535ef071ebae8fbdeff5992070de8e",
+"student/Mock_B07/5/5_The_Unchosen_of_the_Campsite.pdf"
 ],
 "Mock_B07/6/6_Introductions_Before_Moving_Out.pdf": [
-"374ac97725026f79f1c5e51ae12aff75cc210940d72994c6e205216c61a5660d",
+"0fb3280ebf3be65ca9b0f36fcdb7eef08d65377f62d80f93d4cff84a133cda9d",
 "student/Mock_B07/6/6_Introductions_Before_Moving_Out.pdf"
 ],
 "Mock_B07/Makefile": [
@@ -6717,7 +6719,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_B07/Mock_B07.pdf": [
-"44d0b654049b138df1d146195b8970c0a73ffdcb836fe9f88c492fad8a2de8ff",
+"9f0b30e4bbc9af5465c37f816aba38162bff7e0d8202790d1552547e89f1aae6",
 "student/Mock_B07/Mock_B07.pdf"
 ],
 "Mock_B07/judge.bat": [
@@ -6725,27 +6727,27 @@
 "student/set_files/judge.bat"
 ],
 "Mock_B08/1/1_Sports_Day_Colours.pdf": [
-"bab1aa22f9d164f3c055f099343f7f29f32a2ef1d6926d41a016f3f003767162",
+"a12a9c82f16933c3faba01d24c13cd4758e887d3b4982f5200cbff0ffc24810b",
 "student/Mock_B08/1/1_Sports_Day_Colours.pdf"
 ],
 "Mock_B08/2/2_TeaPicking_Robots.pdf": [
-"ec59368ae6a3bb6a2ab3a8ca903c6946e3f245920e0b5aa74d3c6cd7e0c96e92",
+"be0c99fda83124ff0183a7110b04f1714f059773b5f2cf6be21a1303901aa86c",
 "student/Mock_B08/2/2_TeaPicking_Robots.pdf"
 ],
 "Mock_B08/3/3_Monkey_Gathering.pdf": [
-"c72d28b294b201aaf34373cbd1eaca7629d34256aa60b2a90bb7296072735107",
+"3786af60675ad5b1895377aecc7641160baafdfc373da11919e068941164cb10",
 "student/Mock_B08/3/3_Monkey_Gathering.pdf"
 ],
-"Mock_B08/4/4_Zone_Passes.pdf": [
-"99867099108263e9120b353492196dfc1a667d740f155b561d65c332f75e01af",
-"student/Mock_B08/4/4_Zone_Passes.pdf"
+"Mock_B08/4/4_The_Cursed_Tickets_of_the_Theme_Park.pdf": [
+"382358575fbae16d62030644d51b1e6afdd138564ab2d7e9b4fdfc39c44e9c1c",
+"student/Mock_B08/4/4_The_Cursed_Tickets_of_the_Theme_Park.pdf"
 ],
 "Mock_B08/5/5_Leaky_Bucket_Line.pdf": [
-"e3202d9fec700d3ed3366ce7762cbcc22d082b4bca79b3f0ad60780bfe61a48d",
+"db0bc146030ba8b5f06cf7ad081cc6d01bad6233858ccf4e17540c83b57b7928",
 "student/Mock_B08/5/5_Leaky_Bucket_Line.pdf"
 ],
 "Mock_B08/6/6_Member_Codes.pdf": [
-"fddaa8725c083f2bacd80424f370bd156c54897f39000b8368558659f9334682",
+"2e2d081275614aa683134e93fe7efd9197e62cca65411ca340e2939c580d4a51",
 "student/Mock_B08/6/6_Member_Codes.pdf"
 ],
 "Mock_B08/Makefile": [
@@ -6753,7 +6755,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_B08/Mock_B08.pdf": [
-"148f7e4e16909bb253150f3a80e731d5b2b31a960ba7014c623879546aca7562",
+"7cf18c9f09f0acc7b5bcb2f51654fc7b82804eb06a414354fef2b3b1f1c2c33a",
 "student/Mock_B08/Mock_B08.pdf"
 ],
 "Mock_B08/judge.bat": [
@@ -6769,10 +6771,12 @@
 "student/README.txt"
 ]
 },
-"moves": {},
+"moves": {
+"d76a001bec4c67ff78d08dd7d536d1027b570e8cec0eb095b419a0d87f9f12e1": []
+},
 "sources": {
 "": "core/",
 "problems/": "problems/"
 },
-"version": "7.2"
+"version": "7.3"
 }

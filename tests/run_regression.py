@@ -892,8 +892,9 @@ def make_next_release(tmp, version="7.3"):
     bm = os.path.join(repo2, "tools", "build_manifest.py")
     with open(bm, encoding="utf-8") as f:
         text = f.read()
-    with open(bm, "w", encoding="utf-8") as f:
-        f.write(text.replace("RENAMED = {}", "RENAMED = " + repr(renamed), 1))
+    assert text.count("RENAMED = {") == 1, "tools/build_manifest.py: RENAMED = {...} not found once"
+    with open(bm, "w", encoding="utf-8") as f:      # this release's renames go in front of the ones already listed
+        f.write(text.replace("RENAMED = {", "RENAMED = {" + "".join(f"{k!r}: {v!r}, " for k, v in renamed.items()), 1))
     files = os.path.join(repo2, "student", "set_files")
     shutil.copy(os.path.join(files, "Makefile"), os.path.join(files, "Makefile_7"))
     for s in (sx, sy, sz):                                                 # the PDFs follow the titles

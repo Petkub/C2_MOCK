@@ -200,8 +200,8 @@
   "scoring": "all"
  },
  "36": {
-  "title": "ลานน้ำแข็งกับเบรก",
-  "en": "Ice Rink With Brakes",
+  "title": "ราชินีลานน้ำแข็ง (เบรกเป็นนิดหน่อย)",
+  "en": "Queen of the Rink, Brakes Sold Separately",
   "tier": 0,
   "dir": "Mock_B03/2",
   "samples": 5,
@@ -240,8 +240,8 @@
   "scoring": "all"
  },
  "43": {
-  "title": "ทุกช่วงต้องหลากหลาย",
-  "en": "Every Window Has Variety",
+  "title": "ขนมชุดไหนก็ต้องหลากหลาย",
+  "en": "Variety in Every Snack Pack",
   "tier": 0,
   "dir": "Mock_A06/3",
   "samples": 4,
@@ -384,8 +384,8 @@
   "scoring": "all"
  },
  "82": {
-  "title": "นับคำตอบ nonogram",
-  "en": "Nonogram Count",
+  "title": "AI สาบานว่ามีคำตอบเดียว",
+  "en": "The AI Swore There Was Only One Answer",
   "tier": 0,
   "dir": "Mock_B05/1",
   "samples": 5,
@@ -409,7 +409,7 @@
  },
  "88": {
   "title": "กองกล่องสองกอง",
-  "en": "Two Stacks of Boxes",
+  "en": "Two Piles by the Conveyor",
   "tier": 0,
   "dir": "Mock_A02/4",
   "samples": 4,
@@ -585,7 +585,7 @@
   "scoring": "all"
  },
  "120": {
-  "title": "ตัดแต่งแนวรั้วต้นไม้",
+  "title": "เล็มรั้วก่อนเวทีหาเสียง",
   "en": "Trimming the Hedge",
   "tier": 0,
   "dir": "Mock_B01/1",
@@ -609,8 +609,8 @@
   "scoring": "all"
  },
  "123": {
-  "title": "แก้เลขหนึ่งใบ",
-  "en": "One Card to Fix",
+  "title": "คอมโบผนึกของสำรับทำมือ",
+  "en": "Sealed Combo of the Handmade Deck",
   "tier": 0,
   "dir": "Mock_B02/5",
   "samples": 5,
@@ -665,11 +665,11 @@
   "scoring": "all"
  },
  "130": {
-  "title": "ลูกไฟกับปีศาจ",
-  "en": "Fireballs and Demons",
+  "title": "จอมเวทลูกไฟผู้ตายมาแล้วเก้าพันครั้ง",
+  "en": "Fireball Sage of Nine Thousand Deaths",
   "tier": 0,
   "dir": "Mock_B04/6",
-  "samples": 5,
+  "samples": 6,
   "scoring": "all"
  },
  "131": {
@@ -705,8 +705,8 @@
   "scoring": "all"
  },
  "135": {
-  "title": "การ์ดหายเป็นคู่",
-  "en": "Vanishing Card Pairs",
+  "title": "ผนึกการ์ดคู่แฝดแห่งห้องเรียน",
+  "en": "Seal of the Twin Cards",
   "tier": 0,
   "dir": "Mock_B06/5",
   "samples": 5,
@@ -729,8 +729,8 @@
   "scoring": "all"
  },
  "138": {
-  "title": "เต็นท์ค่ายพักแรม",
-  "en": "Camp Tents",
+  "title": "ผู้ไม่ถูกเลือกแห่งค่ายพักแรม",
+  "en": "The Unchosen of the Campsite",
   "tier": 0,
   "dir": "Mock_B07/5",
   "samples": 5,
@@ -769,8 +769,8 @@
   "scoring": "all"
  },
  "143": {
-  "title": "ตั๋วสวนสนุก",
-  "en": "Zone Passes",
+  "title": "ตั๋วต้องสาปแห่งสวนสนุก",
+  "en": "The Cursed Tickets of the Theme Park",
   "tier": 0,
   "dir": "Mock_B08/4",
   "samples": 5,

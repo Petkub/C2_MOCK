@@ -185,7 +185,18 @@ def bundles(pairs, files, write):
 
 
 MOVES = os.path.join(REPO, "tools", "moves")
-RENAMED = {}                        # old English title -> new title, if a problem is renamed between releases
+RENAMED = {                         # old English title -> new title, if a problem is renamed between releases
+    # 7.3 story pass (C2_MOCK_SRC plans/STORY_ALL.md): technique words out of titles, chuuni titles in Track B
+    "Two Stacks of Boxes": "Two Piles by the Conveyor",                         # A2/4
+    "Every Window Has Variety": "Variety in Every Snack Pack",                  # A6/3
+    "One Card to Fix": "Sealed Combo of the Handmade Deck",                     # B2/5
+    "Ice Rink With Brakes": "Queen of the Rink, Brakes Sold Separately",        # B3/2
+    "Fireballs and Demons": "Fireball Sage of Nine Thousand Deaths",            # B4/6
+    "Nonogram Count": "The AI Swore There Was Only One Answer",                 # B5/1
+    "Vanishing Card Pairs": "Seal of the Twin Cards",                           # B6/5
+    "Camp Tents": "The Unchosen of the Campsite",                               # B7/5
+    "Zone Passes": "The Cursed Tickets of the Theme Park",                      # B8/4
+}
 
 
 def moves(now=None, folder=MOVES):
