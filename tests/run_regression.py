@@ -17,7 +17,7 @@ that gen.py rebuilds and progress.json are never written into the repo.
 5. Self-update: a local HTTP server serves a modified copy of the repo as v9.9; a package must update itself
    (hashes, backups, restart, create-only code files), and must refuse bad hashes, bad paths and no network.
    Fast update: a whole new set arrives in a few requests.
-6. A later release (a fake 7.3 over local HTTP): re-titled, replaced and moved problems, a clash, files the updater
+6. A later release (a fake next version over local HTTP): re-titled, replaced and moved problems, a clash, files the updater
    did not ship, tracker scores kept, a quiet second run.
 7. The problem manifests and manifest.json are up to date.
 """
@@ -749,6 +749,81 @@ def test_manifest():
     check(p.returncode == 0, "manifest.json is up to date", p.stdout.decode("utf-8", "replace"))
 
 
+def test_versions():
+    """The updater only moves to a strictly newer version. The release served here (9.9) is older-looking content:
+    no report.py / config.json, another judge.py and a re-titled problem PDF (what made a newer build go back to 4.0.0,
+    retiring its PDFs). Installed newer (9.10) or the same (9.9): nothing changes, even with --update. Older (9.8):
+    the normal update."""
+    print("Update only to a newer version")
+    tmp = tempfile.mkdtemp(prefix="judge_ver_")
+    try:
+        root = build_package(tmp)
+        judge_dir, set1 = os.path.join(root, "Judge"), os.path.join(root, TOWERS_SET)
+        repo2 = make_repo2(tmp, "9.9", "marker-v9.9")
+        for name in ("report.py", "config.json"):            # files of a newer build (grader-discord)
+            if os.path.exists(os.path.join(repo2, "core", name)):
+                os.remove(os.path.join(repo2, "core", name))
+        rebuild_manifest(repo2)
+        pdf = next(k for k in sorted(json.load(open(os.path.join(repo2, "manifest.json"), encoding="utf-8"))["managed"])
+                   if re.fullmatch(r".+/[0-9]+/[0-9]+_[A-Za-z0-9_]+\.pdf", k))
+        retitled = pdf.rsplit("/", 1)[0] + "/" + pdf.rsplit("/", 1)[1].split("_")[0] + "_Retitled_Problem.pdf"
+        edit_manifest(repo2, lambda m: m["managed"].update({retitled: m["managed"].pop(pdf)}))
+        srv, url = serve(repo2)
+
+        def mark(version):
+            p = os.path.join(judge_dir, "manifest.json")
+            with open(p, encoding="utf-8") as f:
+                m = json.load(f)
+            m["version"] = version
+            with open(p, "w", encoding="utf-8") as f:
+                json.dump(m, f)
+
+        def snapshot():
+            out = {}
+            for dp, ds, fs in os.walk(root):
+                for f in fs:
+                    rel = os.path.relpath(os.path.join(dp, f), root).replace(os.sep, "/")
+                    if rel not in ("Judge/.update_check", "Judge/manifest.json"):
+                        out[rel] = sha(os.path.join(dp, f))
+            return out
+
+        def runs():
+            outs = []
+            for args in (["--list"], ["--update"]):
+                if os.path.exists(os.path.join(judge_dir, ".update_check")):
+                    os.remove(os.path.join(judge_dir, ".update_check"))
+                outs.append(run_student(args + ["--no-color"], set1, url)[1])
+            return outs
+
+        before = snapshot()
+        for version, word in (("9.10", "newer than the published v9.9"), ("9.9.0", "up to date")):
+            mark(version)
+            auto, forced = runs()
+            check(snapshot() == before and "restarting" not in auto and word in forced
+                  and not os.path.exists(os.path.join(judge_dir, ".backup")),
+                  f"installed {version}, release 9.9: nothing changes (no file, no PDF retired), also with --update",
+                  forced[-500:])
+        header = os.path.join("include", "bits", "stdc++.h")         # the same bytes in the release: put back
+        os.remove(os.path.join(judge_dir, header))
+        os.remove(os.path.join(judge_dir, "README.txt"))              # other bytes in the release: not touched
+        p = subprocess.run([sys.executable, os.path.join(judge_dir, "updater.py")], cwd=set1, stdout=subprocess.PIPE,
+                           stderr=subprocess.STDOUT, env=dict(os.environ, JUDGE_UPDATE_URL=url))
+        after = snapshot()
+        check("repaired 1 files" in p.stdout.decode() and after.get("Judge/include/bits/stdc++.h") == before["Judge/include/bits/stdc++.h"]
+              and after.get("Judge/README.txt") is None and after.get("Judge/report.py") == before.get("Judge/report.py"),
+              "same version, forced: only a file the release has exactly as installed is put back (README.txt differs: not)",
+              p.stdout.decode()[-300:])
+        shutil.copy(os.path.join(REPO, "core", "README.txt"), os.path.join(judge_dir, "README.txt"))
+        mark("9.8")
+        auto, _ = runs()
+        check("restarting" in auto and "marker-v9.9" in open(os.path.join(judge_dir, "judge.py"), encoding="utf-8").read()
+              and os.path.exists(os.path.join(root, *retitled.split("/"))),
+              "installed 9.8, release 9.9: the normal update", auto[-500:])
+        srv.shutdown()
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def test_fast_update():
     """A package from a release before the newest set gets that whole set in a few requests (a bundle for the test
     data, one template for all the code files, the set folder's Makefile and judge.bat, one PDF per problem; a
@@ -843,9 +918,16 @@ def next_release_plan():
     return sx, sy, sz, T, U, R2, R9, P3, P8
 
 
-def make_next_release(tmp, version="7.3"):
+def next_version(v):
+    """The version after v (4.1.0 -> 4.1.1, 7.3 -> 7.4): the updater only installs a strictly newer release."""
+    parts = v.split(".")
+    return ".".join(parts[:-1] + [str(int(parts[-1]) + 1)])
+
+
+def make_next_release(tmp, version=None):
     """A copy of the repo as that later release (see next_release_plan). Returns (repo2, the old English titles
     {(set, slot): title})."""
+    version = version or next_version(build_version())
     repo2 = make_repo2(tmp, version, "marker-" + version)
     batch = os.path.join(repo2, "problems", "batch")
     os.makedirs(os.path.join(repo2, "tools", "moves"), exist_ok=True)       # what the teacher saves at release time
@@ -913,11 +995,11 @@ def make_next_release(tmp, version="7.3"):
 
 
 def test_future_update(root=None):
-    """From 7.2 on, releases replace, re-title and move problems. A package gets a fake 7.3 over local HTTP: the
+    """From 7.2 on, releases replace, re-title and move problems. A package gets a fake next version over local HTTP: the
     student's written files follow their problems (inside a set and across sets), nothing is overwritten or
     deleted, old PDFs are retired only when their bytes are the shipped ones, the tracker's scores stay with their
     problems (progress.json is not touched), and the second run is quiet."""
-    print("A later release (fake 7.3 over local HTTP)")
+    print("A later release (a fake next version over local HTTP)")
     tmp = tempfile.mkdtemp(prefix="judge_next_")
     try:
         if root is None:                 # else: a package given by the caller (the unpacked release zip)
@@ -966,10 +1048,10 @@ def test_future_update(root=None):
         run_code, out, _ = run_student([TOWERS_CPP, "--no-color", "--stop"], towers_dir, url)
         check(run_code == 0 and "restarting" in out and f"just moved with its problem to {moved_towers}" in out
               and "Result" in out and "ACCEPTED" not in out,
-              "a normal run finds 7.3, installs it, restarts, and says where the code of the file it judges went",
+              f"a normal run finds {next_version(build_version())}, installs it, restarts, and says where the code of the file it judges went",
               f"exit {run_code}\n{out}")
         with open(os.path.join(judge_dir, "manifest.json"), encoding="utf-8") as f:
-            check(json.load(f).get("version") == "7.3", "the installed version is 7.3")
+            check(json.load(f).get("version") == next_version(build_version()), "the installed version is the next one")
         with open(os.path.join(judge_dir, "problems", "batch", "problems.json"), encoding="utf-8") as f:
             titles = {e["dir"]: layout.file_title(e) for e in json.load(f).values()}   # the PDF titles after the update
 
@@ -1061,6 +1143,7 @@ def main():
             test_cli(root, tmp)
             test_tracks(root)
             test_updater()
+            test_versions()
             test_fast_update()
             test_future_update()
             test_data()
