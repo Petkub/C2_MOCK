@@ -4,10 +4,10 @@ A local stand-in for the teacher's Apps Script Web App (C2_PRACTICE_SRC/tools/ap
 regression tests and for trying report.py by hand. Same protocol: POST JSON {action: hello | event | pull, ...};
 like Apps Script it answers a POST with a 302 redirect to a one-time URL whose GET returns the JSON answer.
 
-  python3 tools/fake_report_server.py --student mona-K7Q3:Mona [--student ...] [--port 8765]
+  python3 tools/fake_report_server.py --student <name>-XXXX:<Name> [--student ...] [--port 8765]
   then, in a built package:  JUDGE_REPORT_URL=http://127.0.0.1:8765/exec python3 ../Judge/judge.py ...
 
-As a module: srv = FakeServer({"mona-K7Q3": {"name": "Mona"}}); url = srv.start(); ...; srv.stop()
+As a module: srv = FakeServer({"<name>-XXXX": {"name": "<Name>"}}); url = srv.start(); ...; srv.stop()
   srv.raw        events stored (one per event_id, like the raw tab)
   srv.drive      {student: {pkg: {problem: {"pid", "slot_path", "versions": [{sha, time, score, code}, ...]}}}}
   srv.requests   [(action, number of events)] of every POST
@@ -39,9 +39,11 @@ class FakeServer:
         action = req.get("action")
         code = str(req.get("student", ""))
         self.requests.append((action, len(req.get("events", []))))
-        s = self.students.get(code)
+        hit = [c for c in self.students if c.lower() == code.lower()]      # codes ignore case, like Code.gs
+        s = self.students[hit[0]] if len(hit) == 1 else None
         if not s or not s.get("active"):
             return {"ok": False, "error": "bad_code"}
+        code = hit[0]                                       # the code as the teacher's sheet has it
         if action == "hello":
             saved = {pkg: len(probs) for pkg, probs in self.drive.get(code, {}).items()}
             return {"ok": True, "name": s["name"], "sync_allowed": s["sync_allowed"], "saved": saved}
@@ -51,10 +53,12 @@ class FakeServer:
                 have = {e["event_id"] for e in self.raw}
                 keys = {(e["student"], e["pid"], e["time"], e["code_sha256"]) for e in self.raw}
                 for ev in req.get("events", []):
-                    if not isinstance(ev, dict) or ev.get("student") != code or not ev.get("event_id"):
+                    if not isinstance(ev, dict) or str(ev.get("student", "")).lower() != code.lower() \
+                            or not ev.get("event_id"):
                         continue
                     accepted.append(ev["event_id"])
-                    key = (ev["student"], ev.get("pid"), ev.get("time"), ev.get("code_sha256"))
+                    ev = dict(ev, student=code)
+                    key = (code, ev.get("pid"), ev.get("time"), ev.get("code_sha256"))
                     if ev["event_id"] in have or key in keys:
                         continue                        # already stored: accepted, not stored twice
                     have.add(ev["event_id"])
@@ -145,12 +149,12 @@ class FakeServer:
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--student", action="append", default=[], help="CODE[:Name], e.g. mona-K7Q3:Mona")
+    ap.add_argument("--student", action="append", default=[], help="CODE[:Name], e.g. student-AB2C:Student")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--delay", type=float, default=0.0, help="seconds before each answer")
     a = ap.parse_args()
     students = {}
-    for s in a.student or ["mona-K7Q3:Mona"]:
+    for s in a.student or ["student-AB2C:Student"]:
         code, _, name = s.partition(":")
         students[code] = {"name": name or code.split("-")[0]}
     srv = FakeServer(students)

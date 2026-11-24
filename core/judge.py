@@ -32,7 +32,7 @@ Options
   --no-update      do not check for a new version this time
 
 Reports to your teacher (Judge/report.py; asked once per computer, the first time you judge)
-  --login [CODE]   log in with the student code from your teacher (mona-K7Q3); --logout to stop
+  --login [CODE]   log in with the student code from your teacher (<name>-XXXX); --logout to stop
   --report on|off  send your scores to your teacher (--report status: login, server, results waiting)
   --sync on|off    keep a copy of your code with your teacher (to move to another computer)
   --pull           copy the code your teacher keeps into this package (never over code you wrote)

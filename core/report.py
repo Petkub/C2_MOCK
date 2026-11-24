@@ -5,7 +5,7 @@ The same file ships in C2_Practice and C2_Mock (the regression tests compare the
 that describes its problems. Python 3.7+ standard library only.
 
 What it does
-  - Login once per computer: the student code from the teacher (mona-K7Q3) and two separate consents (send scores;
+  - Login once per computer: the student code from the teacher (<name>-XXXX) and two separate consents (send scores;
     keep a copy of the code with the teacher). The login file is shared by both packages:
       ~/.config/stupidgrader/student.json        (Windows: %APPDATA%\\stupidgrader\\student.json)
       Judge/.student                              (optional: used instead, for this package only)
@@ -44,7 +44,8 @@ BATCH_BYTES = 1024 * 1024           # about this many bytes per POST
 OUTBOX_MAX = 1000                   # events kept while offline (the oldest are dropped)
 OUTBOX_CODE = 8 * 1024 * 1024       # bytes of attached code kept in the outbox (older events keep the hash only)
 LOGIN_TRIES = 3
-CODE_RE = re.compile(r"^[A-Za-z0-9_.]{1,32}-[A-Za-z0-9]{4}$")       # mona-K7Q3
+CODE_RE = re.compile(r"^[A-Za-z0-9_.]{1,32}-[A-Za-z0-9]{4}$")       # <name>-XXXX (compared ignoring case)
+PLACEHOLDER = "<name>-XXXX"
 LOGIN_NAME = "student.json"
 LOCAL_LOGIN = ".student"
 OUTBOX = ".outbox.jsonl"
@@ -123,6 +124,11 @@ def say(st, text, color=None):
 
 def note(st, text):
     say(st, text, "dim")
+
+
+def same_code(a, b):
+    """Student codes are compared ignoring case (petkub-ULTf = petkub-ultf)."""
+    return bool(a) and bool(b) and str(a).lower() == str(b).lower()
 
 
 # ----------------------------------------------------------------------------- settings
@@ -308,7 +314,7 @@ def relabel(pkg, code):
         changed = False
         for ev in events:
             old = str(ev.get("student", ""))
-            if old != code and old.rsplit("-", 1)[0] == nick:
+            if old.lower() != code.lower() and old.rsplit("-", 1)[0].lower() == nick.lower():
                 ev["student"] = code
                 changed = True
         if changed:
@@ -330,7 +336,7 @@ def record(pkg, pid, score, verdicts, attempt, src):
           "title": info.get("title", ""), "set": info.get("set", ""), "set_kind": info.get("set_kind", ""),
           "set_pids": info.get("set_pids", []), "score": int(score),
           "verdicts": "".join(VERDICT_LETTER.get(v, "-") for v in verdicts), "attempt": attempt or 0,
-          "time": now_iso(), "code_sha256": sha256(data)}
+          "time": now_iso(), "code_sha256": sha256(data), "pdf": problem_pdf(pkg, info["slot_path"])}
     if login["sync"] and len(data) <= MAX_CODE:
         try:
             ev["code"] = data.decode("utf-8")
@@ -339,12 +345,24 @@ def record(pkg, pid, score, verdicts, attempt, src):
     add_event(pkg, ev)
 
 
+def problem_pdf(pkg, slot_path):
+    """Package path of the problem's own PDF (<set>/<slot>/<slot>_<Title>.pdf), for the link in Discord; "" if none."""
+    folder, _ = slot_path.rsplit("/", 1)
+    slot = folder.rsplit("/", 1)[-1]
+    try:
+        names = sorted(n for n in os.listdir(os.path.join(pkg.root, *folder.split("/")))
+                       if n.startswith(slot + "_") and n.endswith(".pdf"))
+    except OSError:
+        return ""
+    return f"{folder}/{names[0]}" if names else ""
+
+
 def send(pkg, login, url, deadline):
     """POST the waiting events of this login in batches until done or the deadline. Returns "bad_code", "sent",
     "partial" or "offline"."""
     result = "sent"
     while True:
-        events = [ev for ev in read_outbox(pkg) if ev.get("student") == login["code"]]
+        events = [ev for ev in read_outbox(pkg) if same_code(ev.get("student"), login["code"])]
         if not events:
             return result
         batch, size = [], 0
@@ -394,7 +412,7 @@ def flush(pkg, st, wait=SEND_WAIT):
         say(st, f"Your student code is not accepted any more: ask your teacher for a new one ({pkg.command} --login)",
             "yellow")
         return True
-    waiting = sum(1 for ev in read_outbox(pkg) if ev.get("student") == login["code"])
+    waiting = sum(1 for ev in read_outbox(pkg) if same_code(ev.get("student"), login["code"]))
     if waiting:
         note(st, f"{waiting} result{'s' if waiting != 1 else ''} waiting to be sent to your teacher (sent next time)")
         return True
@@ -457,7 +475,7 @@ def login_flow(pkg, st, url, login, code=None):
     ans = None
     while True:
         if code is None:
-            code = ask("Student code from your teacher (e.g. mona-K7Q3), or Enter to skip: ")
+            code = ask(f"Student code from your teacher ({PLACEHOLDER}), or Enter to skip: ")
             if not code:
                 login.update(skipped=True)
                 save_login(pkg, login)
@@ -466,7 +484,7 @@ def login_flow(pkg, st, url, login, code=None):
         code = code.strip()
         tries += 1
         if not CODE_RE.match(code):
-            say(st, "A student code looks like mona-K7Q3.", "yellow")
+            say(st, f"A student code looks like {PLACEHOLDER} (your name, a dash, 4 letters or digits).", "yellow")
         else:
             ans = hello(pkg, url, code)
             if ans is None or ans.get("ok") or ans.get("error") != "bad_code":
@@ -713,7 +731,7 @@ def status(pkg, st):
     login, exists = load_login(pkg)
     path = login_path(pkg)
     events = read_outbox(pkg)
-    mine = sum(1 for ev in events if ev.get("student") == login["code"])
+    mine = sum(1 for ev in events if same_code(ev.get("student"), login["code"]))
     state = load_state(pkg)
     host = re.sub(r"^(https?://[^/]+).*$", r"\1/...", url) if url else "not set up in this package"
     who = (f"{login['code']}" + (f" ({login['name']})" if login["name"] else "")
@@ -781,7 +799,7 @@ def command(pkg, st, name, value=None):
     if name == "login":
         login, _ = load_login(pkg)
         if value is None and not interactive():
-            say(st, f"Give the code: {pkg.command} --login mona-K7Q3", "yellow")
+            say(st, f"Give the code: {pkg.command} --login {PLACEHOLDER}", "yellow")
             return 2
         login.update(report=True)
         return login_flow(pkg, st, url, login, value)

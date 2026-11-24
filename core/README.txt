@@ -75,30 +75,34 @@ Track B (ชุด B1–B8): ยากกว่าข้อสอบจริง
   (ถ้าอยากได้ปุ่มลัดแยก เช่น Ctrl+Alt+P: Ctrl+Shift+P > "Preferences: Open Keyboard Shortcuts (JSON)" แล้วเพิ่ม
    {"key": "ctrl+alt+p", "command": "workbench.action.tasks.runTask", "args": "Show progress"} )
 
-รายงานผลให้ครู (Discord) และสำเนาโค้ด
-  ครั้งแรกที่ตรวจในเครื่องนี้ judge จะถามรหัสนักเรียนที่ครูให้ (เช่น mona-K7Q3) ยังไม่มีรหัสก็กด Enter ข้ามได้
-  (ใน VS Code คลิกที่หน้าต่าง terminal ก่อนพิมพ์) แล้วถาม 2 เรื่องแยกกัน:
-    1) ส่งคะแนนให้ครูไหม (ตอบ y ถ้าอยากได้แจ้งเตือนในห้อง Discord ของตัวเอง)
-    2) เก็บสำเนาโค้ดไว้กับครูไหม (ไว้ย้ายเครื่อง ตอบ n ได้ คะแนนยังส่งตามปกติ)
-  ผูกครั้งเดียวต่อเครื่อง ใช้ได้ทั้ง C2_Practice และ C2_Mock (ไฟล์ ~/.config/stupidgrader/student.json
-  Windows: %APPDATA%\stupidgrader\student.json)
-  ส่งอะไรบ้าง: รหัสนักเรียน, ข้อที่ตรวจ, คะแนน, ผลรายชุดทดสอบ (เช่น AAAW), ครั้งที่ตรวจ, เวลา, checksum ของไฟล์
-              และตัวโค้ดของข้อนั้น เฉพาะเมื่อเปิดเก็บสำเนาโค้ด (ไฟล์ละไม่เกิน 64 KB) ไม่ส่งไฟล์อื่นในเครื่อง
-  ส่งหลังจากเห็นผลตรวจแล้ว รอไม่เกิน 3 วินาที ไม่มีเน็ตก็ตรวจได้ตามปกติ ผลจะเก็บไว้ส่งรอบหน้า
-  (ขึ้นว่า "... waiting to be sent to your teacher") ปิดทั้งสองอย่างแล้วก็ยังตรวจได้เหมือนเดิม
-  คำสั่ง (พิมพ์ในโฟลเดอร์ชุด Windows ใช้ python แทน python3)
-    python3 ../Judge/judge.py --report status      ผูกกับใคร ใช้ไฟล์ login ไหน ส่งล่าสุดเมื่อไร ค้างส่งกี่รายการ
-    python3 ../Judge/judge.py --report off         หยุดส่งคะแนน (--report on เปิดอีกครั้ง)
-    python3 ../Judge/judge.py --sync off           หยุดเก็บสำเนาโค้ด (--sync on เปิดอีกครั้ง)
-    python3 ../Judge/judge.py --login mona-K7Q3    ผูกหรือเปลี่ยนบัญชี · --logout เลิกผูก (โค้ดในเครื่องไม่หาย)
-  ย้ายไปเครื่องใหม่
-    ก) ผ่านเน็ต (ต้องเปิดเก็บสำเนาโค้ดไว้): ติดตั้ง package ที่เครื่องใหม่ ตรวจข้อใดก็ได้ ใส่รหัสเดิม
-       judge จะถามว่าจะดึงโค้ดลงเครื่องนี้ไหม หรือสั่งเองทีหลัง: python3 ../Judge/judge.py --pull
-    ข) ไม่ใช้เน็ต: ที่เครื่องเก่า python3 ../Judge/judge.py --backup (ได้ไฟล์ <ชื่อ package>_backup_<วันเวลา>.zip
-       ข้างโฟลเดอร์ Judge) คัดลอก zip ไปเครื่องใหม่ แล้วสั่ง python3 ../Judge/judge.py --restore <ไฟล์ zip>
-    ทั้งสองวิธีไม่เขียนทับไฟล์ที่มีโค้ดอยู่แล้ว: ไฟล์ที่ยังว่างจะได้โค้ดกลับมา ถ้าในเครื่องมีโค้ดอื่นอยู่แล้ว
-    โค้ดที่ดึงมาจะไปอยู่ที่ <โฟลเดอร์ชุด>/old/<ข้อ>_cloud_<วันที่>.cpp (จาก zip: _backup_) ให้เปิดดูแล้วเลือกเอง
-  ใช้เครื่องร่วมกับคนอื่น: สร้างไฟล์ Judge/.student ที่มีรหัสของตัวเอง 1 บรรทัด package นี้จะใช้ไฟล์นี้แทน
+Reports to your teacher (Discord) and code copies
+  The first time you judge on a computer, the judge asks for the student code your teacher gave you
+  (<name>-XXXX; press Enter to skip if you have none yet). In VS Code, click into the terminal panel before typing.
+  Then it asks two separate questions:
+    1) Send your scores to your teacher? (answer y to get messages in your own Discord channel)
+    2) Keep a copy of your code with your teacher? (to move to another computer; n is fine, scores are still sent)
+  One login per computer, for both C2_Practice and C2_Mock (file ~/.config/stupidgrader/student.json,
+  Windows: %APPDATA%\stupidgrader\student.json).
+  What is sent: your student code, the problem, the score, the result of each test (e.g. AAAW), the run number,
+  the time, a checksum of your file, and the code of that problem only when code copies are on (64 KB at most).
+  Nothing else from your computer.
+  It is sent after you see your result (3 seconds at most). Without internet the judge works as usual and sends
+  later ("... waiting to be sent to your teacher"). With both turned off, judging works exactly the same.
+  Commands (in a set folder; on Windows type python instead of python3)
+    python3 ../Judge/judge.py --report status        who you are logged in as, login file, last send, results waiting
+    python3 ../Judge/judge.py --report off           stop sending scores (--report on starts again)
+    python3 ../Judge/judge.py --sync off             stop keeping code copies (--sync on starts again)
+    python3 ../Judge/judge.py --login <name>-XXXX    log in or change account; --logout logs out (your files stay)
+  Moving to a new computer
+    a) Online (code copies must have been on): install the package on the new computer, judge any problem and
+       enter the same code; the judge offers to copy your code there. Later: python3 ../Judge/judge.py --pull
+    b) Offline: on the old computer run python3 ../Judge/judge.py --backup (it makes
+       <package>_backup_<date-time>.zip next to the Judge folder), copy the zip to the new computer and run
+       python3 ../Judge/judge.py --restore <zip file>
+    Neither one overwrites a file that already has code: an empty file gets its code back; if there is other code
+    in it, the copy goes to <set folder>/old/<problem>_cloud_<date>.cpp (from a zip: _backup_), so you can compare
+    and choose.
+  Shared computer: put your own code on one line in Judge/.student; this package then uses that file instead.
 
 การอัปเดต: เมื่อต่ออินเทอร์เน็ต judge จะอัปเดตตัวเองจาก GitHub อัตโนมัติ (ตรวจสอบไม่เกินทุก 10 นาที ไฟล์ .cpp ของคุณ
 จะไม่ถูกแก้ ถ้าโจทย์ถูกย้ายหรือถูกเปลี่ยน ไฟล์ที่เขียนไว้จะย้ายตามที่อธิบายในหัวข้อโฟลเดอร์ old/ ข้างบน)

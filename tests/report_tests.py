@@ -7,6 +7,7 @@ never Google, never the student's real login file (STUPIDGRADER_HOME points into
 import importlib.util
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -41,6 +42,7 @@ class Case:
         self.home = os.path.join(os.path.dirname(root), "home")
         self.judge_dir = os.path.join(root, "Judge")
         self.srv = FakeServer({GOOD: {"name": "Petkub"}, OTHER: {"name": "Mona"}})
+        self.outputs = []           # everything the judge printed in these cases (English only)
         self.url = self.srv.start()
 
     def judge(self, args=(), url=None, inp=None, interactive=False, cwd=None, root=None):
@@ -55,7 +57,9 @@ class Case:
         p = subprocess.run([sys.executable, judge] + list(args) + ["--no-color"], cwd=cwd or self.pdir, env=env,
                            input=(inp or "").encode("utf-8"), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                            timeout=300)
-        return p.returncode, p.stdout.decode("utf-8", "replace"), time.time() - t0
+        out = p.stdout.decode("utf-8", "replace")
+        self.outputs.append(out)
+        return p.returncode, out, time.time() - t0
 
     def login_file(self):
         try:
@@ -101,6 +105,7 @@ def run(check, root, problem_dir, code_name, pid, ok_src, pkg, sibling=None):
         backup_restore(c)
         speed(c)
         never_breaks(c)
+        english(c)
     finally:
         c.srv.stop()
 
@@ -302,5 +307,39 @@ def never_breaks(c):
     spec = importlib.util.spec_from_file_location("repo_judge", os.path.join(REPO, "core", "judge.py"))
     repo_judge = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(repo_judge)
-    c.check(repo_judge.report is not None and not repo_judge.report_ready(),
+    c.check(not repo_judge.report_ready() and not os.path.exists(os.path.join(REPO, "core", "manifest.json")),
             "the repo's core/judge.py (not an installed package: no Judge/manifest.json) never reports")
+
+
+THAI = re.compile("[\u0e00-\u0e7f]")
+SAMPLE_NAMES = re.compile(r"mona|k7q3", re.IGNORECASE)
+
+
+def english(c):
+    """Everything a student reads about reports is English, and help text shows <name>-XXXX, never a sample name."""
+    thai = [o for o in c.outputs if THAI.search(o)]
+    c.check(not thai, f"every line the judge printed in these {len(c.outputs)} runs is English (no Thai)",
+            thai[0][:300] if thai else "")
+    code, out, _ = c.judge(["--help"])
+    c.check("--login [CODE]" in out and "<name>-XXXX" in out and not SAMPLE_NAMES.search(out) and not THAI.search(out),
+            "--help: English, the placeholder <name>-XXXX, no sample name", out)
+    c.reset_login()
+    code, out, _ = c.judge(interactive=True, inp="\n")
+    c.check("<name>-XXXX" in out and not SAMPLE_NAMES.search(out), "the first-run prompt shows <name>-XXXX", out[:600])
+    code, out, _ = c.judge(["--login"])
+    c.check(code == 2 and "--login <name>-XXXX" in out, "--login without a code (no terminal): the placeholder", out)
+    code, out, _ = c.judge(["--login", GOOD.lower()], interactive=True, inp="y\ny\n")
+    n = len(c.srv.raw)
+    c.judge()
+    c.check(code == 0 and len(c.srv.raw) == n + 1 and c.srv.raw[-1]["student"] == GOOD,
+            "a code typed in other letter case works (codes ignore case)", out[:400])
+    with open(os.path.join(c.root, "README.txt"), encoding="utf-8") as f:
+        readme = f.read()
+    start = readme.find("Reports to your teacher (Discord) and code copies")
+    end = readme.find("\n\n", start)
+    section = readme[start:end] if start >= 0 else ""
+    c.check(section and not THAI.search(section) and "--login <name>-XXXX" in section and not SAMPLE_NAMES.search(readme),
+            "README.txt: the report section is English with <name>-XXXX; no sample name anywhere",
+            section[:300] or "section not found")
+    with open(os.path.join(c.judge_dir, "report.py"), encoding="utf-8") as f:
+        c.check(not SAMPLE_NAMES.search(f.read()), "report.py has no sample student name")
