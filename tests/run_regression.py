@@ -19,7 +19,9 @@ that gen.py rebuilds and progress.json are never written into the repo.
    Fast update: a whole new set arrives in a few requests.
 6. A later release (a fake 7.3 over local HTTP): re-titled, replaced and moved problems, a clash, files the updater
    did not ship, tracker scores kept, a quiet second run.
-7. The problem manifests and manifest.json are up to date.
+7. Reports to the teacher (tests/report_tests.py, the same file in C2_PRACTICE): login, outbox, pull,
+   backup / restore, speed, against tools/fake_report_server.py on this computer.
+8. The problem manifests and manifest.json are up to date.
 """
 import re
 import contextlib
@@ -46,6 +48,8 @@ SAMPLES = os.path.join(REPO, "samples")
 NAME = "C2_Mock_Test"
 FAILED = []
 os.environ["JUDGE_NO_UPDATE"] = "1"       # the judge never contacts GitHub during the tests
+os.environ["JUDGE_REPORT_URL"] = "off"    # ... nor the teacher's report server (report_tests uses a fake one)
+os.environ["STUPIDGRADER_HOME"] = tempfile.mkdtemp(prefix="judge_login_")   # never the real login file
 judge = None        # the package's judge.py, imported by main()
 # the towers_*.cpp samples solve Signal Towers (id 14): judged by its id; its set folder (TOWERS_SET), problem folder
 # (TOWERS_N) and code file (TOWERS_CPP) come from problems.json, so the tests follow the problem when it moves
@@ -73,6 +77,20 @@ def build_package(out):
                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     check(p.returncode == 0, "build_dist.py", p.stdout.decode("utf-8", "replace"))
     return os.path.join(out, NAME) if p.returncode == 0 else None
+
+
+# ----------------------------------------------------------------------------- reports to the teacher
+def test_reports():
+    import report_tests
+    tmp = tempfile.mkdtemp(prefix="judge_report_")
+    try:
+        root = build_package(tmp)
+        if root:
+            report_tests.run(check, root, f"{TOWERS_SET}/{TOWERS_N}", TOWERS_CPP, int(TOWERS_ID),
+                             os.path.join(SAMPLES, "batch", "towers_ok.cpp"), "mock",
+                             sibling=os.path.join(os.path.dirname(REPO), "C2_PRACTICE"))
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 # ----------------------------------------------------------------------------- 1. package contents
@@ -1060,6 +1078,7 @@ def main():
             test_missed_last_reading()
             test_cli(root, tmp)
             test_tracks(root)
+            test_reports()
             test_updater()
             test_fast_update()
             test_future_update()

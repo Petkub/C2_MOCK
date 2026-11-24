@@ -1,0 +1,4 @@
+{
+ "about": "endpoint = the /exec URL of the teacher's Apps Script Web App (report.py); empty = no reports",
+ "endpoint": ""
+}
