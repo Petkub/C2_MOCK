@@ -16,6 +16,10 @@ Rules
     of a set folder, README.txt, Guide.pdf, Progress.md, .vscode/) and "create-only" files (the empty code file of a problem, added
     only when missing). The old copy of every replaced file goes to Judge/.backup/ (package files under _package/)
   - updates only an installed package (Judge/judge.py and Judge/manifest.json exist), never the source repo
+  - updates only to a strictly newer version (manifest "version", compared as numbers: 4.10 > 4.9, 4.1 = 4.1.0).
+    An older release on GitHub never replaces a newer package, and the same version is left alone; a forced check
+    (--update, python3 updater.py) of the same version only puts back missing or damaged files whose hash in the
+    release is exactly the installed one (a build with other files keeps them)
 
 Package layout (v7.2, one folder per problem; tools/layout.py in the repo):
   Mock_A01/Mock_A01.pdf, Makefile, judge.bat                           (sets A01 ... A12, B01 ... B08)
@@ -481,9 +485,33 @@ def follow_moves(judge_dir=ROOT):
         return []
 
 
+# ----------------------------------------------------------------------------- versions
+def version_key(v):
+    """(4, 1) for "4.1.0" and "4.1" (trailing zeros dropped, so they are equal), or None when v is not a version."""
+    s = str(v).strip()
+    if not re.fullmatch(r"[0-9]+(\.[0-9]+)*", s):
+        return None
+    key = [int(x) for x in s.split(".")]
+    while len(key) > 1 and key[-1] == 0:
+        key.pop()
+    return tuple(key)
+
+
+def installed_view(remote, local):
+    """The part of the release manifest that is exactly what is installed (the same hash in both): a forced check of
+    the same version repairs only these files, so nothing the installed version does not have comes in or goes."""
+    view = dict(remote)
+    for key in ("files", "managed", "create_only"):
+        mine = local.get(key) or {}
+        view[key] = {k: v for k, v in (remote.get(key) or {}).items() if mine.get(k) == v}
+    view.pop("bundles", None)
+    return view
+
+
 # ----------------------------------------------------------------------------- main entry
 def check(judge_dir=ROOT, force=False, notify=None):
-    """Update Judge/ if the repo has a newer version. Returns a Result; never raises. notify(text) is called
+    """Update Judge/ if the repo has a strictly newer version (same version + force: repair only; an older
+    release: nothing). Returns a Result; never raises. notify(text) is called
     once before a big download (NOTIFY_MIN files or more), so the student knows why the judge waits."""
     local = load_json(os.path.join(judge_dir, "manifest.json"))
     if not os.path.isfile(os.path.join(judge_dir, "judge.py")) or local is None:
@@ -499,11 +527,23 @@ def check(judge_dir=ROOT, force=False, notify=None):
         remote = json.loads(data.decode("utf-8"))
         if not isinstance(remote, dict):
             raise ValueError("bad manifest")
+        new, old = version_key(remote.get("version")), version_key(version)
+        if new is None:
+            raise ValueError("bad version in manifest")
+        if old is not None and new < old:      # e.g. a newer build than the last release: never go back
+            return Result("current", f"Judge v{version} is newer than the published v{remote['version']}: kept",
+                          version)
+        same = old is not None and new == old
+        if same and not force:
+            return Result("current", f"Judge v{version} is up to date", version)
+        if same:
+            remote = installed_view(remote, local)      # repair what is installed, change nothing else
         updates, managed, creates = plan(judge_dir, remote, local, force)
         bundles = plan_bundles(remote)
-        retired = plan_retired(judge_dir, remote, local)
-        if not updates and not managed and not creates and not retired and remote["version"] == version:
-            return Result("current", f"Judge v{version} is up to date", version)
+        retired = [] if same else plan_retired(judge_dir, remote, local)
+        if not updates and not managed and not creates and not retired:
+            if same or remote["version"] == version:
+                return Result("current", f"Judge v{version} is up to date", version)
         count = len(updates) + len(managed) + len(creates)
         if notify is not None and count >= NOTIFY_MIN:
             notify(f"Downloading Judge v{remote['version']} ({count} files) ...")
@@ -516,11 +556,13 @@ def check(judge_dir=ROOT, force=False, notify=None):
         test_new_judge(tmp)
         apply(judge_dir, updates, managed, creates, tmp)
         retire(judge_dir, retired)
+        names = [p.replace(os.sep, "/") for p, _, _ in updates + managed + creates]
+        if same:                                        # the installed manifest stays as it is
+            return Result("updated", f"repaired {len(names)} files of v{version}", version, names)
         with open(os.path.join(tmp, "manifest.json"), "w", encoding="utf-8") as f:
             json.dump(remote, f, indent=0, sort_keys=True)      # what is installed now
             f.write("\n")
         os.replace(os.path.join(tmp, "manifest.json"), os.path.join(judge_dir, "manifest.json"))
-        names = [p.replace(os.sep, "/") for p, _, _ in updates + managed + creates]
         names += [p.replace(os.sep, "/") + " (old title, moved to Judge/.backup/_package/)" for p in retired]
         return Result("updated", f"updated to v{remote['version']} ({len(names)} files)", remote["version"], names)
     except Exception as ex:          # network, hash, bad manifest, read-only folder, ...: keep what we have

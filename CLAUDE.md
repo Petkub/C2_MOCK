@@ -197,6 +197,12 @@ Propose the design and wait for approval before writing it.
   its bytes are exactly what it installed (the hash in the installed `Judge/manifest.json`) and the new manifest
   manages another PDF in the same problem folder (`plan_retired`, `retire`). No list of old names is needed; a file
   with other bytes stays.
+- Versions: `check()` installs a release only when its `version` is **strictly newer** (`version_key`: numbers,
+  4.10 > 4.9, 4.1 = 4.1.0). An older release never replaces a newer package (e.g. a build from a branch: before this
+  rule a 4.0.0 on GitHub turned such a package back, retiring its PDFs), the same version is left alone, and a forced
+  check of the same version only repairs missing or damaged files whose hash in the release is the installed one
+  (`installed_view`). So every release must bump `VERSION`. Regression: `test_versions` (newer / same / older), and
+  `test_future_update` serves `next_version(VERSION)`.
 - Only an installed package updates (`Judge/judge.py` and `Judge/manifest.json` exist); `core/` in the repo never.
 - `--update` forces a check and prints the result; `--no-update` skips it; the header box shows `Judge vX.Y`
   (from `Judge/manifest.json`). Recovery when `judge.py` itself is broken: `python3 ../Judge/updater.py`.

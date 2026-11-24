@@ -6033,7 +6033,7 @@
 "problems/batch/problems.json": "43582e5165d33d982398a84ebcc062a274952aac56674939eaf6da789ebf667f",
 "problems/batch/sets.json": "6f8570b763b222cdbd596b7935496b251889070ecef1531355d0115920b86cd8",
 "report.py": "89e78828e8698f4c7349a691a058f26c7a4506e34cd25e1b7afc6b0f065982ea",
-"updater.py": "ec1f7802b9e9be45255e4aef92fa8cf968d07706caadc85b63bddc1bae53c4fb"
+"updater.py": "e7d1b4cda63505861a788214286670f410340d79ef8213e448ad081f006a81c0"
 },
 "managed": {
 ".vscode/settings.json": [
