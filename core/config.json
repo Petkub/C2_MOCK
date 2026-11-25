@@ -1,4 +1,4 @@
 {
- "about": "endpoint = the /exec URL of the teacher's Apps Script Web App (report.py); empty = no reports",
- "endpoint": "https://script.google.com/macros/s/AKfycbw2eAMsY7bjpIaLaQc8nOcg7rJx2PYH4XHiitA91B7rXZYJSxsSr2N3m-JqfwkDkkrXOw/exec"
+ "about": "endpoint = the teacher's report server (DumbBot /api/report, report.py); empty = no reports",
+ "endpoint": "https://dumbgrader.petkub2543.workers.dev/api/report"
 }

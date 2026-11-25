@@ -1,5 +1,13 @@
 POSN Practice Judge - changes
 
+7.4  ส่งผลตรวจให้ครูและห้อง Discord ของตัวเอง (ล็อกอินครั้งเดียวด้วยรหัสจากครู)
+     - Reports to your teacher: the first time you judge, the judge asks for your student code (<name>-XXXX)
+       and two yes/no questions (send your scores; keep a copy of your code). Then every result goes to
+       your teacher and to your own Discord channel. Press Enter to skip: judging works the same without it.
+     - One login for C2_Practice and C2_Mock on this computer. --login, --logout, --report on|off|status,
+       --sync on|off; --pull copies your saved code to another computer, --backup / --restore ZIP without
+       internet. Nothing ever overwrites code you wrote (a different version goes to the set's old/ folder).
+
 7.3  ปรับเนื้อเรื่องทุกข้อให้เป็นแนวเดียวกัน (โจทย์และ test ไม่เปลี่ยน)
      Every story was rewritten in one voice; problems and tests are unchanged (except the new B4/6 sample below).
      Nine problems have a new title (their PDF has a new name; your .cpp stays where it is).

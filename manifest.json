@@ -564,9 +564,9 @@
 ]
 },
 "files": {
-"CHANGELOG.txt": "cf00d390592838ca39247eb8e359763d2a2777f41672bab4291a392083eb6350",
+"CHANGELOG.txt": "e08e57238e9b31c35d17536ea4e7cac3209f23cfed55748f69f99a68c463cfc6",
 "README.txt": "2479f0c9010edd4aaa87550e15b7b2a8a3eddf3ead8c2dba82f8ac3c6725c6cd",
-"config.json": "75cfa4a161739f255d53a9575030e618a6530b4d72edce725350907e749d30b3",
+"config.json": "ab65287d2a9fe234cb3c1e8055186604d02a5760a219e54c52de2bd250c48c40",
 "include/bits/stdc++.h": "1545f1f4b55b3acb866effca73203f3a9131773f147331cbf4e983ebf36d6cc9",
 "judge.py": "2402fa0a2cdd0eab5dd90576c07b022295341c3ab8dbc3b1fbca329eb0e40a43",
 "problems/batch/Mock_A01/1/01.in": "e294ce8cd9fcefeffaa6176fe43fb83680d3f188d4907a61af759b1bacc658a7",
@@ -6780,5 +6780,5 @@
 "": "core/",
 "problems/": "problems/"
 },
-"version": "7.3"
+"version": "7.4"
 }
