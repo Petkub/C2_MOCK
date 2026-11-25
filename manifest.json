@@ -6032,7 +6032,7 @@
 "problems/batch/Mock_B08/6/manifest.json": "f8f1ec9774df11073273b9f81e1d0b29347aac0017785d3b433d2cedd2f1bb28",
 "problems/batch/problems.json": "43582e5165d33d982398a84ebcc062a274952aac56674939eaf6da789ebf667f",
 "problems/batch/sets.json": "6f8570b763b222cdbd596b7935496b251889070ecef1531355d0115920b86cd8",
-"report.py": "309facb0feab9e526f1b249374ef6cc201e8624d2ffcd343a57e3ab585646d35",
+"report.py": "31a0b6ab4c4400ffaa944ef373eb1f1bce776a86dbe9c71b254854f7521f0c93",
 "updater.py": "e7d1b4cda63505861a788214286670f410340d79ef8213e448ad081f006a81c0"
 },
 "managed": {
