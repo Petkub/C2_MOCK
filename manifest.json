@@ -564,7 +564,7 @@
 ]
 },
 "files": {
-"CHANGELOG.txt": "e08e57238e9b31c35d17536ea4e7cac3209f23cfed55748f69f99a68c463cfc6",
+"CHANGELOG.txt": "e61f5d8317d8c1c5369d1e4929a0fdc324b1bcf69ff9254d8253b8f595866f4b",
 "README.txt": "2479f0c9010edd4aaa87550e15b7b2a8a3eddf3ead8c2dba82f8ac3c6725c6cd",
 "config.json": "ab65287d2a9fe234cb3c1e8055186604d02a5760a219e54c52de2bd250c48c40",
 "include/bits/stdc++.h": "1545f1f4b55b3acb866effca73203f3a9131773f147331cbf4e983ebf36d6cc9",
@@ -6045,7 +6045,7 @@
 "student/.vscode/tasks.json"
 ],
 "Mock_A01/1/1_Dark_Lord_Power_999999999.pdf": [
-"2304f9a82bc7eba721796620d2f242beebf3b9e6e47cac55f7130f08a5c38430",
+"ccef612bfeac97e69887cd2d3d3f55f767968300c2ade0ecaecdb86f89168650",
 "student/Mock_A01/1/1_Dark_Lord_Power_999999999.pdf"
 ],
 "Mock_A01/2/2_Ramping_Up_Production.pdf": [
@@ -6073,7 +6073,7 @@
 "student/set_files/Makefile"
 ],
 "Mock_A01/Mock_A01.pdf": [
-"a81604fe988d352a5e8ddd74a495d998626d994dd429a4cf24c2af0ed514a865",
+"5d69aa8d2ca2aced2470f358edbb213943994689cdfde6658e18c64aa43cc991",
 "student/Mock_A01/Mock_A01.pdf"
 ],
 "Mock_A01/judge.bat": [
